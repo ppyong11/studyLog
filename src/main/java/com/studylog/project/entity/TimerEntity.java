@@ -7,13 +7,11 @@ import java.time.LocalDateTime;
 
 @NoArgsConstructor
 @Getter
-@Setter
 @Table(name= "timer")
 @Entity
 public class TimerEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Setter(AccessLevel.NONE)
     private Long timer_id;
 
     @ManyToOne
@@ -41,5 +39,17 @@ public class TimerEntity {
         this.category_id = category_id;
         this.start_time = start_time;
         this.end_time = end_time; //빌더에 값 지정 X 시 null 들어감
+    }
+
+    //수정 가능 필드: plan_id(플랜명), category_id(카테고리명)
+    public void changePlan(PlanEntity newPlan, CategoryEntity generalCateogry) {
+        this.plan_id= plan_id;
+
+        if (newPlan != null) {
+            this.category_id = newPlan.getCategory_id();
+        }
+        else{ //plan 설정 X 시
+            this.category_id = generalCateogry;
+        }
     }
 }

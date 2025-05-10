@@ -7,13 +7,11 @@ import java.time.LocalDateTime;
 
 @NoArgsConstructor
 @Getter
-@Setter
 @Table(name= "file")
 @Entity
 public class FileEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Setter(AccessLevel.NONE)
     private Long file_id;
 
     @ManyToOne

@@ -9,13 +9,11 @@ import java.util.Date;
 
 @NoArgsConstructor
 @Getter
-@Setter
 @Table(name= "plan")
 @Entity
 public class PlanEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Setter(AccessLevel.NONE)
     private Long plan_id;
 
     @ManyToOne
