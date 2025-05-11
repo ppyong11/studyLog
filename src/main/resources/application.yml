@@ -17,8 +17,8 @@ spring:
   datasource:
     driver-class-name: org.mariadb.jdbc.Driver
     url: jdbc:mariadb://localhost:3306/studyLog
-    username: root
-    password: 0000
+    username: studylog_user
+    password: 1234
 
 jpa:
   hibernate:
