@@ -15,12 +15,12 @@ public class FileEntity {
     private Long file_id;
 
     @ManyToOne
-    @JoinColumn(referencedColumnName = "user_id", nullable = false)
-    private UserEntity user_id;
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;
 
     @ManyToOne
-    @JoinColumn(referencedColumnName = "board_id", nullable = false)
-    private BoardEntity board_id;
+    @JoinColumn(name = "board_id", nullable = false)
+    private BoardEntity board;
 
     @Column(nullable = false)
     private String file_path;
@@ -37,8 +37,8 @@ public class FileEntity {
     @Builder
     public FileEntity(UserEntity user_id, BoardEntity board_id, String file_path, String file_name,
                       String file_type, LocalDateTime upload_at) {
-        this.user_id = user_id;
-        this.board_id = board_id;
+        this.user = user_id;
+        this.board = board_id;
         this.file_path = file_path;
         this.file_name = file_name;
         this.file_type = file_type;

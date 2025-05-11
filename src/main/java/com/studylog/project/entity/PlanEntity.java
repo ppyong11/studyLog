@@ -17,12 +17,12 @@ public class PlanEntity {
     private Long plan_id;
 
     @ManyToOne
-    @JoinColumn(referencedColumnName = "user_id", nullable = false)
-    private UserEntity user_id;
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;
 
     @ManyToOne
-    @JoinColumn(referencedColumnName = "category_id", nullable = false)
-    private CategoryEntity category_id;
+    @JoinColumn(name = "category_id", nullable = false)
+    private CategoryEntity category;
 
     @Column(nullable = false)
     private String plan_name;
@@ -41,8 +41,8 @@ public class PlanEntity {
     public PlanEntity (UserEntity user_id, CategoryEntity category_id, String plan_name,
                        Date start_date, Date end_date, LocalTime plan_minutes, Boolean plan_status)
     {
-        this.user_id = user_id;
-        this.category_id = category_id;
+        this.user = user_id;
+        this.category = category_id;
         this.plan_name = plan_name;
         this.start_date = start_date;
         this.end_date = end_date;

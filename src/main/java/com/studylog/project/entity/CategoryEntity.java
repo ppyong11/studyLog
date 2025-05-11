@@ -16,14 +16,14 @@ public class CategoryEntity {
     private Long category_id;
 
     @ManyToOne
-    @JoinColumn(referencedColumnName = "user_id", nullable = false)
-    private UserEntity user_id;
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;
 
     private String category_name;
 
     @Builder
     public CategoryEntity(UserEntity user_id, String category_name) {
-        this.user_id = user_id;
+        this.user = user_id;
         this.category_name = category_name;
     }
 }

@@ -15,12 +15,12 @@ public class BoardEntity {
     private Long board_id;
 
     @ManyToOne
-    @JoinColumn(referencedColumnName = "user_id", nullable = false)
-    private UserEntity user_id;
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;
 
     @ManyToOne
-    @JoinColumn(referencedColumnName = "category_id", nullable = false)
-    private CategoryEntity category_id;
+    @JoinColumn(name = "category_id", nullable = false)
+    private CategoryEntity category;
 
     @Column(nullable = false)
     private String title;
@@ -33,8 +33,8 @@ public class BoardEntity {
     @Builder
     public BoardEntity(UserEntity user_id, CategoryEntity category_id, String title, String content,
                        LocalDateTime upload_at, LocalDateTime update_at) {
-        this.user_id = user_id;
-        this.category_id = category_id;
+        this.user = user_id;
+        this.category = category_id;
         this.title = title;
         this.content = content;
         this.upload_at = upload_at;

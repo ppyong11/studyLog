@@ -15,16 +15,16 @@ public class TimerEntity {
     private Long timer_id;
 
     @ManyToOne
-    @JoinColumn(referencedColumnName = "user_id", nullable = false)
-    private UserEntity user_id;
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;
 
     @ManyToOne
-    @JoinColumn(referencedColumnName = "plan_id")
-    private PlanEntity plan_id; //플랜명 널 허용 (단순 기록)
+    @JoinColumn(name = "plan_id")
+    private PlanEntity plan; //플랜명 널 허용 (단순 기록)
 
     @ManyToOne
-    @JoinColumn(referencedColumnName = "category_id", nullable = false)
-    private CategoryEntity category_id;
+    @JoinColumn(name = "category_id", nullable = false)
+    private CategoryEntity category;
 
     @Column(nullable = false)
     private LocalDateTime start_time;
@@ -34,22 +34,22 @@ public class TimerEntity {
     @Builder
     public TimerEntity(UserEntity user_id, PlanEntity plan_id, CategoryEntity category_id,
                        LocalDateTime start_time, LocalDateTime end_time) {
-        this.user_id = user_id;
-        this.plan_id = plan_id;
-        this.category_id = category_id;
+        this.user = user_id;
+        this.plan = plan_id;
+        this.category = category_id;
         this.start_time = start_time;
         this.end_time = end_time; //빌더에 값 지정 X 시 null 들어감
     }
 
     //수정 가능 필드: plan_id(플랜명), category_id(카테고리명)
     public void changePlan(PlanEntity newPlan, CategoryEntity generalCateogry) {
-        this.plan_id= plan_id;
+        this.plan= newPlan;
 
         if (newPlan != null) {
-            this.category_id = newPlan.getCategory_id();
+            this.category = newPlan.getCategory();
         }
         else{ //plan 설정 X 시
-            this.category_id = generalCateogry;
+            this.category = generalCateogry;
         }
     }
 }
