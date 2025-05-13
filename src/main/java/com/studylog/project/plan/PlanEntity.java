@@ -5,8 +5,8 @@ import com.studylog.project.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.Date;
 
 @NoArgsConstructor
 @Getter
@@ -29,10 +29,10 @@ public class PlanEntity {
     private String plan_name;
 
     @Column(nullable = false)
-    private Date start_date;
+    private LocalDate start_date;
 
     @Column(nullable = false)
-    private Date end_date; //미지정 시 start_date와 같음
+    private LocalDate end_date; //미지정 시 start_date와 같음
     private LocalTime plan_minutes;
 
     @Column(nullable = false)
@@ -40,7 +40,7 @@ public class PlanEntity {
 
     @Builder
     public PlanEntity (UserEntity user_id, CategoryEntity category_id, String plan_name,
-                       Date start_date, Date end_date, LocalTime plan_minutes, Boolean plan_status)
+                       LocalDate start_date, LocalDate end_date, LocalTime plan_minutes, Boolean plan_status)
     {
         this.user = user_id;
         this.category = category_id;

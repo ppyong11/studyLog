@@ -1,7 +1,14 @@
 package com.studylog.project.user;
 
+import com.studylog.project.board.BoardEntity;
+import com.studylog.project.category.CategoryEntity;
+import com.studylog.project.plan.PlanEntity;
+import com.studylog.project.timer.TimerEntity;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @NoArgsConstructor
 @Getter
@@ -26,6 +33,18 @@ public class UserEntity {
 
     @Column(insertable = false) //회원 역할, DB에서 기본값 0으로 처리, 파라미터 안 받음
     private Boolean role;
+
+    @OneToMany(mappedBy = "user")
+    private List<BoardEntity> boards= new ArrayList<>();
+
+    @OneToMany(mappedBy = "user")
+    private List<PlanEntity> plans= new ArrayList<>();
+
+    @OneToMany(mappedBy = "user")
+    private List<CategoryEntity> categories= new ArrayList<>();
+
+    @OneToMany(mappedBy = "user")
+    private List<TimerEntity> timers = new ArrayList<>();
 
     @Builder
     public UserEntity(String id, String pw, String nickname, String email) {

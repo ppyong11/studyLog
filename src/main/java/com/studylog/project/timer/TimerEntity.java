@@ -30,18 +30,18 @@ public class TimerEntity {
     private CategoryEntity category;
 
     @Column(nullable = false)
-    private LocalDateTime start_time;
+    private LocalDateTime start_at;
 
-    private LocalDateTime end_time; //종료 시간, 널 허용
+    private LocalDateTime end_at; //종료 시간, 널 허용
 
     @Builder
     public TimerEntity(UserEntity user_id, PlanEntity plan_id, CategoryEntity category_id,
-                       LocalDateTime start_time, LocalDateTime end_time) {
+                       LocalDateTime start_at, LocalDateTime end_at) {
         this.user = user_id;
         this.plan = plan_id;
         this.category = category_id;
-        this.start_time = start_time;
-        this.end_time = end_time; //빌더에 값 지정 X 시 null 들어감
+        this.start_at = start_at;
+        this.end_at = end_at; //빌더에 값 지정 X 시 null 들어감
     }
 
     //수정 가능 필드: plan_id(플랜명), category_id(카테고리명)
