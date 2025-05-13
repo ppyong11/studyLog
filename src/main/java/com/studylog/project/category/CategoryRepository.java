@@ -1,4 +1,4 @@
-package com.studylog.project.repository;
+package com.studylog.project.category;
 
 public interface CategoryRepository {
 }

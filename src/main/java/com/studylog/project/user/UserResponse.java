@@ -1,6 +1,5 @@
-package com.studylog.project.dto.response;
+package com.studylog.project.user;
 
-import com.studylog.project.entity.UserEntity;
 import lombok.Getter;
 
 @Getter

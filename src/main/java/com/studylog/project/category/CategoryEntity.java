@@ -1,5 +1,6 @@
-package com.studylog.project.entity;
+package com.studylog.project.category;
 
+import com.studylog.project.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 

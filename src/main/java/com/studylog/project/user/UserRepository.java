@@ -1,6 +1,5 @@
-package com.studylog.project.repository;
+package com.studylog.project.user;
 
-import com.studylog.project.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

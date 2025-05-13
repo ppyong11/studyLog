@@ -1,6 +1,6 @@
-package com.studylog.project.exception;
+package com.studylog.project.global.exception;
 
-import com.studylog.project.dto.response.ApiResponse;
+import com.studylog.project.global.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

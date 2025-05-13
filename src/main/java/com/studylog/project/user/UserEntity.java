@@ -1,4 +1,4 @@
-package com.studylog.project.entity;
+package com.studylog.project.user;
 
 import jakarta.persistence.*;
 import lombok.*;

@@ -1,4 +1,4 @@
-package com.studylog.project.dto.response;
+package com.studylog.project.global.response;
 
 import lombok.Getter;
 

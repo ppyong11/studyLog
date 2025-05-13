@@ -1,5 +1,8 @@
-package com.studylog.project.entity;
+package com.studylog.project.timer;
 
+import com.studylog.project.category.CategoryEntity;
+import com.studylog.project.plan.PlanEntity;
+import com.studylog.project.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 

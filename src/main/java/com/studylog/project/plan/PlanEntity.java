@@ -1,8 +1,9 @@
-package com.studylog.project.entity;
+package com.studylog.project.plan;
 
+import com.studylog.project.category.CategoryEntity;
+import com.studylog.project.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
-import org.checkerframework.checker.units.qual.Time;
 
 import java.time.LocalTime;
 import java.util.Date;
