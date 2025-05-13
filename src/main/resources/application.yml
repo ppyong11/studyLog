@@ -27,3 +27,7 @@ jpa:
   properties:
     hibernate:
       format_sql: true #SQL 예쁘게 출력
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %method() - %msg%n" #로깅 패턴 정의
