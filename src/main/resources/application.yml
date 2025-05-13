@@ -20,14 +20,20 @@ spring:
     username: studylog_user
     password: 1234
 
-jpa:
-  hibernate:
-    ddl-auto: validate
-  show-sql: true
-  properties:
+  jpa:
     hibernate:
-      format_sql: true #SQL 예쁘게 출력
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true #SQL 예쁘게 출력
 
 logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %method() - %msg%n" #로깅 패턴 정의
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
