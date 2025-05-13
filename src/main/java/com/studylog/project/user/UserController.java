@@ -1,14 +1,15 @@
-package com.studylog.project.controller;
+package com.studylog.project.user;
 
 
-import com.studylog.project.dto.request.EmailRequest;
-import com.studylog.project.dto.response.ApiResponse;
+import com.studylog.project.mail.MailErrorCode;
+import com.studylog.project.mail.MailRequest;
+import com.studylog.project.global.response.ApiResponse;
+import com.studylog.project.mail.MailService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.studylog.project.service.UserService;
 
 @RestController
 @RequestMapping("/study-log")
@@ -16,6 +17,7 @@ import com.studylog.project.service.UserService;
 public class UserController {
 
     private final UserService userService;
+    private final MailService mailService;
 
     @GetMapping("/sign-in/check-info")
     public ResponseEntity<ApiResponse> check(@RequestParam(required = false) String id,
@@ -46,24 +48,30 @@ public class UserController {
         }
     }
 
+    //이메일 인증 코드 발송
     @PostMapping("/sign-in/send-email-code")
-    public ResponseEntity<ApiResponse> sendEmailCode(@RequestBody @Valid EmailRequest emailDTO) {
+    public ResponseEntity<ApiResponse> sendEmailCode(@RequestBody @Valid MailRequest emailDTO) {
         String email= emailDTO.getEmail(); //유효성 검사 후 받은 이메일 string형 변환
         if (userService.existsEmail(email)){
             return ResponseEntity.status(HttpStatus.CONFLICT).
                     body(new ApiResponse(false, "이미 사용 중인 이메일입니다."));
         }
-        userService.sendEmailCode(email); //랜덤 코드 생성 후 이메일 발송
+        mailService.sendEmailCode(email); //랜덤 코드 생성 후 이메일 발송, 에러 시 핸들러가 처리
         return ResponseEntity.ok(new ApiResponse(true, "사용 가능한 이메일입니다. 이메일 발송 완료"));
         }
 
     @PostMapping("/sign-in/verify-email-code")
-    public ResponseEntity<ApiResponse> verifyCode(@RequestBody @Valid EmailRequest emailDTO) {
+    public ResponseEntity<ApiResponse> verifyCode(@RequestBody @Valid MailRequest emailDTO) {
         if(emailDTO.getCode() == null || emailDTO.getCode().isBlank()){ //code 입력 안 했을 때
             return ResponseEntity.badRequest().body(new ApiResponse(false, "인증 코드를 입력하세요."));
         }
-        boolean result= userService.verifyEmailCode(emailDTO.getEmail(), emailDTO.getCode()); //Redis 값 비교
-        return result ? ResponseEntity.ok(new ApiResponse(true, "이메일 인증 성공"))
-                : ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiResponse(false, "이메일 인증 실패"));
+        MailErrorCode result= mailService.verifyEmailCode(emailDTO.getEmail(), emailDTO.getCode()); //Redis 값 비교
+        return switch(result) {
+            case SUCCESS -> ResponseEntity.ok(new ApiResponse(true, "이메일 인증 성공"));
+            case CODE_EXPIRED -> ResponseEntity.status(HttpStatus.GONE)
+                    .body(new ApiResponse(false, "인증 코드 만료되었습니다."));
+            case MISMATCH -> ResponseEntity.badRequest()
+                    .body(new ApiResponse(false, "인증 코드가 일치하지 않습니다."));
+        };
     }
 }
