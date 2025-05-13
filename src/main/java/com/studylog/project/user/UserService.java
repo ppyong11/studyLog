@@ -1,19 +1,19 @@
-package com.studylog.project.service;
+package com.studylog.project.user;
 
-import com.studylog.project.entity.UserEntity;
-import com.studylog.project.repository.UserRepository;
-import jakarta.persistence.Table;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
 
+    /* @RequiredArgsConstructor 사용으로 생략
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
-    }
+    }*/
 
     public UserEntity saveUser(UserEntity user) {
         validateDuplicateMemeber(user);
