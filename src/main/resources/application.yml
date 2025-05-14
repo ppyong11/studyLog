@@ -20,6 +20,12 @@ spring:
     username: studylog_user
     password: 1234
 
+  redis:
+    host: localhost
+    port: 6379
+    username: studyLog
+    password: 1234
+
   jpa:
     hibernate:
       ddl-auto: validate
