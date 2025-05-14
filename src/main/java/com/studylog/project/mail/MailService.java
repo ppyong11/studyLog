@@ -31,9 +31,9 @@ public class MailService {
 
             log.info("메일 발송 성공");
             saveCode(email, code); //코드 저장
-        } catch (Exception e){ //체크 예외 처리
-            log.error("메일 발송 실패 \n"+e); //에러 내용 반환
-            throw new RuntimeException(e); //unchecked 예외 던짐 (핸들러가 받음)
+        } catch (Exception e){ //체크, 언체크 예외 처리
+            log.error("메일 발송 실패 -"+e.getMessage()); //에러 내용 반환
+            throw new RuntimeException(e.getMessage(), e); //unchecked 예외 던짐 (핸들러가 받음)
         }
     }
     //인증 코드 생성
