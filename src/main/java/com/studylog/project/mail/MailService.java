@@ -1,5 +1,6 @@
 package com.studylog.project.mail;
 
+import com.studylog.project.global.exception.MailException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -22,11 +23,19 @@ public class MailService {
         SimpleMailMessage message = new SimpleMailMessage(); //전송 내용 담는 객체
 
         String code= randomCode(); //랜덤 코드 생성
-
+        String text = String.format("""
+        안녕하세요, Study Log입니다.
+        아래 인증 코드를 입력해 주세요.
+        
+        ✅ 인증 코드: %s
+        인증 코드는 2분간 유효합니다.
+        
+        ⚠️ 요청하지 않은 경우, 이 메일은 무시하셔도 됩니다.
+        """, code);
         try{
             message.setTo(email);
-            message.setSubject("Study Log 이메일 인증 코드입니다.");
-            message.setText("인증 코드: "+code+"\n인증 코드는 2분 동안 유효합니다.");
+            message.setSubject("[Study Log] 이메일 인증 코드");
+            message.setText(text);
             mailSender.send(message); //구현체로 메일 전송 (실제 SMTP 서버로 전송됨)
 
             log.info("메일 발송 성공");
@@ -50,18 +59,18 @@ public class MailService {
 
     //인증 코드 저장
     public void saveCode(String email, String code) {
-        redisTemplate.opsForValue().set("email:"+email, code, Duration.ofMinutes(2));
-        log.info("redis 인증 코드 저장 완료: "+redisTemplate.opsForValue().get("email:"+email));
+        redisTemplate.opsForValue().set("send:"+email, code, Duration.ofMinutes(2));
+        log.info("redis 인증 코드 저장 완료: "+redisTemplate.opsForValue().get("send:"+email));
     }
 
     //인증 코드 검증
-    public MailErrorCode verifyEmailCode(String email, String code) {
-        String storedCode= redisTemplate.opsForValue().get("email:"+email);
+    public void verifyEmailCode(String email, String code) {
+        String storedCode= redisTemplate.opsForValue().get("send:"+email); //코드 값 꺼내기
 
-        if(storedCode == null) return MailErrorCode.CODE_EXPIRED; //TTL 만료 or 이메일 저장 X
-        if(!storedCode.equals(code)) return MailErrorCode.CODE_EXPIRED; //코드 일치 X
+        if(storedCode == null) throw new MailException("인증 코드가 만료되었습니다."); //TTL 만료 or 이메일 저장 X
+        if(!storedCode.equals(code)) throw new MailException("인증 코드가 일치하지 않습니다."); //코드 일치 X
 
-        return MailErrorCode.SUCCESS; //위 상황 제외면 인증 처리
+        redisTemplate.opsForValue().set("verified:" + email, "true", Duration.ofMinutes(5)); //검증 완료한 메일 담는 redis
+        log.info("인증 및 검증 메일 redis 저장 완료: {}", email);
     }
-
 }
