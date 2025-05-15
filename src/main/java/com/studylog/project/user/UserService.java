@@ -1,7 +1,11 @@
 package com.studylog.project.user;
 
+import com.studylog.project.global.exception.DuplicateException;
+import com.studylog.project.global.exception.MailException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -9,22 +13,35 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
+    private final RedisTemplate<String, String> redisTemplate; //제네릭 타입 명시
 
     /* @RequiredArgsConstructor 사용으로 생략
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }*/
 
-    public UserEntity saveUser(UserEntity user) {
-        validateDuplicateMemeber(user);
-        return userRepository.save(user);
-    }
-    public void validateDuplicateMemeber(UserEntity user) {
-        UserEntity findEmail = userRepository.findByEmail(user.getEmail());
-        if (findEmail != null) {
-            throw new IllegalArgumentException("이미 가입된 이메일입니다.");
+    //회원 DB에 저장
+    public void register(UserRequest user) {
+        if(existsId(user.getId())){
+            throw new DuplicateException(String.format("[%s] 이미 가입된 회원입니다.", user.getId()));
         }
+        if(existsNickname(user.getNickname())){
+            throw new DuplicateException(String.format("[%s] 이미 가입된 회원입니다.", user.getNickname()));
+        }
+        if(existsEmail(user.getEmail())){
+            throw new DuplicateException(String.format("[%s] 이미 가입된 회원입니다.", user.getEmail()));
+        }
+        if(!Boolean.TRUE.equals(redisTemplate.hasKey("verified:" + user.getEmail())))
+        {
+            throw new MailException("인증 세션이 만료됐거나 인증된 메일이 아닙니다.");
+        }
+        String encryptedPw= passwordEncoder.encode(user.getPw());
+        UserEntity userEntity = user.toEntity();
+        userEntity.setEncodedPw(encryptedPw); //빌더 객체 pw 값 바뀜
+        userRepository.save(userEntity);
     }
+
     public Boolean existsEmail(String email) {
         return userRepository.existsByEmail(email);
     }

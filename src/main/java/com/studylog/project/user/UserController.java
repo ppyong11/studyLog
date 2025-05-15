@@ -65,13 +65,14 @@ public class UserController {
         if(emailDTO.getCode() == null || emailDTO.getCode().isBlank()){ //code 입력 안 했을 때
             return ResponseEntity.badRequest().body(new ApiResponse(false, "인증 코드를 입력하세요."));
         }
-        MailErrorCode result= mailService.verifyEmailCode(emailDTO.getEmail(), emailDTO.getCode()); //Redis 값 비교
-        return switch(result) {
-            case SUCCESS -> ResponseEntity.ok(new ApiResponse(true, "이메일 인증 성공"));
-            case CODE_EXPIRED -> ResponseEntity.status(HttpStatus.GONE)
-                    .body(new ApiResponse(false, "인증 코드 만료되었습니다."));
-            case MISMATCH -> ResponseEntity.badRequest()
-                    .body(new ApiResponse(false, "인증 코드가 일치하지 않습니다."));
-        };
+        mailService.verifyEmailCode(emailDTO.getEmail(), emailDTO.getCode()); //Redis 값 비교, 오류 시 핸들러 처리
+        return ResponseEntity.ok(new ApiResponse(true, "이메일 인증 완료")); //mailService에서 문제 없으면 처리
+    }
+
+    @PostMapping("/sing-in")
+    public ResponseEntity<ApiResponse> singIn(@RequestBody @Valid UserRequest userRequest) {
+        userService.register(userRequest);
+        return ResponseEntity.ok(new ApiResponse(true, "회원가입 되었습니다."));
+
     }
 }
