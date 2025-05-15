@@ -55,11 +55,15 @@ public class UserEntity {
         //user_id, role은 빌더에서 안 다룸 (role은 db에서 초기화 *insert문에도 안 들어감)
     }
 
+    public void setEncodedPw(String encodedPw) {
+        this.pw = encodedPw;
+    }
+
     //수정 가능 필드: 닉네임, 비밀번호
     public void changeNickname(String newNickname) {
         this.nickname = newNickname;
     }
-    public void changePw(String newPw) {
-        this.pw = newPw;
+    public void changePw(String newEncodedPw) {
+        this.pw = newEncodedPw;
     }
 }
