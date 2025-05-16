@@ -37,4 +37,16 @@ public class GlobalExceptionHandler {
         //축약 메시지 뽑음
         return ResponseEntity.badRequest().body(new ApiResponse(false, String.join(" / ", messages)));
     }
+    @ExceptionHandler(MailException.class)
+    public ResponseEntity<ApiResponse> handleMail(MailException e) {
+        return ResponseEntity.badRequest()
+                .body(new ApiResponse(false, e.getMessage()));
+    }
+
+
+    @ExceptionHandler(LoginFaildException.class)
+    public ResponseEntity<ApiResponse> handleLogFaild(LoginFaildException e) {
+        return ResponseEntity.badRequest()
+                .body(new ApiResponse(false, e.getMessage()));
+    }
 }
