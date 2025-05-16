@@ -1,9 +1,11 @@
 package com.studylog.project.user;
 
 import com.studylog.project.global.exception.DuplicateException;
+import com.studylog.project.global.exception.LoginFaildException;
 import com.studylog.project.global.exception.MailException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Transactional
 @RequiredArgsConstructor
+@Slf4j
 public class UserService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
@@ -22,7 +25,7 @@ public class UserService {
     }*/
 
     //회원 DB에 저장
-    public void register(UserRequest user) {
+    public void register(SignInRequest user) {
         if(existsId(user.getId())){
             throw new DuplicateException(String.format("[%s] 이미 가입된 회원입니다.", user.getId()));
         }
@@ -40,6 +43,26 @@ public class UserService {
         UserEntity userEntity = user.toEntity();
         userEntity.setEncodedPw(encryptedPw); //빌더 객체 pw 값 바뀜
         userRepository.save(userEntity);
+    }
+
+    //로그인 로직
+    public String login(LogInRequest request) {
+        UserEntity user= userRepository.findById(request.getId()).
+                orElseThrow(() -> new LoginFaildException("존재하지 않는 아이디입니다.")); //사용자 없을 시 예외 던짐
+        //존재하는 id일 경우
+        validatePw(user, request.getPw()); //비번 확인
+        return user.getNickname();
+    }
+
+    //비밀번호 확인
+    public void validatePw(UserEntity user, String pw) {
+        if (passwordEncoder.matches(pw, user.getPw())) {
+            log.info(String.format("id: [%s], 로그인 성공", user.getId()));
+        }
+        else{
+            log.warn(String.format("id: [%s], 로그인 실패", user.getId()));
+            throw new LoginFaildException("비밀번호가 일치하지 않습니다.");
+        }
     }
 
     public Boolean existsEmail(String email) {

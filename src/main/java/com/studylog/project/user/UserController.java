@@ -1,7 +1,6 @@
 package com.studylog.project.user;
 
 
-import com.studylog.project.mail.MailErrorCode;
 import com.studylog.project.mail.MailRequest;
 import com.studylog.project.global.response.ApiResponse;
 import com.studylog.project.mail.MailService;
@@ -50,8 +49,8 @@ public class UserController {
 
     //이메일 인증 코드 발송
     @PostMapping("/sign-in/send-email-code")
-    public ResponseEntity<ApiResponse> sendEmailCode(@RequestBody @Valid MailRequest emailDTO) {
-        String email= emailDTO.getEmail(); //유효성 검사 후 받은 이메일 string형 변환
+    public ResponseEntity<ApiResponse> sendEmailCode(@RequestBody @Valid MailRequest reqeust) {
+        String email= reqeust.getEmail(); //유효성 검사 후 받은 이메일 string형 변환
         if (userService.existsEmail(email)){
             return ResponseEntity.status(HttpStatus.CONFLICT).
                     body(new ApiResponse(false, "이미 사용 중인 이메일입니다."));
@@ -61,18 +60,23 @@ public class UserController {
         }
 
     @PostMapping("/sign-in/verify-email-code")
-    public ResponseEntity<ApiResponse> verifyCode(@RequestBody @Valid MailRequest emailDTO) {
-        if(emailDTO.getCode() == null || emailDTO.getCode().isBlank()){ //code 입력 안 했을 때
+    public ResponseEntity<ApiResponse> verifyCode(@RequestBody @Valid MailRequest reqeust) {
+        if(reqeust.getCode() == null || reqeust.getCode().isBlank()){ //code 입력 안 했을 때
             return ResponseEntity.badRequest().body(new ApiResponse(false, "인증 코드를 입력하세요."));
         }
-        mailService.verifyEmailCode(emailDTO.getEmail(), emailDTO.getCode()); //Redis 값 비교, 오류 시 핸들러 처리
+        mailService.verifyEmailCode(reqeust.getEmail(), reqeust.getCode()); //Redis 값 비교, 오류 시 핸들러 처리
         return ResponseEntity.ok(new ApiResponse(true, "이메일 인증 완료")); //mailService에서 문제 없으면 처리
     }
 
     @PostMapping("/sing-in")
-    public ResponseEntity<ApiResponse> singIn(@RequestBody @Valid UserRequest userRequest) {
-        userService.register(userRequest);
+    public ResponseEntity<ApiResponse> singIn(@RequestBody @Valid SignInRequest signInRequest) {
+        userService.register(signInRequest);
         return ResponseEntity.ok(new ApiResponse(true, "회원가입 되었습니다."));
+    }
 
+    @PostMapping("/log-in")
+    public ResponseEntity<ApiResponse> logIn(@RequestBody @Valid LogInRequest request) {
+        String nickname= userService.login(request);
+        return ResponseEntity.ok(new ApiResponse(true, String.format("%s 님, 반갑습니다. ☺️", nickname)));
     }
 }
