@@ -17,6 +17,7 @@ import java.security.Key;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.stream.Collectors;
 
 
@@ -33,9 +34,10 @@ public class JwtTokenProvider {
     //유저 정보로 Token 생성
     public JwtToken createToken(Authentication authentication) {
         //권한 가져오기
-        String authorities = authentication.getAuthorities().stream()
+        String authority = authentication.getAuthorities().stream()
+                .findFirst() //단일 권한
                 .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.joining(","));
+                .orElseThrow(() -> new IllegalStateException("권한 정보가 없습니다."));
 
         long now= (new Date().getTime()); //현재 시간 저장
 
@@ -43,7 +45,7 @@ public class JwtTokenProvider {
         Date accessTokenExpire= new Date(now + (60*60*1000)); //현재 시간 + 60분(ms)
         String accessToken= Jwts.builder()
                 .setSubject(authentication.getName()) //사용자 이름 (토큰 주인)
-                .claim("auth", authorities) //사용자 권한 정보
+                .claim("auth", authority) //사용자 권한 정보
                 .setExpiration(accessTokenExpire) //토큰 만료 시간
                 .signWith(key, SignatureAlgorithm.HS256) //비밀키로 서명
                 .compact(); //토큰 문자열 생성
@@ -66,19 +68,17 @@ public class JwtTokenProvider {
         //복호화 및 claim 받음 (유효기간 지나도 받음)
         Claims claims = parseClaims(accessToken);
 
-        if(claims.get("auth") == null){ //토큰 없는 경우
+        if(claims.get("auth") == null){ //권한 없는 경우
             throw new RuntimeException("권한 정보가 없는 토큰입니다.");
         }
 
-        //클레임에서 권한 정보 가져오기 "auth"에 ,로 구분된 권한들 있음
-        Collection<? extends GrantedAuthority> authorities= Arrays.stream(claims.get("auth").toString().split(","))
-                .map(SimpleGrantedAuthority::new)
-                .collect(Collectors.toList());
+        String role= claims.get("auth", String.class); //ROlE_USER or RILE_ADMIN
+        Collection<? extends  GrantedAuthority> authority= List.of(new SimpleGrantedAuthority(role));
 
         //UserDetails 객체 생성 후 Authentication 반환
         //UserDetails: 인터페이스, User: UserDetails 구현 클래스
-        UserDetails principal= new User(claims.getSubject(), "", authorities);
-        return new UsernamePasswordAuthenticationToken(principal, "", authorities);
+        UserDetails principal= new User(claims.getSubject(), "", authority);
+        return new UsernamePasswordAuthenticationToken(principal, "", authority); //Authentication 객체
     }
 
     //토큰 정보 검증 메서드
