@@ -45,15 +45,6 @@ public class UserService {
         userRepository.save(userEntity);
     }
 
-    //로그인 로직
-    public String login(LogInRequest request) {
-        UserEntity user= userRepository.findById(request.getId()).
-                orElseThrow(() -> new LoginFaildException("존재하지 않는 아이디입니다.")); //사용자 없을 시 예외 던짐
-        //존재하는 id일 경우
-        validatePw(user, request.getPw()); //비번 확인
-        return user.getNickname();
-    }
-
     //비밀번호 확인
     public void validatePw(UserEntity user, String pw) {
         if (passwordEncoder.matches(pw, user.getPw())) {
