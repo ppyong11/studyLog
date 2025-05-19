@@ -1,22 +1,27 @@
 package com.studylog.project.user;
 
-
+import com.studylog.project.jwt.JwtService;
+import com.studylog.project.jwt.JwtToken;
 import com.studylog.project.mail.MailRequest;
 import com.studylog.project.global.response.ApiResponse;
 import com.studylog.project.mail.MailService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/study-log")
 @RequiredArgsConstructor
+@Slf4j
 public class UserController {
-
     private final UserService userService;
     private final MailService mailService;
+    private final JwtService jwtService; //회원 정보 비교 및 토큰 발급
 
     @GetMapping("/sign-in/check-info")
     public ResponseEntity<ApiResponse> check(@RequestParam(required = false) String id,
@@ -76,7 +81,11 @@ public class UserController {
 
     @PostMapping("/log-in")
     public ResponseEntity<ApiResponse> logIn(@RequestBody @Valid LogInRequest request) {
-        String nickname= userService.login(request);
+        JwtToken jwtToken= jwtService.sigIn(request.getId(), request.getPw()); //예외 발생 시 아래 로직 실행 X
+        log.info("요청- ID: {}, PW: {}", request.getId(), request.getPw());
+        log.info("AccessToken: {}, RefreshToken: {}", jwtToken.getAccessToken(), jwtToken.getRefreshToken());
+        Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
+        String nickname= authentication.getName();
         return ResponseEntity.ok(new ApiResponse(true, String.format("%s 님, 반갑습니다. ☺️", nickname)));
     }
 }
