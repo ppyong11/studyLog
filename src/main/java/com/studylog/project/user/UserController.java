@@ -81,11 +81,12 @@ public class UserController {
 
     @PostMapping("/log-in")
     public ResponseEntity<ApiResponse> logIn(@RequestBody @Valid LogInRequest request) {
-        JwtToken jwtToken= jwtService.sigIn(request.getId(), request.getPw()); //예외 발생 시 아래 로직 실행 X
+        JwtToken jwtToken= jwtService.logIn(request.getId(), request.getPw()); //예외 발생 시 아래 로직 실행 X
         log.info("요청- ID: {}, PW: {}", request.getId(), request.getPw());
         log.info("AccessToken: {}, RefreshToken: {}", jwtToken.getAccessToken(), jwtToken.getRefreshToken());
-        Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
-        String nickname= authentication.getName();
+
+        String nickname= userService.getNickname(request);
         return ResponseEntity.ok(new ApiResponse(true, String.format("%s 님, 반갑습니다. ☺️", nickname)));
     }
+
 }

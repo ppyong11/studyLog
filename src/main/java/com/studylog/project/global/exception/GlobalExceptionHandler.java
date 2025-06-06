@@ -4,6 +4,7 @@ import com.studylog.project.global.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -48,5 +49,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse> handleLogFaild(LoginFaildException e) {
         return ResponseEntity.badRequest()
                 .body(new ApiResponse(false, e.getMessage()));
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiResponse> handleBadCredentials(BadCredentialsException e) {
+        throw new LoginFaildException("토큰 발급 중 비밀번호 안 맞음");
     }
 }

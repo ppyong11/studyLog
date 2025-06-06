@@ -7,6 +7,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -43,6 +44,13 @@ public class UserService {
         UserEntity userEntity = user.toEntity();
         userEntity.setEncodedPw(encryptedPw); //빌더 객체 pw 값 바뀜
         userRepository.save(userEntity);
+    }
+
+    //로그인한 유저 닉네임 반환
+    public String getNickname(LogInRequest request){
+        UserEntity userEntity= userRepository.findById(request.getId())
+                .orElseThrow(() -> new UsernameNotFoundException(String.format("[%s]에 해당하는 회원을 찾을 수 없습니다.", request.getId())));
+        return userEntity.getNickname();
     }
 
     //비밀번호 확인
