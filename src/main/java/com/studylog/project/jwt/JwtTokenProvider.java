@@ -14,11 +14,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -36,7 +34,7 @@ public class JwtTokenProvider {
         //권한 가져오기
         String authority = authentication.getAuthorities().stream()
                 .findFirst() //단일 권한
-                .map(GrantedAuthority::getAuthority)
+                .map(GrantedAuthority::getAuthority) //Collection<SimpleGranted~ > 타입의 권한을 문자열로 반환
                 .orElseThrow(() -> new IllegalStateException("권한 정보가 없습니다."));
 
         long now= (new Date().getTime()); //현재 시간 저장
@@ -102,15 +100,16 @@ public class JwtTokenProvider {
     }
 
     //jwt 토큰 복호화 후 claim 가져옴
-    private Claims parseClaims(String accessToken) {
+    public Claims parseClaims(String token) {
         try{ //복호화 & claim 리턴
             return Jwts.parserBuilder() //파서 생성 준비
-                    .setSigningKey(key) //서명 검증에 쓸 비밀키 (복호화를 위한 키)
+                    .setSigningKey(key) //서명 검증에 쓸 비밀키
                     .build() //JwtParser 객체 생성
-                    .parseClaimsJws(accessToken) //토큰 파싱 + 서명 검증 + 복호화 진행 (예외 가능성 O)
+                    .parseClaimsJws(token) //토큰 파싱 + 서명 검증 + Base64 디코딩 (예외 가능성 O)
                     .getBody(); //토큰 안의 payload(claims) 꺼냄
         } catch (ExpiredJwtException e) { //만료 토큰이라도 claim 반환
             return e.getClaims();
         }
     }
+
 }
