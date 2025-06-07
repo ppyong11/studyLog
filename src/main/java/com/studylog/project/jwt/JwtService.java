@@ -2,6 +2,7 @@ package com.studylog.project.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -35,14 +36,21 @@ public class JwtService {
 
         //3. 인증 정보를 기반으로 JWT 토큰 생성
         JwtToken jwtToken= jwtTokenProvider.createToken(authentication);
-        String rt= jwtToken.getRefreshToken();
-        Claims claims= jwtTokenProvider.parseClaims(rt);
-        Date now= new Date();
-        Date expiration= claims.getExpiration();
-        long ttl= expiration.getTime() - now.getTime(); //남은 유효기간(ms)
-        //리프레시 토큰 저장
-        redisTemplate.opsForValue().set("RT:"+ id, jwtToken.getRefreshToken(), ttl, TimeUnit.MILLISECONDS);
+        String rt= jwtToken.getRefreshToken(); //검증 후에 토큰 만드니까 오류 X
+        saveToken("RT:" + id, rt); //리프레시 토큰 저장
         log.info("redis rt 저장 완료: "+redisTemplate.opsForValue().get("RT:"+ id));
         return jwtToken;
     }
+
+    public void saveToken(String key, String token) {
+        Claims claims= jwtTokenProvider.parseClaims(token);
+        Date now= new Date();
+        Date expiration= claims.getExpiration();
+        long TTL= expiration.getTime() - now.getTime();
+        redisTemplate.opsForValue().set(key, token, TTL, TimeUnit.MILLISECONDS);
+        log.info("redis rt 저장 완료: "+redisTemplate.opsForValue().get(key));
+        System.out.println("redis rt 저장 완료: "+redisTemplate.opsForValue().get(key));
+    }
+    //token으로 회원 id 찾고... 저장
+
 }

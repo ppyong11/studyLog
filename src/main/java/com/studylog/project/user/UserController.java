@@ -2,9 +2,11 @@ package com.studylog.project.user;
 
 import com.studylog.project.jwt.JwtService;
 import com.studylog.project.jwt.JwtToken;
+import com.studylog.project.jwt.JwtTokenProvider;
 import com.studylog.project.mail.MailRequest;
 import com.studylog.project.global.response.ApiResponse;
 import com.studylog.project.mail.MailService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +24,7 @@ public class UserController {
     private final UserService userService;
     private final MailService mailService;
     private final JwtService jwtService; //회원 정보 비교 및 토큰 발급
+    private final JwtTokenProvider jwtTokenProvider;
 
     @GetMapping("/sign-in/check-info")
     public ResponseEntity<ApiResponse> check(@RequestParam(required = false) String id,
@@ -84,9 +87,17 @@ public class UserController {
         JwtToken jwtToken= jwtService.logIn(request.getId(), request.getPw()); //예외 발생 시 아래 로직 실행 X
         log.info("요청- ID: {}, PW: {}", request.getId(), request.getPw());
         log.info("AccessToken: {}, RefreshToken: {}", jwtToken.getAccessToken(), jwtToken.getRefreshToken());
-
+        System.out.println("redis rt 저장 완료: ");
         String nickname= userService.getNickname(request);
         return ResponseEntity.ok(new ApiResponse(true, String.format("%s 님, 반갑습니다. ☺️", nickname)));
     }
-
+    @PostMapping("/log-out")
+    public ResponseEntity<ApiResponse> logout(HttpServletRequest request) {
+        //토큰 없는 경우엔 필터에서 다 걸러서 여기까지 안 옴 -> 토큰은 항상 있음! 인증된 객체라는 뜻 (authenticated)
+        Authentication auth= SecurityContextHolder.getContext().getAuthentication();
+        String id= auth.getName(); //인증 객체에서 id 추출
+        String token= jwtTokenProvider.resolveToken(request); //토큰 추출
+        jwtService.saveToken("AT:"+ id, token);
+        return ResponseEntity.ok(new ApiResponse(true, "로그아웃 처리되었습니다."));
+    }
 }

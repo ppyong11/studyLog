@@ -3,6 +3,7 @@ package com.studylog.project.jwt;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -12,6 +13,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.security.Key;
 import java.util.Collection;
@@ -96,7 +98,7 @@ public class JwtTokenProvider {
         } catch (IllegalArgumentException e) { //null or 빈 문자열 토큰
             log.info("JWT claims string is empty.", e);
         }
-        return false;
+        return false; //캐치 들어가면 fasle 던짐
     }
 
     //jwt 토큰 복호화 후 claim 가져옴
@@ -112,4 +114,13 @@ public class JwtTokenProvider {
         }
     }
 
+    //헤더에서 토큰 정보 추출
+    public String resolveToken(HttpServletRequest request) {
+        String bearerToken= request.getHeader("Authorization");
+        log.info("토큰 추출: {}", bearerToken);
+        if(StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer")) {
+            return bearerToken.substring(7);
+        }
+        return null;
+    }
 }
