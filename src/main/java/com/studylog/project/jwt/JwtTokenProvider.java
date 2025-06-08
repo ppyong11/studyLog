@@ -89,14 +89,16 @@ public class JwtTokenProvider {
                     .build()
                     .parseClaimsJws(token); //실제 토큰 파싱 및 서명 검증 수행
             return true;
-        }catch (SecurityException | MalformedJwtException e) { //서명 검증 실패 or JWT 형식 잘못된 경우
-            log.info("Invalid JWT Token", e);
+        }catch (io.jsonwebtoken.security.SignatureException e){
+            log.info("Invalid JWT signature: {}", e.getMessage());
+        } catch (SecurityException | MalformedJwtException e ) { //서명 검증 실패 or JWT 형식 잘못된 경우
+            log.info("Invalid JWT Token: {}", e.getMessage());
         } catch (ExpiredJwtException e) { //유효기간 만료
-            log.info("Expired JWT Token", e);
+            log.info("Expired JWT Token: {}", e.getMessage());
         } catch (UnsupportedJwtException e) { //지원하지 않는 형식의 JWT
-            log.info("Unsupported JWT Token", e);
+            log.info("Unsupported JWT Token: {}", e.getMessage());
         } catch (IllegalArgumentException e) { //null or 빈 문자열 토큰
-            log.info("JWT claims string is empty.", e);
+            log.info("JWT claims string is empty: {}", e.getMessage());
         }
         return false; //캐치 들어가면 fasle 던짐
     }
