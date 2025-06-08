@@ -1,12 +1,10 @@
 package com.studylog.project.jwt;
 
+import com.studylog.project.global.exception.LogoutFaildException;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
@@ -50,11 +48,22 @@ public class JwtService {
         try {
             redisTemplate.opsForValue().set(key, token, TTL, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
-            throw new RuntimeException(e.getMessage()); //잡아서 컨트롤러에 던짐
+            throw new RuntimeException(e.getMessage()); //잡아서 에러 던짐
         }
         log.info("redis rt 저장 완료: "+redisTemplate.opsForValue().get(key));
-        System.out.println("redis rt 저장 완료: "+redisTemplate.opsForValue().get(key));
     }
-    //token으로 회원 id 찾고... 저장
+
+    //이미 로그아웃한 토큰
+    public void saveBlacklistToken(String id, String token){
+        if (Boolean.TRUE.equals(redisTemplate.hasKey("AT:"+ id))) {
+            //해당 키가 저장돼 있다면
+            log.info("access {}", redisTemplate.opsForValue().get("AT:"+ id));
+            log.info("refresh {}", redisTemplate.opsForValue().get("RT:"+ id));
+            throw new LogoutFaildException("이미 로그아웃한 회원입니다.");
+        }
+        //로그아웃 X 토큰
+        saveToken("AT:"+ id, token);
+        redisTemplate.delete("RT:"+id); //리프레시 토큰 삭제 (강제 무효화)
+    }
 
 }

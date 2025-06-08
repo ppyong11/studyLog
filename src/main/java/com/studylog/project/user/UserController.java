@@ -1,5 +1,6 @@
 package com.studylog.project.user;
 
+import com.studylog.project.global.exception.LogoutFaildException;
 import com.studylog.project.jwt.JwtService;
 import com.studylog.project.jwt.JwtToken;
 import com.studylog.project.jwt.JwtTokenProvider;
@@ -100,7 +101,8 @@ public class UserController {
         Authentication auth= SecurityContextHolder.getContext().getAuthentication();
         String id= auth.getName(); //인증 객체에서 id 추출
         String token= jwtTokenProvider.resolveToken(request); //토큰 추출
-        jwtService.saveToken("AT:"+ id, token);
+        jwtService.saveBlacklistToken(id, token); //액세스 토큰 저장
+
         return ResponseEntity.ok(new ApiResponse(true, "로그아웃 처리되었습니다."));
     }
 }
