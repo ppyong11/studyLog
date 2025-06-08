@@ -47,7 +47,11 @@ public class JwtService {
         Date now= new Date();
         Date expiration= claims.getExpiration();
         long TTL= expiration.getTime() - now.getTime();
-        redisTemplate.opsForValue().set(key, token, TTL, TimeUnit.MILLISECONDS);
+        try {
+            redisTemplate.opsForValue().set(key, token, TTL, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage()); //잡아서 컨트롤러에 던짐
+        }
         log.info("redis rt 저장 완료: "+redisTemplate.opsForValue().get(key));
         System.out.println("redis rt 저장 완료: "+redisTemplate.opsForValue().get(key));
     }
