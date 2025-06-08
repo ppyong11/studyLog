@@ -94,8 +94,9 @@ public class UserController {
         String nickname= userService.getNickname(request);
         return ResponseEntity.ok(new ApiResponse(true, String.format("%s 님, 반갑습니다. ☺️", nickname)));
     }
+
     @PostMapping("/log-out")
-    @Operation(summary= "accessToken", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary= "로그아웃", security = @SecurityRequirement(name= "bearerAuth"))
     public ResponseEntity<ApiResponse> logout(HttpServletRequest request) {
         //토큰 없는 경우엔 필터에서 다 걸러서 여기까지 안 옴 -> 토큰은 항상 있음! 인증된 객체라는 뜻 (authenticated)
         Authentication auth= SecurityContextHolder.getContext().getAuthentication();
@@ -105,4 +106,8 @@ public class UserController {
 
         return ResponseEntity.ok(new ApiResponse(true, "로그아웃 처리되었습니다."));
     }
+
+    @PatchMapping("/member/change-pw")
+    @Operation(summary = "비밀번호 변경", security = @SecurityRequirement(name= "bearerAuth"))
+    public ResponseEntity<ApiResponse> pwUpdate(HttpServletRequest request, @RequestBody @Valid UpdatePwRequest pwRequest) {}
 }

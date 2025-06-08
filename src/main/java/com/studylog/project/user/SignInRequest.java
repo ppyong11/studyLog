@@ -28,14 +28,4 @@ public class SignInRequest {
                 .email(email)
                 .build();
     }
-
-    //닉네임, 비밀번호 수정 메소드
-    public void applyTo(UserEntity user) {
-        if (nickname != null && !nickname.equals(user.getNickname())) {
-            user.changeNickname(nickname);
-        }
-        if (pw != null && !pw.equals(user.getPw())) {
-            user.changePw(email);
-        }
-    }
 }
