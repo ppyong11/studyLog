@@ -6,6 +6,8 @@ import com.studylog.project.jwt.JwtTokenProvider;
 import com.studylog.project.mail.MailRequest;
 import com.studylog.project.global.response.ApiResponse;
 import com.studylog.project.mail.MailService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -76,7 +78,7 @@ public class UserController {
         return ResponseEntity.ok(new ApiResponse(true, "이메일 인증 완료")); //mailService에서 문제 없으면 처리
     }
 
-    @PostMapping("/sing-in")
+    @PostMapping("/sign-in")
     public ResponseEntity<ApiResponse> singIn(@RequestBody @Valid SignInRequest signInRequest) {
         userService.register(signInRequest);
         return ResponseEntity.ok(new ApiResponse(true, "회원가입 되었습니다."));
@@ -92,6 +94,7 @@ public class UserController {
         return ResponseEntity.ok(new ApiResponse(true, String.format("%s 님, 반갑습니다. ☺️", nickname)));
     }
     @PostMapping("/log-out")
+    @Operation(summary= "accessToken", security = @SecurityRequirement(name= "bearerAuth"))
     public ResponseEntity<ApiResponse> logout(HttpServletRequest request) {
         //토큰 없는 경우엔 필터에서 다 걸러서 여기까지 안 옴 -> 토큰은 항상 있음! 인증된 객체라는 뜻 (authenticated)
         Authentication auth= SecurityContextHolder.getContext().getAuthentication();
