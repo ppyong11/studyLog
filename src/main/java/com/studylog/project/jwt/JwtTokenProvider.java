@@ -19,7 +19,6 @@ import java.security.Key;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
 
 @Slf4j
@@ -42,23 +41,17 @@ public class JwtTokenProvider {
 
         long now= (new Date().getTime()); //현재 시간 저장
 
-        //jti 생성
-        String accessJti= UUID.randomUUID().toString();
-
         //Access Token 생성
         Date accessTokenExpire= new Date(now + (60*60*1000)); //현재 시간 + 60분(ms)
         String accessToken= Jwts.builder()
                 .setSubject(authentication.getName()) //사용자 이름 (토큰 주인)
                 .claim("auth", authority) //사용자 권한 정보
-                .claim("jti", accessJti)
                 .setExpiration(accessTokenExpire) //토큰 만료 시간
                 .signWith(key, SignatureAlgorithm.HS256) //비밀키로 서명
                 .compact(); //토큰 문자열 생성
 
-        String refreshJti= UUID.randomUUID().toString();
         //Refresh Token 생성 (액세스 토큰보다 김)
         String refreshToken= Jwts.builder()
-                .claim("jti", refreshJti)
                 .setExpiration(new Date(now + (7*24*60*60*1000))) //현재 시간 + 7일(ms)
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
