@@ -68,8 +68,7 @@ public class UserService {
     }
 
     //비밀번호 변경
-    public void changPw(CustomUserDetail customUserDTO,
-                        UpdatePwRequest pwRequest) { //암호화된 비번(DTO), 평문 비번(request)
+    public void changePw(CustomUserDetail customUserDTO, UpdatePwRequest pwRequest) { //암호화된 비번(DTO), 평문 비번(request)
         if (passwordEncoder.matches(pwRequest.getCurrentPw(), customUserDTO.getPassword())){
             //평문 비번과 암호화 비번이 동일하다면
             if(pwRequest.getCurrentPw().equals(pwRequest.getNewPw())){
@@ -84,6 +83,16 @@ public class UserService {
             log.info("changePw: 비밀번호 변경 실패");
             throw new InvalidRequestException("기존 비밀번호와 일치하지 않습니다.");
         }
+    }
+
+    //닉네임 변경
+    public void changeNickname(CustomUserDetail customUserDTO,UpdateNicknameRequest nicknameRequest) {
+        String currentNick= customUserDTO.getUser().getNickname();
+        if(currentNick.equals(nicknameRequest.getNickname())){
+            //기존 닉네임 동일 시
+            throw new InvalidRequestException("현재 닉네임과 동일합니다.");
+        }
+        //닉네임 중복 시
     }
 
     public Boolean existsEmail(String email) {

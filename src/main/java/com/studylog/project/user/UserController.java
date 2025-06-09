@@ -110,11 +110,19 @@ public class UserController {
 
     @PatchMapping("/member/change-pw")
     @Operation(summary = "비밀번호 변경", security = @SecurityRequirement(name= "bearerAuth"))
-    public ResponseEntity<ApiResponse> pwUpdate(@AuthenticationPrincipal CustomUserDetail user,
-                                                @RequestBody @Valid UpdatePwRequest pwRequest) {
+    public ResponseEntity<ApiResponse> updatePW(@AuthenticationPrincipal CustomUserDetail user,
+                                                @RequestBody @Valid UpdatePwRequest request) {
         //유효 토큰 및 로그인 상태 확인(redis) 필터에서 검증됨
-
-
+        userService.changePw(user, request);
         return ResponseEntity.ok(new ApiResponse(true, "비밀번호가 변경되었습니다."));
+    }
+
+    @PatchMapping("/member/change-nickname")
+    @Operation(summary = "닉네임 변경", security = @SecurityRequirement(name= "bearerAuth"))
+    public ResponseEntity<ApiResponse> updateNickname(@AuthenticationPrincipal CustomUserDetail user,
+                                                @RequestBody @Valid UpdateNicknameRequest request) {
+        //유효 토큰 및 로그인 상태 확인(redis) 필터에서 검증됨
+        userService.changeNickname(user, request);
+        return ResponseEntity.ok(new ApiResponse(true, "닉네임이 변경되었습니다."));
     }
 }

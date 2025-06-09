@@ -12,6 +12,7 @@ import java.util.Collections;
 @Getter
 public class CustomUserDetail implements UserDetails {
     //principal 객체 넣기 전에 findById로 넣어서 토큰 주인 객체로 설정됨
+    //유저 전체 정보(entity 필드)가 들어옴
     private final UserEntity user; //이건 Getter가 자동 생성해 줌 (추상 메서드 X)
 
     public CustomUserDetail(UserEntity user) {
