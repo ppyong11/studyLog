@@ -1,9 +1,12 @@
 package com.studylog.project.user;
 
 import com.studylog.project.global.exception.DuplicateException;
+import com.studylog.project.global.exception.InvalidRequestException;
 import com.studylog.project.global.exception.LoginFaildException;
 import com.studylog.project.global.exception.MailException;
+import com.studylog.project.jwt.CustomUserDetail;
 import jakarta.transaction.Transactional;
+import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -61,6 +64,25 @@ public class UserService {
         else{
             log.warn(String.format("id: [%s], 로그인 실패", user.getId()));
             throw new LoginFaildException("비밀번호가 일치하지 않습니다.");
+        }
+    }
+
+    //비밀번호 변경
+    public void changPw(CustomUserDetail customUserDTO,
+                        UpdatePwRequest pwRequest) { //암호화된 비번(DTO), 평문 비번(request)
+        if (passwordEncoder.matches(pwRequest.getCurrentPw(), customUserDTO.getPassword())){
+            //평문 비번과 암호화 비번이 동일하다면
+            if(pwRequest.getCurrentPw().equals(pwRequest.getNewPw())){
+                throw new InvalidRequestException("기존 비밀번호와 새로운 비밀번호가 일치합니다.");
+            }
+            String encryptedPw= passwordEncoder.encode(pwRequest.getNewPw()); //새 비번 암호화
+            UserEntity userEntity= customUserDTO.getUser(); //principal의 user 객체를 entity에 넣음
+            userEntity.changePw(encryptedPw);
+            log.info("changePw: 비밀번호 변경 완료");
+        }
+        else{ //현재 비번 일치 X
+            log.info("changePw: 비밀번호 변경 실패");
+            throw new InvalidRequestException("기존 비밀번호와 일치하지 않습니다.");
         }
     }
 

@@ -1,6 +1,7 @@
 package com.studylog.project.user;
 
 import com.studylog.project.global.exception.LogoutFaildException;
+import com.studylog.project.jwt.CustomUserDetail;
 import com.studylog.project.jwt.JwtService;
 import com.studylog.project.jwt.JwtToken;
 import com.studylog.project.jwt.JwtTokenProvider;
@@ -13,9 +14,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.units.qual.A;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -99,15 +102,19 @@ public class UserController {
     @Operation(summary= "로그아웃", security = @SecurityRequirement(name= "bearerAuth"))
     public ResponseEntity<ApiResponse> logout(HttpServletRequest request) {
         //토큰 없는 경우엔 필터에서 다 걸러서 여기까지 안 옴 -> 토큰은 항상 있음! 인증된 객체라는 뜻 (authenticated)
-        Authentication auth= SecurityContextHolder.getContext().getAuthentication();
-        String id= auth.getName(); //인증 객체에서 id 추출
         String token= jwtTokenProvider.resolveToken(request); //토큰 추출
-        jwtService.saveBlacklistToken(id, token); //액세스 토큰 저장
+        jwtService.saveBlacklistToken(token); //액세스 토큰 저장
 
         return ResponseEntity.ok(new ApiResponse(true, "로그아웃 처리되었습니다."));
     }
 
     @PatchMapping("/member/change-pw")
     @Operation(summary = "비밀번호 변경", security = @SecurityRequirement(name= "bearerAuth"))
-    public ResponseEntity<ApiResponse> pwUpdate(HttpServletRequest request, @RequestBody @Valid UpdatePwRequest pwRequest) {}
+    public ResponseEntity<ApiResponse> pwUpdate(@AuthenticationPrincipal CustomUserDetail user,
+                                                @RequestBody @Valid UpdatePwRequest pwRequest) {
+        //유효 토큰 및 로그인 상태 확인(redis) 필터에서 검증됨
+
+
+        return ResponseEntity.ok(new ApiResponse(true, "비밀번호가 변경되었습니다."));
+    }
 }
