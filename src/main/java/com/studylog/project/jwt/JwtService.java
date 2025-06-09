@@ -35,8 +35,7 @@ public class JwtService {
         //3. 인증 정보를 기반으로 JWT 토큰 생성
         JwtToken jwtToken= jwtTokenProvider.createToken(authentication);
         String rt= jwtToken.getRefreshToken(); //검증 후에 토큰 만드니까 오류 X
-        saveToken("RT:" + id, rt); //리프레시 토큰 저장
-        log.info("redis rt 저장 완료: "+redisTemplate.opsForValue().get("RT:"+ id));
+        saveToken("RT: " + rt, "login"); //리프레시 토큰 저장
         return jwtToken;
     }
 
@@ -53,17 +52,15 @@ public class JwtService {
         log.info("redis rt 저장 완료: "+redisTemplate.opsForValue().get(key));
     }
 
-    //이미 로그아웃한 토큰
-    public void saveBlacklistToken(String id, String token){
-        if (Boolean.TRUE.equals(redisTemplate.hasKey("AT:"+ id))) {
+    //블랙리스트 저장 (로그아웃)
+    public void saveBlacklistToken(String token){
+        if (Boolean.TRUE.equals(redisTemplate.hasKey("AT: "+ token))) {
             //해당 키가 저장돼 있다면
-            log.info("access {}", redisTemplate.opsForValue().get("AT:"+ id));
-            log.info("refresh {}", redisTemplate.opsForValue().get("RT:"+ id));
             throw new LogoutFaildException("이미 로그아웃한 회원입니다.");
         }
         //로그아웃 X 토큰
-        saveToken("AT:"+ id, token);
-        redisTemplate.delete("RT:"+id); //리프레시 토큰 삭제 (강제 무효화)
+        saveToken("AT: "+ token, "logout");
+        redisTemplate.delete("RT: "+token); //리프레시 토큰 삭제 (강제 무효화)
     }
 
 }

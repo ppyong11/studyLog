@@ -1,5 +1,7 @@
 package com.studylog.project.jwt;
 
+import com.studylog.project.user.UserEntity;
+import com.studylog.project.user.UserRepository;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -12,6 +14,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -25,10 +28,12 @@ import java.util.List;
 @Component
 public class JwtTokenProvider {
     private final Key key;
+    private final UserRepository userRepository;
 
-    public JwtTokenProvider(@Value("${jwt.secret}")String secretKey) {
+    public JwtTokenProvider(@Value("${jwt.secret}")String secretKey, UserRepository userRepository) {
         byte[] keyBytes= Decoders.BASE64.decode(secretKey);
         this.key= Keys.hmacShaKeyFor(keyBytes);
+        this.userRepository = userRepository;
     }
 
     //유저 정보로 Token 생성
@@ -76,8 +81,9 @@ public class JwtTokenProvider {
         Collection<? extends  GrantedAuthority> authority= List.of(new SimpleGrantedAuthority(role));
 
         //UserDetails 객체 생성 후 Authentication 반환
-        //UserDetails: 인터페이스, User: UserDetails 구현 클래스
-        UserDetails principal= new User(claims.getSubject(), "", authority);
+        UserEntity userEntity= userRepository.findById(claims.getSubject())
+                .orElseThrow(() -> new UsernameNotFoundException(String.format("[%s]에 해당하는 회원을 찾을 수 없습니다.", claims.getSubject())));
+        CustomUserDetail principal= new CustomUserDetail(userEntity);
         return new UsernamePasswordAuthenticationToken(principal, "", authority); //Authentication 객체
     }
 
