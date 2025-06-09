@@ -61,4 +61,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest()
                 .body(new ApiResponse(false, e.getMessage()));
     }
+
+    @ExceptionHandler(TokenBlacklistedException.class)
+    public ResponseEntity<ApiResponse> handleTokenBlacklisted(TokenBlacklistedException e) {
+        return ResponseEntity.badRequest()
+                .body(new ApiResponse(false, e.getMessage()));
+    }
 }
