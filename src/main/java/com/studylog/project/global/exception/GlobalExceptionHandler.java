@@ -67,4 +67,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest()
                 .body(new ApiResponse(false, e.getMessage()));
     }
+
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<ApiResponse> handleInvalidRequest(InvalidRequestException e) {
+        return ResponseEntity.badRequest()
+                .body(new ApiResponse(false, e.getMessage()));
+    }
 }
