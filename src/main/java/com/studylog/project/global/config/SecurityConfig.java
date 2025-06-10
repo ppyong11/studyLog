@@ -27,7 +27,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                     .requestMatchers(
                             //아래 API 요청 모두 허가
-                            "/study-log/sign-in",
+                            "/study-log/sign-in/**",
                             "/study-log/log-in",
                             "/study-log/", //메인
                             "/study-log", //메인

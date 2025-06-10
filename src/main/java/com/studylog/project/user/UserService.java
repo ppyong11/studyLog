@@ -49,6 +49,11 @@ public class UserService {
         userRepository.save(userEntity);
     }
 
+    public void test(String id, Boolean role) {
+        UserEntity userEntity= userRepository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException(String.format("[%s]에 해당하는 회원을 찾을 수 없습니다.", id)));
+        userEntity.changeRole(role);
+    }
     //로그인한 유저 닉네임 반환
     public String getNickname(LogInRequest request){
         UserEntity userEntity= userRepository.findById(request.getId())
@@ -92,9 +97,17 @@ public class UserService {
             //기존 닉네임 동일 시
             throw new InvalidRequestException("현재 닉네임과 동일합니다.");
         }
-        //닉네임 중복 시
+        //닉네임 중복 시 (존재 닉네임)
+        if(existsNickname(nicknameRequest.getNickname())){
+            throw new DuplicateException("이미 존재하는 닉네임입니다.");
+        }
+        //위 경우가 아니라면
+        UserEntity userEntity= customUserDTO.getUser(); //요청 날린 토큰의 인증 객체 받기
+        userEntity.changeNickname(nicknameRequest.getNickname());
     }
 
+    //컨트롤러에서도 repo 접근해야 돼서 만듦... 이왕 만든 김에 서비스에서도 그냥 사용
+    //서비스에서는 레포로 바로 접근해도 문제 X, 컨트롤러->서비스->레포
     public Boolean existsEmail(String email) {
         return userRepository.existsByEmail(email);
     }

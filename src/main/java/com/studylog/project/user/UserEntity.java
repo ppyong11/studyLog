@@ -7,6 +7,7 @@ import com.studylog.project.timer.TimerEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,6 +34,12 @@ public class UserEntity {
 
     @Column(insertable = false) //회원 역할, DB에서 기본값 0으로 처리, 파라미터 안 받음
     private Boolean role;
+
+    @Column(insertable = false) //회원탈퇴 여부, DB에서 기본값 0으로 처리, 파라미터 안 받음
+    private Boolean is_delete;
+
+    @Column(insertable = false) //탈퇴 일자
+    private LocalDateTime delete_at;
 
     @OneToMany(mappedBy = "user")
     private List<BoardEntity> boards= new ArrayList<>();
@@ -65,5 +72,9 @@ public class UserEntity {
     }
     public void changePw(String newEncodedPw) {
         this.pw = newEncodedPw;
+    }
+
+    public void changeRole(Boolean newRole) {
+        this.role = newRole;
     }
 }
