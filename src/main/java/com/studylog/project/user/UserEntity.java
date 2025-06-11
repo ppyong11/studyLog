@@ -15,7 +15,6 @@ import java.util.List;
 @Getter
 @Table(name="user")
 @Entity
-
 public class UserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,12 +31,12 @@ public class UserEntity {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column
+    @Column(nullable = false)
     //회원 역할, DB에서 기본값 0으로 처리, 파라미터 안 받음 (빌더 필드에 없어도 알아서 false 들어감 *멤버변수 초기값(boolean= false, Boolean(객체)= null)
-    private boolean role;
+    private Boolean role;
 
-    @Column //회원탈퇴 여부, DB에서 기본값 0으로 처리, 파라미터 안 받음
-    private boolean is_delete;
+    @Column(nullable = false) //회원탈퇴 여부, DB에서 기본값 0으로 처리, 파라미터 안 받음
+    private boolean is_delete; //isIsDelete()로 롬복이 만들어줌 (getter)
 
     @Column //탈퇴 일자
     private LocalDateTime delete_at;
@@ -55,12 +54,14 @@ public class UserEntity {
     private List<TimerEntity> timers = new ArrayList<>();
 
     @Builder
-    public UserEntity(String id, String pw, String nickname, String email) {
+    public UserEntity(String id, String pw, String nickname, String email, Boolean role) {
         this.id = id;
         this.pw = pw;
         this.nickname = nickname;
         this.email = email;
-        //user_id, role, is_delete, delete_at은 안 다룸
+        this.role = role;
+        //user_id, is_delete, delete_at은 안 다룸
+        // null 허용 X인 필드(is_delete)는 필드 기본 값 들어가서 null 처리 안 됨
     }
 
     public void setEncodedPw(String encodedPw) {

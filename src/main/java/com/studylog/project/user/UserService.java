@@ -48,12 +48,6 @@ public class UserService {
         userEntity.setEncodedPw(encryptedPw); //빌더 객체 pw 값 바뀜
         userRepository.save(userEntity);
     }
-
-    public void test(String id, Boolean role) {
-        UserEntity userEntity= userRepository.findById(id)
-                .orElseThrow(() -> new UsernameNotFoundException(String.format("[%s]에 해당하는 회원을 찾을 수 없습니다.", id)));
-        userEntity.changeRole(role);
-    }
     //로그인한 유저 닉네임 반환
     public String getNickname(LogInRequest request){
         UserEntity userEntity= userRepository.findById(request.getId())

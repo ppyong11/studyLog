@@ -100,12 +100,6 @@ public class UserController {
         return ResponseEntity.ok(new ApiResponse(true, String.format("%s 님, 반갑습니다. ☺️", nickname)));
     }
 
-    @PostMapping("/sign-in/test")
-    public ResponseEntity<ApiResponse> test(@RequestParam(required = false) String id, Boolean role) {
-        userService.test(id, role);
-        return ResponseEntity.ok(new ApiResponse(true, "role 변경 O"));
-    }
-
     @PostMapping("/log-out")
     @Operation(summary= "로그아웃", security = @SecurityRequirement(name= "bearerAuth"))
     public ResponseEntity<ApiResponse> logout(HttpServletRequest request) {
