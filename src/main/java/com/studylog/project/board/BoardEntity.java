@@ -33,13 +33,21 @@ public class BoardEntity {
     private LocalDateTime update_at;
 
     @Builder
-    public BoardEntity(UserEntity user_id, CategoryEntity category_id, String title, String content,
-                       LocalDateTime upload_at, LocalDateTime update_at) {
+    public BoardEntity(UserEntity user_id, CategoryEntity category_id, String title, String content
+    , LocalDateTime upload_at) {
         this.user = user_id;
         this.category = category_id;
         this.title = title;
+        this.content = (content != null) ? content : ""; //content가 null이 아니면 content, 맞다면 ""
+        this.upload_at= upload_at;
+    }
+
+    //게시판 수정 (카테고리, 제목, 내용, 수정일)
+    public void updateBoard(CategoryEntity id, String title, String content, LocalDateTime uploadAt) {
+        this.category = id;
+        this.title = title;
         this.content = content;
-        this.upload_at = upload_at;
-        this.update_at = update_at;
+        this.upload_at = uploadAt;
+        //프론트에서 기존 내용+변경 내용 같이 보냄 (변경 안 된 필드는 기존 필드로)
     }
 }

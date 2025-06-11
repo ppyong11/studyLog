@@ -33,14 +33,14 @@ public class PlanEntity {
 
     @Column(nullable = false)
     private LocalDate end_date; //미지정 시 start_date와 같음
-    private LocalTime plan_minutes;
+    private int plan_minutes;
 
     @Column(nullable = false)
-    private Boolean plan_status; //계획 생성 시 0으로 설정
+    private boolean plan_status; //계획 생성 시 0으로 설정
 
     @Builder
     public PlanEntity (UserEntity user_id, CategoryEntity category_id, String plan_name,
-                       LocalDate start_date, LocalDate end_date, LocalTime plan_minutes, Boolean plan_status)
+                       LocalDate start_date, LocalDate end_date, int plan_minutes, boolean plan_status)
     {
         this.user = user_id;
         this.category = category_id;

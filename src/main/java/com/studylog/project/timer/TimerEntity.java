@@ -32,16 +32,16 @@ public class TimerEntity {
     @Column(nullable = false)
     private LocalDateTime start_at;
 
-    private LocalDateTime end_at; //종료 시간, 널 허용
+    private LocalDateTime end_at; //종료 시간, 처음엔 null
 
     @Builder
     public TimerEntity(UserEntity user_id, PlanEntity plan_id, CategoryEntity category_id,
-                       LocalDateTime start_at, LocalDateTime end_at) {
+                       LocalDateTime start_at) {
         this.user = user_id;
         this.plan = plan_id;
         this.category = category_id;
         this.start_at = start_at;
-        this.end_at = end_at; //빌더에 값 지정 X 시 null 들어감
+        //end_at은 자바 필드 초기값 가짐 (null)
     }
 
     //수정 가능 필드: plan_id(플랜명), category_id(카테고리명)
@@ -54,5 +54,10 @@ public class TimerEntity {
         else{ //plan 설정 X 시
             this.category = generalCateogry;
         }
+    }
+
+    //타이머 종료 시
+    public void endTimer(LocalDateTime end_at) {
+        this.end_at = end_at;
     }
 }

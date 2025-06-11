@@ -137,6 +137,7 @@ public class UserController {
     @PostMapping("/member/withdraw")
     @Operation(summary = "회원탈퇴", security = @SecurityRequirement(name= "bearerAuth"))
     public ResponseEntity<ApiResponse> withdraw(){
+
         return ResponseEntity.ok(new ApiResponse(true, "회원탈퇴 되었습니다."));
     }
 }

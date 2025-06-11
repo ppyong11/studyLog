@@ -32,13 +32,14 @@ public class UserEntity {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(insertable = false) //회원 역할, DB에서 기본값 0으로 처리, 파라미터 안 받음
-    private Boolean role;
+    @Column
+    //회원 역할, DB에서 기본값 0으로 처리, 파라미터 안 받음 (빌더 필드에 없어도 알아서 false 들어감 *멤버변수 초기값(boolean= false, Boolean(객체)= null)
+    private boolean role;
 
-    @Column(insertable = false) //회원탈퇴 여부, DB에서 기본값 0으로 처리, 파라미터 안 받음
-    private Boolean is_delete;
+    @Column //회원탈퇴 여부, DB에서 기본값 0으로 처리, 파라미터 안 받음
+    private boolean is_delete;
 
-    @Column(insertable = false) //탈퇴 일자
+    @Column //탈퇴 일자
     private LocalDateTime delete_at;
 
     @OneToMany(mappedBy = "user")
@@ -59,7 +60,7 @@ public class UserEntity {
         this.pw = pw;
         this.nickname = nickname;
         this.email = email;
-        //user_id, role은 빌더에서 안 다룸 (role은 db에서 초기화 *insert문에도 안 들어감)
+        //user_id, role, is_delete, delete_at은 안 다룸
     }
 
     public void setEncodedPw(String encodedPw) {
@@ -74,7 +75,14 @@ public class UserEntity {
         this.pw = newEncodedPw;
     }
 
-    public void changeRole(Boolean newRole) {
-        this.role = newRole;
+    //회원탈퇴
+    public void withdraw(LocalDateTime deleteAt){
+        this.is_delete = true;
+        this.delete_at = deleteAt;
+    }
+    //탈퇴 취소
+    public void restore(){
+        this.is_delete = false;
+        this.delete_at = null;
     }
 }
