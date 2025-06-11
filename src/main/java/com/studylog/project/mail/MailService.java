@@ -21,7 +21,10 @@ public class MailService {
 
     public void sendEmailCode(String email) {
         SimpleMailMessage message = new SimpleMailMessage(); //전송 내용 담는 객체
-
+        if(Boolean.TRUE.equals(redisTemplate.hasKey("verified:" + email))) {
+            //이미 검증 완료된 메일
+            throw new MailException("이미 검증 완료된 메일입니다. 회원가입을 진행해 주세요.");
+        }
         String code= randomCode(); //랜덤 코드 생성
         String text = String.format("""
         안녕하세요, Study Log입니다.

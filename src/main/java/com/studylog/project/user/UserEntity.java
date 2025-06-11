@@ -54,14 +54,14 @@ public class UserEntity {
     private List<TimerEntity> timers = new ArrayList<>();
 
     @Builder
-    public UserEntity(String id, String pw, String nickname, String email, Boolean role) {
+    public UserEntity(String id, String pw, String nickname, String email) {
         this.id = id;
         this.pw = pw;
         this.nickname = nickname;
         this.email = email;
-        this.role = role;
+        this.role = false; //기본값이 null이라 직접 설정
         //user_id, is_delete, delete_at은 안 다룸
-        // null 허용 X인 필드(is_delete)는 필드 기본 값 들어가서 null 처리 안 됨
+        //null 허용 X인 필드(is_delete)는 필드 기본 값 들어가서 null 처리 안 됨
     }
 
     public void setEncodedPw(String encodedPw) {

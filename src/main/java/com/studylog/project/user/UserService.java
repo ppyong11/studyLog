@@ -40,7 +40,7 @@ public class UserService {
             throw new DuplicateException(String.format("[%s] 이미 가입된 회원입니다.", user.getEmail()));
         }
         if(!Boolean.TRUE.equals(redisTemplate.hasKey("verified:" + user.getEmail())))
-        {
+        {//키 없는 경우
             throw new MailException("인증 세션이 만료됐거나 인증된 메일이 아닙니다.");
         }
         String encryptedPw= passwordEncoder.encode(user.getPw());

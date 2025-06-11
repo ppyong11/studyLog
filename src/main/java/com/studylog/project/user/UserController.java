@@ -64,10 +64,8 @@ public class UserController {
     //이메일 인증 코드 발송
     @PostMapping("/sign-in/send-email-code")
     public ResponseEntity<ApiResponse> sendEmailCode(@RequestBody @Valid MailRequest reqeust) {
-        log.info("1");
         String email= reqeust.getEmail(); //유효성 검사 후 받은 이메일 string형 변환
         if (userService.existsEmail(email)){
-            log.info("3");
             return ResponseEntity.status(HttpStatus.CONFLICT).
                     body(new ApiResponse(false, "이미 사용 중인 이메일입니다."));
         }
@@ -85,7 +83,7 @@ public class UserController {
     }
 
     @PostMapping("/sign-in")
-    public ResponseEntity<ApiResponse> singIn(@RequestBody @Valid SignInRequest signInRequest) {
+    public ResponseEntity<ApiResponse> signIn(@RequestBody @Valid SignInRequest signInRequest) {
         userService.register(signInRequest);
         return ResponseEntity.ok(new ApiResponse(true, "회원가입 되었습니다."));
     }
