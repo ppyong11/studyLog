@@ -14,6 +14,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -55,14 +57,21 @@ public class UserService {
         return userEntity.getNickname();
     }
 
-    //비밀번호 확인
-    public void validatePw(UserEntity user, String pw) {
-        if (passwordEncoder.matches(pw, user.getPw())) {
-            log.info(String.format("id: [%s], 로그인 성공", user.getId()));
-        }
-        else{
-            log.warn(String.format("id: [%s], 로그인 실패", user.getId()));
-            throw new LoginFaildException("비밀번호가 일치하지 않습니다.");
+    //아이디, 비밀번호 확인
+    public void validateAndRestoreUser(LogInRequest request) {
+        //아이디 검증
+        UserEntity userEntity= userRepository.findById(request.getId())
+                .orElseThrow(() -> new LoginFaildException("아이디 또는 비밀번호가 일치하지 않습니다."));
+
+        if (passwordEncoder.matches(request.getPw(), userEntity.getPw())) {
+            log.info(String.format("id: [%s], 로그인 성공", userEntity.getId()));
+            if(userEntity.is_delete()){
+                //회원탈퇴한 회원이라면
+                restore(userEntity); //복구 처리
+            }
+        } else{
+            log.warn(String.format("id: [%s], 로그인 실패", userEntity.getId()));
+            throw new LoginFaildException("아이디 또는 비밀번호가 일치하지 않습니다.");
         }
     }
 
@@ -98,6 +107,20 @@ public class UserService {
         //위 경우가 아니라면
         UserEntity userEntity= customUserDTO.getUser(); //요청 날린 토큰의 인증 객체 받기
         userEntity.changeNickname(nicknameRequest.getNickname());
+    }
+
+    //회원탈퇴
+    public void withdraw(CustomUserDetail customUserDTO){
+        UserEntity userEntity= customUserDTO.getUser(); //회원 객체 받기
+        userEntity.withdraw(LocalDateTime.now()); //기존 객체를 바꾸는 거니까 빌더 필요 X
+        log.info("탈퇴 처리 완료: 여부 {}, 시간 {}, ", userEntity.is_delete(), userEntity.getDelete_at());
+    }
+
+    //회원 탈퇴 취소
+    public void restore(UserEntity user){
+        //로그인한 회원이 회원탈퇴한 회원이라면, 탈퇴 취소
+        user.restore(); //is_delete= false, deleteAt= null
+        log.info("탈퇴 철회 완료: 탈퇴 여부 {}, 시간 {}, ", user.is_delete(), user.getDelete_at());
     }
 
     //컨트롤러에서도 repo 접근해야 돼서 만듦... 이왕 만든 김에 서비스에서도 그냥 사용

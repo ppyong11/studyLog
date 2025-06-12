@@ -125,8 +125,8 @@ public class JwtTokenProvider {
     //헤더에서 토큰 정보 추출
     public String resolveToken(HttpServletRequest request) {
         String bearerToken= request.getHeader("Authorization");
-        log.info("토큰 추출: {}", bearerToken);
         if(StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer")) {
+            log.info("토큰 추출: {}", bearerToken.substring(7));
             return bearerToken.substring(7);
         }
         return null;

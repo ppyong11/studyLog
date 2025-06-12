@@ -21,10 +21,11 @@ spring:
     password: 1234
 
   redis:
-    host: localhost
-    port: 6379
-    username: studyLog
-    password: 1234
+    host= localhost
+    port= 6379
+    username= studyLog
+    password= 1234
+    database= 0
 
   jpa:
     hibernate:

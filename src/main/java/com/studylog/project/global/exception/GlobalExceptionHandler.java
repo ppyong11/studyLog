@@ -51,11 +51,6 @@ public class GlobalExceptionHandler {
                 .body(new ApiResponse(false, e.getMessage()));
     }
 
-    @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<ApiResponse> handleBadCredentials(BadCredentialsException e) {
-        throw new LoginFaildException("토큰 발급 중 비밀번호 안 맞음");
-    }
-
     @ExceptionHandler(LogoutFaildException.class)
     public ResponseEntity<ApiResponse> handleLogoutFaild(LogoutFaildException e) {
         return ResponseEntity.badRequest()

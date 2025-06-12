@@ -35,32 +35,47 @@ public class JwtService {
         //3. 인증 정보를 기반으로 JWT 토큰 생성
         JwtToken jwtToken= jwtTokenProvider.createToken(authentication);
         String rt= jwtToken.getRefreshToken(); //검증 후에 토큰 만드니까 오류 X
-        saveToken("RT: " + rt, "login"); //리프레시 토큰 저장
+        saveToken("RT:" + id, rt, null); //리프레시 토큰 저장
         return jwtToken;
     }
 
-    public void saveToken(String key, String token) {
+    public void saveToken(String key, String token, String state) {
         Claims claims= jwtTokenProvider.parseClaims(token);
         Date now= new Date();
         Date expiration= claims.getExpiration();
         long TTL= expiration.getTime() - now.getTime();
-        try {
-            redisTemplate.opsForValue().set(key, token, TTL, TimeUnit.MILLISECONDS);
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage()); //잡아서 에러 던짐
+
+        if (state == null) {
+            //리프레시 저장
+            try {
+                redisTemplate.opsForValue().set(key, token, TTL, TimeUnit.MILLISECONDS);
+            } catch (Exception e) {
+                throw new RuntimeException(e.getMessage()); //잡아서 에러 던짐
+            }
+            log.info("rt 저장 완료: "+redisTemplate.opsForValue().get(key));
+        } else{
+            //액세스 저장
+            try {
+                redisTemplate.opsForValue().set(key, state, TTL, TimeUnit.MILLISECONDS);
+            } catch (Exception e) {
+                throw new RuntimeException(e.getMessage()); //잡아서 에러 던짐
+            }
+            Long ttl = redisTemplate.getExpire(key, TimeUnit.MILLISECONDS);
+            String value = redisTemplate.opsForValue().get(key);
+            log.info("value: {}, TTL: {}", value, ttl);
         }
-        log.info("redis rt 저장 완료: "+redisTemplate.opsForValue().get(key));
     }
 
     //블랙리스트 저장 (로그아웃)
-    public void saveBlacklistToken(String token){
-        if (Boolean.TRUE.equals(redisTemplate.hasKey("AT: "+ token))) {
+    public void saveBlacklistToken(String token, String userId){
+        if (Boolean.TRUE.equals(redisTemplate.hasKey("AT:"+ token))) {
             //해당 키가 저장돼 있다면
             throw new LogoutFaildException("이미 로그아웃한 회원입니다.");
         }
-        //로그아웃 X 토큰
-        saveToken("AT: "+ token, "logout");
-        redisTemplate.delete("RT: "+token); //리프레시 토큰 삭제 (강제 무효화)
+        //로그아웃 안 한 토큰이라면
+        saveToken("AT:"+ token, token, "로그아웃"); //액세스 저장
+        redisTemplate.delete("RT:"+ userId); //리프레시 토큰 삭제 (강제 무효화)
+        log.info("로그아웃 확인 {}", redisTemplate.opsForValue().get("RT: "+userId));
     }
 
 }
