@@ -15,6 +15,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.NoSuchElementException;
 
 @Service
 @Transactional
@@ -75,6 +76,7 @@ public class UserService {
         }
     }
 
+    @Transactional
     //비밀번호 변경
     public void changePw(CustomUserDetail customUserDTO, UpdatePwRequest pwRequest) { //암호화된 비번(DTO), 평문 비번(request)
         if (passwordEncoder.matches(pwRequest.getCurrentPw(), customUserDTO.getPassword())){
@@ -83,7 +85,8 @@ public class UserService {
                 throw new InvalidRequestException("기존 비밀번호와 새로운 비밀번호가 일치합니다.");
             }
             String encryptedPw= passwordEncoder.encode(pwRequest.getNewPw()); //새 비번 암호화
-            UserEntity userEntity= customUserDTO.getUser(); //principal의 user 객체를 entity에 넣음
+            UserEntity userEntity= userRepository.findById(customUserDTO.getUser().getUser_id())
+                    .orElseThrow(() -> new NoSuchElementException("해당하는 유저가 없습니다.")); //principal의 user 객체를 entity에 넣음
             userEntity.changePw(encryptedPw);
             log.info("changePw: 비밀번호 변경 완료");
         }
@@ -93,6 +96,7 @@ public class UserService {
         }
     }
 
+    @Transactional
     //닉네임 변경
     public void changeNickname(CustomUserDetail customUserDTO,UpdateNicknameRequest nicknameRequest) {
         String currentNick= customUserDTO.getUser().getNickname();
@@ -105,8 +109,10 @@ public class UserService {
             throw new DuplicateException("이미 존재하는 닉네임입니다.");
         }
         //위 경우가 아니라면
-        UserEntity userEntity= customUserDTO.getUser(); //요청 날린 토큰의 인증 객체 받기
-        userEntity.changeNickname(nicknameRequest.getNickname());
+        UserEntity userEntity= userRepository.findById(customUserDTO.getUser().getUser_id())
+                .orElseThrow(() -> new NoSuchElementException("해당하는 유저가 없습니다.")); //요청 날린 토큰의 인증 객체로 영속성 컨텍스트 저장
+        userEntity.changeNickname(nicknameRequest.getNickname()); //닉네임 바꿈
+        //변경 값 감지 후 update
     }
 
     //회원탈퇴

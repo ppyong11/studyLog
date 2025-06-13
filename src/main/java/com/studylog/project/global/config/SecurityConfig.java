@@ -1,7 +1,12 @@
 package com.studylog.project.global.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.studylog.project.global.filterException.CustomAuthenticationEntryPoint;
 import com.studylog.project.jwt.JwtAuthenticationFilter;
 import com.studylog.project.jwt.JwtTokenProvider;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -9,6 +14,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -17,8 +23,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity //WebSecurity 활성화
 public class SecurityConfig {
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtTokenProvider jwtTokenProvider, RedisTemplate<String, String> redisTemplate) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter, CustomAuthenticationEntryPoint customAuthenticationEntryPoint) throws Exception {
         http
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(exceptionHandling ->
+                        exceptionHandling.authenticationEntryPoint(customAuthenticationEntryPoint)
+                )
                 //RestAPI이므로 basic auth, csrf 보안 사용 X
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable)
@@ -38,12 +48,20 @@ public class SecurityConfig {
                 ).permitAll()
                 //그 외 모든 요청은 인증 필요
                 .anyRequest().authenticated()
-                )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, redisTemplate),
-                        UsernamePasswordAuthenticationFilter.class);
+                );
         return http.build();
     }
 
+    @Bean //or 클래스에 @Component 붙이기
+    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider, RedisTemplate<String, String> redisTemplate) {
+        return new JwtAuthenticationFilter(jwtTokenProvider, redisTemplate);
+    //각 파라미터에 @Component 등 어노테이션이 붙어있으면 알아서 빈 찾아서 파라미터에 주입해줌, 그리고 이 메서드도 저 위 파라미터에 주입하는 것
+    }
+
+    @Bean
+    public CustomAuthenticationEntryPoint customAuthenticationEntryPoint(ObjectMapper objectMapper) {
+        return new CustomAuthenticationEntryPoint(objectMapper);
+    }
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

@@ -1,5 +1,6 @@
 package com.studylog.project.jwt;
 
+import com.studylog.project.global.exception.JwtException;
 import com.studylog.project.user.UserEntity;
 import com.studylog.project.user.UserRepository;
 import io.jsonwebtoken.*;

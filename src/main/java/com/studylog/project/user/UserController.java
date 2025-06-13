@@ -124,6 +124,7 @@ public class UserController {
                                                       @RequestBody @Valid UpdateNicknameRequest request) {
         //유효 토큰 및 로그인 상태 확인(redis) 필터에서 검증됨
         userService.changeNickname(user, request);
+        log.info(user.getUsername());
         return ResponseEntity.ok(new ApiResponse(true, "닉네임이 변경되었습니다."));
     }
 

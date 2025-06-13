@@ -62,4 +62,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest()
                 .body(new ApiResponse(false, e.getMessage()));
     }
+
+    @ExceptionHandler(JwtException.class) //jwt 관련 exception
+    public ResponseEntity<ApiResponse> handleJwtException(JwtException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiResponse(false, e.getMessage()));
+    }
 }
