@@ -1,20 +1,15 @@
 package com.studylog.project.global.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.studylog.project.global.filterException.CustomAuthenticationEntryPoint;
+import com.studylog.project.global.filterExceptionHandler.CustomAuthenticationEntryPoint;
 import com.studylog.project.jwt.JwtAuthenticationFilter;
 import com.studylog.project.jwt.JwtTokenProvider;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -53,8 +48,8 @@ public class SecurityConfig {
     }
 
     @Bean //or 클래스에 @Component 붙이기
-    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider, RedisTemplate<String, String> redisTemplate) {
-        return new JwtAuthenticationFilter(jwtTokenProvider, redisTemplate);
+    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider) {
+        return new JwtAuthenticationFilter(jwtTokenProvider);
     //각 파라미터에 @Component 등 어노테이션이 붙어있으면 알아서 빈 찾아서 파라미터에 주입해줌, 그리고 이 메서드도 저 위 파라미터에 주입하는 것
     }
 

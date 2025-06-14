@@ -1,6 +1,5 @@
 package com.studylog.project.jwt;
 
-import com.studylog.project.global.exception.JwtException;
 import com.studylog.project.user.UserEntity;
 import com.studylog.project.user.UserRepository;
 import io.jsonwebtoken.*;
@@ -9,12 +8,11 @@ import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -30,11 +28,13 @@ import java.util.List;
 public class JwtTokenProvider {
     private final Key key;
     private final UserRepository userRepository;
+    private final RedisTemplate<String, String> redisTemplate;
 
-    public JwtTokenProvider(@Value("${jwt.secret}")String secretKey, UserRepository userRepository) {
+    public JwtTokenProvider(@Value("${jwt.secret}")String secretKey, UserRepository userRepository, RedisTemplate<String, String> redisTemplate) {
         byte[] keyBytes= Decoders.BASE64.decode(secretKey);
         this.key= Keys.hmacShaKeyFor(keyBytes);
         this.userRepository = userRepository;
+        this.redisTemplate= redisTemplate;
     }
 
     //유저 정보로 Token 생성
@@ -95,6 +95,11 @@ public class JwtTokenProvider {
                     .setSigningKey(key) //비밀키 설정 (서명 검증용)
                     .build()
                     .parseClaimsJws(token); //실제 토큰 파싱 및 서명 검증 수행
+            if (Boolean.TRUE.equals(redisTemplate.hasKey("AT:"+token))) {
+                //유효 토큰 + 블랙리스트 저장= 로그아웃 토큰
+                log.info("로그아웃 처리된 회원의 요청입니다.");
+                return false;
+            }
             return true;
         }catch (io.jsonwebtoken.security.SignatureException e){
             log.info("Invalid JWT signature: {}", e.getMessage());
@@ -107,7 +112,8 @@ public class JwtTokenProvider {
         } catch (IllegalArgumentException e) { //null or 빈 문자열 토큰
             log.info("JWT claims string is empty: {}", e.getMessage());
         }
-        return false; //캐치 들어가면 fasle 던짐
+        //jwt 관련 에러는 로그만 띄우고 security filter chain에서 인증 관련 에러 뜨게끔 처리
+        return false;
     }
 
     //jwt 토큰 복호화 후 claim 가져옴
