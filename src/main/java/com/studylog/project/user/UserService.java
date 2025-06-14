@@ -1,9 +1,6 @@
 package com.studylog.project.user;
 
-import com.studylog.project.global.exception.DuplicateException;
-import com.studylog.project.global.exception.InvalidRequestException;
-import com.studylog.project.global.exception.LoginFaildException;
-import com.studylog.project.global.exception.MailException;
+import com.studylog.project.global.exception.*;
 import com.studylog.project.jwt.CustomUserDetail;
 import jakarta.transaction.Transactional;
 import jakarta.validation.ValidationException;
@@ -69,8 +66,11 @@ public class UserService {
 
         if (passwordEncoder.matches(request.getPw(), userEntity.getPw())) {
             log.info(String.format("id: [%s], 로그인 성공", userEntity.getId()));
-            if(userEntity.is_delete()){
-                //회원탈퇴한 회원이라면
+            if(userEntity.isDelete()){//회원탈퇴한 회원이라면
+                //3일 지났는데 스케쥴러 안 돌아서 삭제 안 된 경우
+                if(userEntity.getDeleteAt().isBefore(LocalDateTime.now().minusMinutes(3))){
+                    throw new AlreadyDeleteUserException("회원 탈퇴 철회 기간이 지나 복구가 불가합니다.");
+                }
                 restore(userEntity); //복구 처리
             }
         } else{
@@ -122,7 +122,7 @@ public class UserService {
     public void restore(UserEntity user){
         //로그인한 회원이 회원탈퇴한 회원이라면, 탈퇴 취소
         user.restore(); //is_delete= false, deleteAt= null
-        log.info("탈퇴 철회 완료: 탈퇴 여부 {}, 시간 {}, ", user.is_delete(), user.getDelete_at());
+        log.info("탈퇴 철회 완료: 탈퇴 여부 {}, 시간 {}, ", user.isDelete(), user.getDeleteAt());
     }
 
     //회원탈퇴
@@ -131,13 +131,15 @@ public class UserService {
         UserEntity userEntity= userRepository.findById(customUserDTO.getUser().getUser_id())
                 .orElseThrow(() -> new NoSuchElementException("존재하지 않는 회원입니다.")); //회원 객체 받기
         userEntity.withdraw(LocalDateTime.now()); //기존 객체를 바꾸는 거니까 빌더 필요 X
-        log.info("탈퇴 처리 완료: 여부 {}, 시간 {}, ", userEntity.is_delete(), userEntity.getDelete_at());
+        log.info("탈퇴 처리 완료: 여부 {}, 시간 {}, ", userEntity.isDelete(), userEntity.getDeleteAt());
     }
 
-    @Scheduled(cron= "0 0 1 * * ?") //매일 새벽 1시마다 일괄 제거
+    @Scheduled(cron= "0 0/30 * * * ?") //매시 0분, 30분마다 실행
     @Transactional
     public void deleteUser(){
-        List<UserEntity> users = userRepository.findByIsDeleted(true);
+        //isDelete == true && deleteAt < 지금 일자 - 3일 튜플 찾음
+        List<UserEntity> users = userRepository.findAllByDeleteTrueAndDeleteAtBefore(LocalDateTime.now().minusMinutes(3));
+        userRepository.deleteAll(users);
     }
     //컨트롤러에서도 repo 접근해야 돼서 만듦... 이왕 만든 김에 서비스에서도 그냥 사용
     //서비스에서는 레포로 바로 접근해도 문제 X, 컨트롤러->서비스->레포

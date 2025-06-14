@@ -75,4 +75,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(httpStatus)
                 .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
     }
+
+    @ExceptionHandler(AlreadyDeleteUserException.class)
+    public ResponseEntity<ApiResponse> handleAlreadyDeleteUser(AlreadyDeleteUserException e) {
+        HttpStatus httpStatus = HttpStatus.CONFLICT;
+        return ResponseEntity.status(httpStatus)
+                .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
+    }
 }

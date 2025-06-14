@@ -36,7 +36,7 @@ public class UserEntity {
     private Boolean role;
 
     @Column(name= "is_delete", nullable = false) //회원탈퇴 여부, DB에서 기본값 0으로 처리, 파라미터 안 받음
-    private boolean isDelete; //isIsDelete()로 롬복이 만들어줌 (getter)
+    private boolean delete; //isIsDelete()로 롬복이 만들어줌 (getter)
 
     @Column(name= "delete_at") //탈퇴 일자, DB 속성명이랑 달라서 명시 필요
     private LocalDateTime deleteAt;
@@ -78,12 +78,12 @@ public class UserEntity {
 
     //회원탈퇴
     public void withdraw(LocalDateTime deleteAt){
-        this.isDelete = true;
+        this.delete = true;
         this.deleteAt = deleteAt;
     }
     //탈퇴 취소
     public void restore(){
-        this.isDelete = false;
+        this.delete = false;
         this.deleteAt = null;
     }
 }
