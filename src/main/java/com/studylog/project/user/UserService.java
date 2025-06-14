@@ -10,11 +10,13 @@ import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 @Service
@@ -58,6 +60,7 @@ public class UserService {
         return userEntity.getNickname();
     }
 
+    @Transactional
     //아이디, 비밀번호 확인
     public void validateAndRestoreUser(LogInRequest request) {
         //아이디 검증
@@ -86,7 +89,7 @@ public class UserService {
             }
             String encryptedPw= passwordEncoder.encode(pwRequest.getNewPw()); //새 비번 암호화
             UserEntity userEntity= userRepository.findById(customUserDTO.getUser().getUser_id())
-                    .orElseThrow(() -> new NoSuchElementException("해당하는 유저가 없습니다.")); //principal의 user 객체를 entity에 넣음
+                    .orElseThrow(() -> new NoSuchElementException("존재하지 않는 회원입니다.")); //principal의 user 객체를 entity에 넣음
             userEntity.changePw(encryptedPw);
             log.info("changePw: 비밀번호 변경 완료");
         }
@@ -110,16 +113,9 @@ public class UserService {
         }
         //위 경우가 아니라면
         UserEntity userEntity= userRepository.findById(customUserDTO.getUser().getUser_id())
-                .orElseThrow(() -> new NoSuchElementException("해당하는 유저가 없습니다.")); //요청 날린 토큰의 인증 객체로 영속성 컨텍스트 저장
+                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 회원입니다.")); //요청 날린 토큰의 인증 객체로 영속성 컨텍스트 저장
         userEntity.changeNickname(nicknameRequest.getNickname()); //닉네임 바꿈
         //변경 값 감지 후 update
-    }
-
-    //회원탈퇴
-    public void withdraw(CustomUserDetail customUserDTO){
-        UserEntity userEntity= customUserDTO.getUser(); //회원 객체 받기
-        userEntity.withdraw(LocalDateTime.now()); //기존 객체를 바꾸는 거니까 빌더 필요 X
-        log.info("탈퇴 처리 완료: 여부 {}, 시간 {}, ", userEntity.is_delete(), userEntity.getDelete_at());
     }
 
     //회원 탈퇴 취소
@@ -129,6 +125,20 @@ public class UserService {
         log.info("탈퇴 철회 완료: 탈퇴 여부 {}, 시간 {}, ", user.is_delete(), user.getDelete_at());
     }
 
+    //회원탈퇴
+    @Transactional
+    public void withdraw(CustomUserDetail customUserDTO){
+        UserEntity userEntity= userRepository.findById(customUserDTO.getUser().getUser_id())
+                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 회원입니다.")); //회원 객체 받기
+        userEntity.withdraw(LocalDateTime.now()); //기존 객체를 바꾸는 거니까 빌더 필요 X
+        log.info("탈퇴 처리 완료: 여부 {}, 시간 {}, ", userEntity.is_delete(), userEntity.getDelete_at());
+    }
+
+    @Scheduled(cron= "0 0 1 * * ?") //매일 새벽 1시마다 일괄 제거
+    @Transactional
+    public void deleteUser(){
+        List<UserEntity> users = userRepository.findByIsDeleted(true);
+    }
     //컨트롤러에서도 repo 접근해야 돼서 만듦... 이왕 만든 김에 서비스에서도 그냥 사용
     //서비스에서는 레포로 바로 접근해도 문제 X, 컨트롤러->서비스->레포
     public Boolean existsEmail(String email) {

@@ -29,10 +29,11 @@ public class TimerEntity {
     @JoinColumn(name = "category_id", nullable = false)
     private CategoryEntity category;
 
-    @Column(nullable = false)
-    private LocalDateTime start_at;
+    @Column(name= "start_at", nullable = false)
+    private LocalDateTime startAt;
 
-    private LocalDateTime end_at; //종료 시간, 처음엔 null
+    @Column(name= "end_at")
+    private LocalDateTime endAt; //종료 시간, 처음엔 null
 
     @Builder
     public TimerEntity(UserEntity user_id, PlanEntity plan_id, CategoryEntity category_id,
@@ -40,7 +41,7 @@ public class TimerEntity {
         this.user = user_id;
         this.plan = plan_id;
         this.category = category_id;
-        this.start_at = start_at;
+        this.startAt = start_at;
         //end_at은 자바 필드 초기값 가짐 (null)
     }
 
@@ -57,7 +58,7 @@ public class TimerEntity {
     }
 
     //타이머 종료 시
-    public void endTimer(LocalDateTime end_at) {
-        this.end_at = end_at;
+    public void endTimer(LocalDateTime endAt) {
+        this.endAt = endAt;
     }
 }

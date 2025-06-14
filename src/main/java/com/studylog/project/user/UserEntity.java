@@ -35,11 +35,11 @@ public class UserEntity {
     //회원 역할, DB에서 기본값 0으로 처리, 파라미터 안 받음 (빌더 필드에 없어도 알아서 false 들어감 *멤버변수 초기값(boolean= false, Boolean(객체)= null)
     private Boolean role;
 
-    @Column(nullable = false) //회원탈퇴 여부, DB에서 기본값 0으로 처리, 파라미터 안 받음
-    private boolean is_delete; //isIsDelete()로 롬복이 만들어줌 (getter)
+    @Column(name= "is_delete", nullable = false) //회원탈퇴 여부, DB에서 기본값 0으로 처리, 파라미터 안 받음
+    private boolean isDelete; //isIsDelete()로 롬복이 만들어줌 (getter)
 
-    @Column //탈퇴 일자
-    private LocalDateTime delete_at;
+    @Column(name= "delete_at") //탈퇴 일자, DB 속성명이랑 달라서 명시 필요
+    private LocalDateTime deleteAt;
 
     @OneToMany(mappedBy = "user")
     private List<BoardEntity> boards= new ArrayList<>();
@@ -78,12 +78,12 @@ public class UserEntity {
 
     //회원탈퇴
     public void withdraw(LocalDateTime deleteAt){
-        this.is_delete = true;
-        this.delete_at = deleteAt;
+        this.isDelete = true;
+        this.deleteAt = deleteAt;
     }
     //탈퇴 취소
     public void restore(){
-        this.is_delete = false;
-        this.delete_at = null;
+        this.isDelete = false;
+        this.deleteAt = null;
     }
 }
