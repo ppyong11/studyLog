@@ -3,6 +3,7 @@ package com.studylog.project.jwt;
 import com.studylog.project.global.exception.JwtException;
 import com.studylog.project.global.response.ApiResponse;
 import com.studylog.project.user.LogInRequest;
+import com.studylog.project.user.UserEntity;
 import com.studylog.project.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -12,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -52,7 +54,7 @@ public class AuthController {
         ResponseCookie refreshCookie= ResponseCookie.from("refresh_token", jwtToken.getRefreshToken())
                 .httpOnly(true)
                 .secure(false)
-                .path("/member/refresh") //재발급 경로
+                .path("/study-log/refresh") //재발급 경로
                 .maxAge(7*24*60*60) //7일
                 .build();
 
@@ -90,7 +92,7 @@ public class AuthController {
 
     @PostMapping("/refresh")
     @Operation(summary = "액세스 토큰 재발급")
-    public ResponseEntity<ApiResponse> refreshAccessToken(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse> refreshAccessToken(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken= extractCookie(request, "refresh_token");
         if(refreshToken == null) { //쿠키에 토큰 X
             throw new JwtException("재발급 검증에 필요한 토큰이 없습니다.");
@@ -99,7 +101,29 @@ public class AuthController {
             throw new JwtException("유효하지 않은 토큰입니다.");
         }
         //토큰 O, 검증 완료
-        String useId= jwtTokenProvider.get(refreshToken)
+        String userId= redisTemplate.opsForValue().get("RT:" + refreshToken); //userId (long) 타입으로 안 넣음
+        if (userId == null) { //서버에 등록 안 된 토큰
+            log.warn("로그아웃 및 탈퇴한 회원이거나 이전에 사용한 리프레시 토큰으로 access token 재발급 실패");
+            throw new JwtException("유효하지 않은 토큰입니다.");
+        }
+        JwtToken newToken= jwtService.createNewToken(userId);
+        ResponseCookie accessCookie= ResponseCookie.from("access_token", newToken.getAccessToken())
+                .httpOnly(true)
+                .secure(false) //아직 http
+                .path("/")
+                .sameSite("None")
+                .maxAge(60*60) //1시간 후 만료
+                .build();
+
+        ResponseCookie refreshCookie= ResponseCookie.from("refresh_token", newToken.getRefreshToken())
+                .httpOnly(true)
+                .secure(false)
+                .path("/study-log/refresh") //재발급 경로
+                .maxAge(7*24*60*60) //7일
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+        return ResponseEntity.ok(new ApiResponse(200, true, "로그인이 연장되었습니다."));
     }
 
     //쿠키에서 토큰 출력

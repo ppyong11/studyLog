@@ -1,6 +1,8 @@
 package com.studylog.project.jwt;
 
 import com.studylog.project.global.exception.LogoutFaildException;
+import com.studylog.project.user.UserEntity;
+import com.studylog.project.user.UserRepository;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,10 +10,15 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -22,6 +29,7 @@ public class JwtService {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final RedisTemplate<String, String> redisTemplate;
+    private final UserRepository userRepository;
 
     public JwtToken logIn(String id, String password) {
         //1. 로그인 정보를 기반으로 Authentication 객체 생성
@@ -71,9 +79,23 @@ public class JwtService {
     public void saveBlacklistToken(String token, String userId){
         saveToken("AT:"+ token, token, "로그아웃"); //액세스 저장
         String refreshToken= redisTemplate.opsForValue().get("RT:"+ userId);
+        //accessToken 검증 후라서 보안 문제 약함 + 리프레시 바로 삭제
         redisTemplate.delete("RT:"+ userId); //리프레시 토큰 삭제 (강제 무효화)
         redisTemplate.delete("RT:" + refreshToken); //토큰에 저장된 id 삭제
         log.info("로그아웃 확인 {}, {}", redisTemplate.opsForValue().get("RT: "+userId), redisTemplate.opsForValue().get("RT: "+refreshToken));
+    }
+
+    //토큰 재발급
+    //redis에 토큰 회전 및 쿠키에 재발급한 토큰들 내려주기
+    public JwtToken createNewToken(String userId){
+        UserEntity userEntity= userRepository.findById(userId) //userId 유니크 필드라 조회 문제 X
+                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 회원입니다."));
+        //인증 객체 임의 생성
+        List<GrantedAuthority> authorities= List.of(new SimpleGrantedAuthority(userEntity.getRole()? "ROLE_USER" : "ROLE_ADMIN"));
+        Authentication authentication= new UsernamePasswordAuthenticationToken(userEntity.getId(), null, authorities);
+        JwtToken newToken= jwtTokenProvider.createToken(authentication);
+        return newToken;
+
     }
 
 }
