@@ -35,7 +35,8 @@ public class JwtService {
         //3. 인증 정보를 기반으로 JWT 토큰 생성
         JwtToken jwtToken= jwtTokenProvider.createToken(authentication);
         String rt= jwtToken.getRefreshToken(); //검증 후에 토큰 만드니까 오류 X
-        saveToken("RT:" + id, rt, null); //리프레시 토큰 저장
+        saveToken("RT:" + id, rt, null); //리프레시 토큰 저장 (id -> 토큰)
+        saveToken("RT:" + rt, id, null); //양방향 저장 (토큰 -> id)
         return jwtToken;
     }
 
@@ -69,8 +70,10 @@ public class JwtService {
     //블랙리스트 저장 (로그아웃)
     public void saveBlacklistToken(String token, String userId){
         saveToken("AT:"+ token, token, "로그아웃"); //액세스 저장
+        String refreshToken= redisTemplate.opsForValue().get("RT:"+ userId);
         redisTemplate.delete("RT:"+ userId); //리프레시 토큰 삭제 (강제 무효화)
-        log.info("로그아웃 확인 {}", redisTemplate.opsForValue().get("RT: "+userId));
+        redisTemplate.delete("RT:" + refreshToken); //토큰에 저장된 id 삭제
+        log.info("로그아웃 확인 {}, {}", redisTemplate.opsForValue().get("RT: "+userId), redisTemplate.opsForValue().get("RT: "+refreshToken));
     }
 
 }

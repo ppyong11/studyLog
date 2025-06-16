@@ -69,7 +69,8 @@ public class UserService {
             if(userEntity.isDelete()){//회원탈퇴한 회원이라면
                 //3일 지났는데 스케쥴러 안 돌아서 삭제 안 된 경우
                 if(userEntity.getDeleteAt().isBefore(LocalDateTime.now().minusMinutes(3))){
-                    throw new AlreadyDeleteUserException("회원 탈퇴 철회 기간이 지나 복구가 불가합니다.");
+                    throw new AlreadyDeleteUserException("회원 탈퇴 철회 기간이 지나 복구가 불가합니다." +
+                            "");
                 }
                 restore(userEntity); //복구 처리
             }

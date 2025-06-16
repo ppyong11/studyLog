@@ -11,12 +11,15 @@ import com.studylog.project.mail.MailService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.checkerframework.checker.units.qual.A;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,8 +33,6 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
     private final UserService userService;
     private final MailService mailService;
-    private final JwtService jwtService; //회원 정보 비교 및 토큰 발급
-    private final JwtTokenProvider jwtTokenProvider;
     private final RedisTemplate<String, String> redisTemplate;
 
     @GetMapping("/sign-in/check-info")
@@ -87,28 +88,6 @@ public class UserController {
         return ResponseEntity.ok(new ApiResponse(200, true, "회원가입 되었습니다."));
     }
 
-    @PostMapping("/log-in")
-    public ResponseEntity<ApiResponse> logIn(@RequestBody @Valid LogInRequest request) {
-        userService.validateAndRestoreUser(request); //회원 검증 및 탈퇴 복구 처리
-        JwtToken jwtToken = jwtService.logIn(request.getId(), request.getPw()); //예외 발생 시 아래 로직 실행 X
-        log.info("요청- ID: {}, PW: {}", request.getId(), request.getPw());
-        log.info("AccessToken: {}, RefreshToken: {}", jwtToken.getAccessToken(), jwtToken.getRefreshToken());
-        String nickname = userService.getNickname(request);
-        return ResponseEntity.ok(new ApiResponse(200, true, String.format("%s 님, 반갑습니다. ☺️", nickname)));
-    }
-
-    @PostMapping("/log-out")
-    @Operation(summary = "로그아웃", security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<ApiResponse> logout(HttpServletRequest request,
-                                              @AuthenticationPrincipal CustomUserDetail user) {
-        //토큰 없는 경우엔 필터에서 다 걸러서 여기까지 안 옴 -> 토큰은 항상 있음! 인증된 객체라는 뜻 (authenticated)
-        String token = jwtTokenProvider.resolveToken(request); //토큰 추출
-        jwtService.saveBlacklistToken(token, user.getUsername()); //액세스 토큰 저장
-
-
-        return ResponseEntity.ok(new ApiResponse(200, true, "로그아웃 처리되었습니다."));
-    }
-
     @PatchMapping("/member/change-pw")
     @Operation(summary = "비밀번호 변경", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse> updatePW(@AuthenticationPrincipal CustomUserDetail user,
@@ -126,20 +105,5 @@ public class UserController {
         userService.changeNickname(user, request);
         log.info(user.getUsername());
         return ResponseEntity.ok(new ApiResponse(200, true, "닉네임이 변경되었습니다."));
-    }
-
-    @PostMapping("/member/withdraw")
-    @Operation(summary = "회원탈퇴", security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<ApiResponse> withdraw(HttpServletRequest request,
-                                                @AuthenticationPrincipal CustomUserDetail user) {
-        //자동 로그아웃 + user 속성 바꾸기
-        String token = jwtTokenProvider.resolveToken(request); //토큰 추출
-
-        jwtService.saveBlacklistToken(token, user.getUsername()); //액세스 토큰 저장
-        //로그아웃 확인
-        log.info("cont " + redisTemplate.opsForValue().get("AT:" + token));
-        log.info("cont" + redisTemplate.opsForValue().get("RT:" + user.getUsername()));
-        userService.withdraw(user);
-        return ResponseEntity.ok(new ApiResponse(200, true, "회원탈퇴 되었습니다."));
     }
 }
