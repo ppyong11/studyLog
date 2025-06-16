@@ -21,10 +21,7 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.parameters.P;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/study-log")
@@ -65,11 +62,11 @@ public class AuthController {
 
     @PostMapping("/log-out")
     @Operation(summary = "로그아웃", security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<ApiResponse> logout(HttpServletRequest request,
+    public ResponseEntity<ApiResponse> logout(@CookieValue(value = "access-token") String accessToken,
                                               @AuthenticationPrincipal CustomUserDetail user) {
         //토큰 없는 경우엔 필터에서 다 걸러서 여기까지 안 옴 -> 토큰은 항상 있음! 인증된 객체라는 뜻 (authenticated)
-        String token = jwtTokenProvider.resolveToken(request); //토큰 추출
-        jwtService.saveBlacklistToken(token, user.getUsername()); //액세스 토큰 저장
+        //로그아웃  시 토큰 필요해서 파라미터 받기 (컨트롤러에서 필요없으면 필터에서만 검증하면 됨)
+        jwtService.saveBlacklistToken(accessToken, user.getUsername()); //액세스 토큰 저장
 
 
         return ResponseEntity.ok(new ApiResponse(200, true, "로그아웃 처리되었습니다."));
@@ -77,14 +74,12 @@ public class AuthController {
 
     @PostMapping("/member/withdraw")
     @Operation(summary = "회원탈퇴", security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<ApiResponse> withdraw(HttpServletRequest request,
+    public ResponseEntity<ApiResponse> withdraw(@CookieValue(name="access_token")String accessToken,
                                                 @AuthenticationPrincipal CustomUserDetail user) {
         //자동 로그아웃 + user 속성 바꾸기
-        String token = jwtTokenProvider.resolveToken(request); //토큰 추출
-
-        jwtService.saveBlacklistToken(token, user.getUsername()); //액세스 토큰 저장
+        jwtService.saveBlacklistToken(accessToken, user.getUsername()); //액세스 토큰 저장
         //로그아웃 확인
-        log.info("cont " + redisTemplate.opsForValue().get("AT:" + token));
+        log.info("cont " + redisTemplate.opsForValue().get("AT:" + accessToken));
         log.info("cont" + redisTemplate.opsForValue().get("RT:" + user.getUsername()));
         userService.withdraw(user);
         return ResponseEntity.ok(new ApiResponse(200, true, "회원탈퇴 되었습니다."));
@@ -92,8 +87,10 @@ public class AuthController {
 
     @PostMapping("/refresh")
     @Operation(summary = "액세스 토큰 재발급")
-    public ResponseEntity<ApiResponse> refreshAccessToken(HttpServletRequest request, HttpServletResponse response) {
-        String refreshToken= extractCookie(request, "refresh_token");
+    public ResponseEntity<ApiResponse> refreshAccessToken(@CookieValue(name="refresh_token", required = false)String refreshToken,
+                                                          HttpServletResponse response) {
+        //permitAll 경로라 필터에서 쿠키 있든 없든 컨트롤러 호출 O
+        //컨트롤러에서 RT 써야 해서 파라미터로 꺼냄
         if(refreshToken == null) { //쿠키에 토큰 X
             throw new JwtException("재발급 검증에 필요한 토큰이 없습니다.");
         }
@@ -109,7 +106,7 @@ public class AuthController {
         JwtToken newToken= jwtService.createNewToken(userId);
         ResponseCookie accessCookie= ResponseCookie.from("access_token", newToken.getAccessToken())
                 .httpOnly(true)
-                .secure(false) //아직 http
+                .secure(true) //아직 http
                 .path("/")
                 .sameSite("None")
                 .maxAge(60*60) //1시간 후 만료
@@ -117,24 +114,12 @@ public class AuthController {
 
         ResponseCookie refreshCookie= ResponseCookie.from("refresh_token", newToken.getRefreshToken())
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .path("/study-log/refresh") //재발급 경로
                 .maxAge(7*24*60*60) //7일
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
         return ResponseEntity.ok(new ApiResponse(200, true, "로그인이 연장되었습니다."));
-    }
-
-    //쿠키에서 토큰 출력
-    private String extractCookie(HttpServletRequest request, String name) {
-        if(request.getCookies() == null) return null;
-        for (Cookie cookie : request.getCookies()) {
-            log.info("쿠키 꺼냄: {}", cookie);
-            if (cookie.getName().equals(name)) {
-                return cookie.getValue();
-            }
-        }
-        return null;
     }
 }

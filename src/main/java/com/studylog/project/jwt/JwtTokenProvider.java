@@ -5,6 +5,7 @@ import com.studylog.project.user.UserRepository;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -130,12 +131,18 @@ public class JwtTokenProvider {
     }
 
     //헤더에서 토큰 정보 추출
-    public String resolveToken(HttpServletRequest request) {
-        String bearerToken= request.getHeader("Authorization");
-        if(StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer")) {
-            log.info("토큰 추출: {}", bearerToken.substring(7));
-            return bearerToken.substring(7);
+    public String resolveAccessToken(HttpServletRequest request) {
+        Cookie[] cookies= request.getCookies(); //쿠키 꺼내가
+        String token= null;
+
+        if(cookies != null){
+            for (Cookie cookie : cookies) {
+                if(cookie.getName().equals("access_token")){
+                    token= cookie.getValue(); //액세스 토큰 꺼내기
+                    break; //있으면 for문 종료 -> return문 바로 감
+                }
+            }
         }
-        return null;
+        return token; //없으면 null 반환
     }
 }
