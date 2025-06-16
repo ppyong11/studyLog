@@ -21,7 +21,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws IOException, ServletException {
             String token = jwtTokenProvider.resolveAccessToken(request); //request에서 쿠키 꺼내서 검증
-
+            log.info("JWT token: {}", token);
             if (token != null && jwtTokenProvider.validateToken(token)) {
                 // 인증 객체 생성
                 Authentication authentication = jwtTokenProvider.getAuthentication(token);

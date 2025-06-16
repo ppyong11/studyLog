@@ -7,6 +7,7 @@ import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
@@ -43,12 +44,12 @@ public class JwtService {
         //3. 인증 정보를 기반으로 JWT 토큰 생성
         JwtToken jwtToken= jwtTokenProvider.createToken(authentication);
         String rt= jwtToken.getRefreshToken(); //검증 후에 토큰 만드니까 오류 X
-        saveToken("RT:" + id, rt, null); //리프레시 토큰 저장 (id -> 토큰)
-        saveToken("RT:" + rt, id, null); //양방향 저장 (토큰 -> id)
+        saveToken("RT:" + id, rt, null, null); //리프레시 토큰 저장 (id -> 토큰)
+        saveToken("RT:" + rt, rt, id, null); //양방향 저장 (토큰 -> id)
         return jwtToken;
     }
 
-    public void saveToken(String key, String token, String state) {
+    public void saveToken(String key, String token, String userId, String state) {
         Claims claims= jwtTokenProvider.parseClaims(token);
         Date now= new Date();
         Date expiration= claims.getExpiration();
@@ -57,7 +58,12 @@ public class JwtService {
         if (state == null) {
             //리프레시 저장
             try {
-                redisTemplate.opsForValue().set(key, token, TTL, TimeUnit.MILLISECONDS);
+                if (userId != null){
+                    //키값- RT: 토큰, 값- userId
+                    redisTemplate.opsForValue().set(key, userId, TTL, TimeUnit.MILLISECONDS);
+                } else {
+                    redisTemplate.opsForValue().set(key, token, TTL, TimeUnit.MILLISECONDS);
+                }
             } catch (Exception e) {
                 throw new RuntimeException(e.getMessage()); //잡아서 에러 던짐
             }
@@ -77,7 +83,7 @@ public class JwtService {
 
     //블랙리스트 저장 (로그아웃)
     public void saveBlacklistToken(String token, String userId){
-        saveToken("AT:"+ token, token, "로그아웃"); //액세스 저장
+        saveToken("AT:"+ token, token, null, "로그아웃"); //액세스 저장
         String refreshToken= redisTemplate.opsForValue().get("RT:"+ userId);
         //accessToken 검증 후라서 보안 문제 약함 + 리프레시 바로 삭제
         redisTemplate.delete("RT:"+ userId); //리프레시 토큰 삭제 (강제 무효화)
@@ -95,7 +101,27 @@ public class JwtService {
         Authentication authentication= new UsernamePasswordAuthenticationToken(userEntity.getId(), null, authorities);
         JwtToken newToken= jwtTokenProvider.createToken(authentication);
         return newToken;
+    }
 
+    //쿠키 생성
+    public String createCookie(String name, String token, String path, long expTime){
+        return ResponseCookie.from(name, token)
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("None")
+                .maxAge(expTime) //1시간 후 만료
+                .build().toString();
+
+    }
+    //쿠키 삭제
+    public String deleteCookie(String name, String path){
+        return ResponseCookie.from(name, "")
+                .httpOnly(true)
+                .secure(true)
+                .path(path) //생성할 때 넣은 path로 설
+                .sameSite("None")
+                .maxAge(0) //바로 만료
+                .build().toString();
     }
 
 }

@@ -40,34 +40,40 @@ public class AuthController {
         log.info("요청- ID: {}, PW: {}", request.getId(), request.getPw());
         log.info("AccessToken: {}, RefreshToken: {}", jwtToken.getAccessToken(), jwtToken.getRefreshToken());
         String nickname = userService.getNickname(request);
-        ResponseCookie accessCookie= ResponseCookie.from("access_token", jwtToken.getAccessToken())
-                .httpOnly(true)
-                .secure(false) //아직 http
-                .path("/")
-                .sameSite("None")
-                .maxAge(60*60) //1시간 후 만료
-                .build();
+        String accessCookie= jwtService.createCookie("access_token",jwtToken.getAccessToken(),
+                "/", 60*60); //60분
 
-        ResponseCookie refreshCookie= ResponseCookie.from("refresh_token", jwtToken.getRefreshToken())
-                .httpOnly(true)
-                .secure(false)
-                .path("/study-log/refresh") //재발급 경로
-                .maxAge(7*24*60*60) //7일
-                .build();
+        String refreshCookie= jwtService.createCookie("refresh_token", jwtToken.getRefreshToken(),
+                "/study-log/refresh", 7*24*60*60); //7일
 
-        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
-        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie);
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie);
         return ResponseEntity.ok(new ApiResponse(200, true, String.format("%s 님, 반갑습니다. ☺️", nickname)));
     }
 
     @PostMapping("/log-out")
     @Operation(summary = "로그아웃", security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<ApiResponse> logout(@CookieValue(value = "access-token") String accessToken,
+    public ResponseEntity<ApiResponse> logout(@CookieValue(name="access_token")String accessToken,
+                                              HttpServletResponse response,
                                               @AuthenticationPrincipal CustomUserDetail user) {
         //토큰 없는 경우엔 필터에서 다 걸러서 여기까지 안 옴 -> 토큰은 항상 있음! 인증된 객체라는 뜻 (authenticated)
-        //로그아웃  시 토큰 필요해서 파라미터 받기 (컨트롤러에서 필요없으면 필터에서만 검증하면 됨)
+        //로그아웃  시 액세스 토큰 필요해서 파라미터 받기 (컨트롤러에서 필요없으면 필터에서만 검증하면 됨)
         jwtService.saveBlacklistToken(accessToken, user.getUsername()); //액세스 토큰 저장
 
+        ResponseCookie deleteAccessCookie= ResponseCookie.from("access_token", "")
+                .httpOnly(true)
+                .secure(true)
+                .maxAge(0)
+                .path("/") //쿠키 줄 때 넣은 path 값으로
+                .build();
+        ResponseCookie deleteRefreshCookie= ResponseCookie.from("refresh_token", "")
+                .httpOnly(true)
+                .secure(true)
+                .maxAge(0)
+                .path("/study-log/refresh")
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, deleteAccessCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, deleteRefreshCookie.toString());
 
         return ResponseEntity.ok(new ApiResponse(200, true, "로그아웃 처리되었습니다."));
     }
@@ -91,6 +97,7 @@ public class AuthController {
                                                           HttpServletResponse response) {
         //permitAll 경로라 필터에서 쿠키 있든 없든 컨트롤러 호출 O
         //컨트롤러에서 RT 써야 해서 파라미터로 꺼냄
+        log.info("refresh token: " + refreshToken);
         if(refreshToken == null) { //쿠키에 토큰 X
             throw new JwtException("재발급 검증에 필요한 토큰이 없습니다.");
         }
@@ -103,23 +110,16 @@ public class AuthController {
             log.warn("로그아웃 및 탈퇴한 회원이거나 이전에 사용한 리프레시 토큰으로 access token 재발급 실패");
             throw new JwtException("유효하지 않은 토큰입니다.");
         }
+        log.info("재발급 전 refresh: {}", refreshToken);
         JwtToken newToken= jwtService.createNewToken(userId);
-        ResponseCookie accessCookie= ResponseCookie.from("access_token", newToken.getAccessToken())
-                .httpOnly(true)
-                .secure(true) //아직 http
-                .path("/")
-                .sameSite("None")
-                .maxAge(60*60) //1시간 후 만료
-                .build();
-
-        ResponseCookie refreshCookie= ResponseCookie.from("refresh_token", newToken.getRefreshToken())
-                .httpOnly(true)
-                .secure(true)
-                .path("/study-log/refresh") //재발급 경로
-                .maxAge(7*24*60*60) //7일
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
-        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+        String accessCookie= jwtService.createCookie("access_token", newToken.getAccessToken(),
+                "/", 60*60);
+        log.info("재발급 후 access: {}", newToken.getAccessToken());
+        String refreshCookie= jwtService.createCookie("refresh_token", newToken.getRefreshToken(),
+                "/study-log/refresh", 7*24*60*60);
+        log.info("재발급 후 refresh: {}", newToken.getRefreshToken());
+        response.addHeader(HttpHeaders.SET_COOKIE, accessCookie);
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie);
         return ResponseEntity.ok(new ApiResponse(200, true, "로그인이 연장되었습니다."));
     }
 }
