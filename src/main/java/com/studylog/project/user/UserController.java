@@ -35,6 +35,29 @@ public class UserController {
     private final MailService mailService;
     private final RedisTemplate<String, String> redisTemplate;
 
+    @GetMapping("")
+    public ResponseEntity<ApiResponse> mainPage(@AuthenticationPrincipal CustomUserDetail customUserDetail) {
+        //permitAll 경로
+        if(customUserDetail == null) {
+            //액세스 토큰 X 경우 (비회원)
+            return ResponseEntity.ok(new ApiResponse(200, true, "비회원 메인 페이지입니다."));
+        } else{
+            //나중에 DTO 보내기
+            return ResponseEntity.ok(new ApiResponse(200, true, "비회원 메인 페이지입니다."));
+        }
+    }
+    @GetMapping("/")
+    public ResponseEntity<ApiResponse> mainPage2(@AuthenticationPrincipal CustomUserDetail customUserDetail) {
+        //permitAll 경로
+        if(customUserDetail == null) {
+            //액세스 토큰 X 경우 (비회원)
+            return ResponseEntity.ok(new ApiResponse(200, true, "비회원 메인 페이지입니다."));
+        } else{
+            //나중에 DTO 보내기
+            return ResponseEntity.ok(new ApiResponse(200, true, "비회원 메인 페이지입니다."));
+        }
+    }
+
     @GetMapping("/sign-in/check-info")
     public ResponseEntity<ApiResponse> check(@RequestParam(required = false) String id,
                                              @RequestParam(required = false) String nickname) {

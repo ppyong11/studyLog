@@ -106,7 +106,7 @@ public class JwtService {
         return ResponseCookie.from(name, token)
                 .httpOnly(true)
                 .secure(true)
-                .sameSite("None")
+                .sameSite("Lax")
                 .maxAge(expTime) //1시간 후 만료
                 .build().toString();
 
