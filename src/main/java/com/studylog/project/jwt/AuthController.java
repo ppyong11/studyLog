@@ -3,24 +3,17 @@ package com.studylog.project.jwt;
 import com.studylog.project.global.exception.JwtException;
 import com.studylog.project.global.response.ApiResponse;
 import com.studylog.project.user.LogInRequest;
-import com.studylog.project.user.UserEntity;
 import com.studylog.project.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -60,20 +53,10 @@ public class AuthController {
         //로그아웃  시 액세스 토큰 필요해서 파라미터 받기 (컨트롤러에서 필요없으면 필터에서만 검증하면 됨)
         jwtService.saveBlacklistToken(accessToken, user.getUsername()); //액세스 토큰 저장
 
-        ResponseCookie deleteAccessCookie= ResponseCookie.from("access_token", "")
-                .httpOnly(true)
-                .secure(true)
-                .maxAge(0)
-                .path("/") //쿠키 줄 때 넣은 path 값으로
-                .build();
-        ResponseCookie deleteRefreshCookie= ResponseCookie.from("refresh_token", "")
-                .httpOnly(true)
-                .secure(true)
-                .maxAge(0)
-                .path("/study-log/refresh")
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, deleteAccessCookie.toString());
-        response.addHeader(HttpHeaders.SET_COOKIE, deleteRefreshCookie.toString());
+        String deleteAccessCookie= jwtService.deleteCookie("access_token", "/");
+        String deleteRefreshCookie= jwtService.deleteCookie("refresh_token", "/study-log/refresh");
+        response.addHeader(HttpHeaders.SET_COOKIE, deleteAccessCookie);
+        response.addHeader(HttpHeaders.SET_COOKIE, deleteRefreshCookie);
 
         return ResponseEntity.ok(new ApiResponse(200, true, "로그아웃 처리되었습니다."));
     }
@@ -81,12 +64,15 @@ public class AuthController {
     @PostMapping("/member/withdraw")
     @Operation(summary = "회원탈퇴", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse> withdraw(@CookieValue(name="access_token")String accessToken,
+                                                HttpServletResponse response,
                                                 @AuthenticationPrincipal CustomUserDetail user) {
         //자동 로그아웃 + user 속성 바꾸기
         jwtService.saveBlacklistToken(accessToken, user.getUsername()); //액세스 토큰 저장
-        //로그아웃 확인
-        log.info("cont " + redisTemplate.opsForValue().get("AT:" + accessToken));
-        log.info("cont" + redisTemplate.opsForValue().get("RT:" + user.getUsername()));
+        String deleteAccessCookie= jwtService.deleteCookie("access_token", "/");
+        String deleteRefreshCookie= jwtService.deleteCookie("refresh_token", "/study-log/refresh");
+        response.addHeader(HttpHeaders.SET_COOKIE, deleteAccessCookie);
+        response.addHeader(HttpHeaders.SET_COOKIE, deleteRefreshCookie);
+
         userService.withdraw(user);
         return ResponseEntity.ok(new ApiResponse(200, true, "회원탈퇴 되었습니다."));
     }

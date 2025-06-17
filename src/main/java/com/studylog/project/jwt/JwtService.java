@@ -1,6 +1,5 @@
 package com.studylog.project.jwt;
 
-import com.studylog.project.global.exception.LogoutFaildException;
 import com.studylog.project.user.UserEntity;
 import com.studylog.project.user.UserRepository;
 import io.jsonwebtoken.Claims;
@@ -16,7 +15,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.NoSuchElementException;
