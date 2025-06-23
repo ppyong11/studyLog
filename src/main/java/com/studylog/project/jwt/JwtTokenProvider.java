@@ -49,7 +49,7 @@ public class JwtTokenProvider {
         long now= (new Date().getTime()); //현재 시간 저장
 
         //Access Token 생성
-        Date accessTokenExpire= new Date(now + (60*60*1000)); //현재 시간 + 60분(ms)
+        Date accessTokenExpire= new Date(now + (15*60*1000)); //현재 시간 + 60분(ms)
         String accessToken= Jwts.builder()
                 .setSubject(authentication.getName()) //사용자 이름 (토큰 주인)
                 .claim("auth", authority) //사용자 권한 정보

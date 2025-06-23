@@ -82,4 +82,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(httpStatus)
                 .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
     }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiResponse> handleSignup(BadRequestException e) {
+        HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(httpStatus)
+                .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
+    }
 }
