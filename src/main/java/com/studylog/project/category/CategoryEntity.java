@@ -27,4 +27,8 @@ public class CategoryEntity {
         this.user = user_id;
         this.category_name = category_name;
     }
+
+    public void setCategory_name(String name) {
+        this.category_name = name;
+    }
 }
