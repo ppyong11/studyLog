@@ -20,15 +20,17 @@ public class CategoryEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
-    private String category_name;
+    @Column(name="category_name")
+    private String name;
 
     @Builder
     public CategoryEntity(UserEntity user_id, String category_name) {
         this.user = user_id;
-        this.category_name = category_name;
+        this.name = category_name;
     }
 
+    //카테고리 수정
     public void setCategory_name(String name) {
-        this.category_name = name;
+        this.name = name;
     }
 }

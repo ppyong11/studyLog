@@ -89,4 +89,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(httpStatus)
                 .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
     }
+
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ApiResponse> handleNotFound(NotFoundException e) {
+        HttpStatus httpStatus = HttpStatus.NOT_FOUND;
+        return ResponseEntity.status(httpStatus)
+                .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse> handleAccessDenied(AccessDeniedException e) {
+        HttpStatus httpStatus = HttpStatus.FORBIDDEN;
+        return ResponseEntity.status(httpStatus)
+                .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
+    }
 }

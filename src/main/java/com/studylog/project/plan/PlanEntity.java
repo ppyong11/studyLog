@@ -50,4 +50,8 @@ public class PlanEntity {
         this.plan_minutes = plan_minutes;
         this.plan_status = plan_status;
     } //plan_id는 DB에서 자동 설정
+
+    public void updateCategory(CategoryEntity category_id) {
+        this.category = category_id;
+    }
 }

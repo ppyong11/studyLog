@@ -50,4 +50,10 @@ public class BoardEntity {
         this.upload_at = uploadAt;
         //프론트에서 기존 내용+변경 내용 같이 보냄 (변경 안 된 필드는 기존 필드로)
     }
+
+    //카테고리 수정
+    public void updateCategory(CategoryEntity id, LocalDateTime uploadAt) {
+        this.category = id;
+        this.upload_at = uploadAt;
+    }
 }
