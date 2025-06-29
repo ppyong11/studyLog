@@ -1,5 +1,6 @@
 package com.studylog.project.user;
 
+import com.studylog.project.category.CategoryService;
 import com.studylog.project.global.exception.*;
 import com.studylog.project.jwt.CustomUserDetail;
 import jakarta.transaction.Transactional;
@@ -24,12 +25,14 @@ public class UserService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final RedisTemplate<String, String> redisTemplate; //제네릭 타입 명시
+    private final CategoryService categoryService;
 
     /* @RequiredArgsConstructor 사용으로 생략
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }*/
 
+    @Transactional
     //회원 DB에 저장
     public void register(SignInRequest user) {
         if(existsId(user.getId())){
@@ -49,6 +52,10 @@ public class UserService {
         UserEntity userEntity = user.toEntity();
         userEntity.setEncodedPw(encryptedPw); //빌더 객체 pw 값 바뀜
         userRepository.save(userEntity);
+        userRepository.flush(); //userEntity DB에 저장 후 카테고리 넣기
+        //위에 거 안 하면 메서드 다 끝나고 user 테이블에 저장해서 아래 코드 오류남 (엔티티 X)
+        log.info("{}", userEntity.getUser_id());
+        categoryService.defaultCategory(userEntity);
     }
     //로그인한 유저 닉네임 반환
     public String getNickname(LogInRequest request){

@@ -34,7 +34,7 @@ public class AuthController {
         log.info("AccessToken: {}, RefreshToken: {}", jwtToken.getAccessToken(), jwtToken.getRefreshToken());
         String nickname = userService.getNickname(request);
         String accessCookie= jwtService.createCookie("access_token",jwtToken.getAccessToken(),
-                "/", 60*60); //60분
+                "/", 30*60); //60분
 
         String refreshCookie= jwtService.createCookie("refresh_token", jwtToken.getRefreshToken(),
                 "/study-log/refresh", 7*24*60*60); //7일

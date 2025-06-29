@@ -27,7 +27,6 @@ public class CategoryService {
     private final CategoryRepository categoryRepository;
     private final PlanRepository planRepository;
     private final BoardRepository boardRepository;
-    private final UserService userService;
 
     public void defaultCategory(UserEntity user) {
         CategoryEntity category = CategoryEntity.builder()
@@ -39,6 +38,7 @@ public class CategoryService {
     }
 
     public void addCategory(CategoryRequest request, UserEntity user) {
+        log.info("{}",user.getUser_id());
         if (categoryRepository.existsByUserAndName(user, request.getName())){
             throw new DuplicateException("동일한 카테고리가 있습니다.");
         }
@@ -57,10 +57,10 @@ public class CategoryService {
         //카테고리 소유자가 아니라면
         if (!category.getUser().getId().equals(user.getId()))
             throw new AccessDeniedException("요청 권한이 없습니다.");
-        if (categoryRepository.existsByUserAndName(user, request.getName()))
-            throw new DuplicateException("동일한 카테고리가 있습니다.");
         if(category.getName().equals("기타"))
             throw new BadRequestException("해당 카테고리는 수정할 수 없습니다.");
+        if (categoryRepository.existsByUserAndName(user, request.getName()))
+            throw new DuplicateException("동일한 카테고리가 있습니다.");
         category.setCategory_name(request.getName());
     }
 
@@ -88,6 +88,7 @@ public class CategoryService {
         for (BoardEntity board : boards) {
             board.updateCategory(defaultCategory, LocalDateTime.now());
         }
+        categoryRepository.delete(category);
     }
 }
 

@@ -8,14 +8,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.when;
 
 @WebMvcTest(UserController.class)
-@WithMockUser
 public class Controller {
     @Autowired
     private MockMvc mockMvc;
@@ -27,16 +30,24 @@ public class Controller {
 
 
     @Test
-    void id_닉네임_동시_입력시_에러() throws Exception {
-        mockMvc.perform(get("/study-log/sign-in/check-info")
-                        .param("id", "test")
-                        .param("nickname", "테스트"))
-                .andExpect(status().isBadRequest());
+    void 메일_보내기() throws Exception {
+        when(userService.existsEmail(anyString())).thenReturn(false);
+        doNothing().when(mailService).sendEmailCode(anyString());
+        mockMvc.perform(
+                post("/study-log/sign-in/send-email-code")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"mncxbv1120@gmail.com\",\"code\":\"\"}")
+        )
+                .andExpect(status().isOk());
     }
-
+/*
     @Test
-    void 아무_값도_없는_경우_에러() throws Exception {
-        mockMvc.perform(get("/study-log/sign-in/check-info"))
+    void 메일_검증() throws Exception {
+        mockMvc.perform(
+                post("/study-log/sign-in/verify-email-code")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"mncxbv1120@gmail.com\",\"code\":\"hello world\"}")
+                )
                 .andExpect(status().isBadRequest());
-    }
+    }*/
 }
