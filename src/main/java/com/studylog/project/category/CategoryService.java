@@ -17,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 @Slf4j
@@ -37,6 +39,21 @@ public class CategoryService {
         log.info("기본 카테고리 저장 완료");
     }
 
+    //카테고리 전체 조회
+    public List<CategoryResponse> getCategories(UserEntity user) {
+        List<CategoryEntity> categories = categoryRepository.findByUserOrderByName(user);
+        if (categories.isEmpty()) {
+            throw new NoSuchElementException("카테고리가 존재하지 않습니다.");
+        }
+        //entity to reponseDTO 변환
+        List<CategoryResponse> response = new ArrayList<>();
+        for(CategoryEntity category : categories) {
+            //dto 객체 생성하면서 추가
+            response.add(new CategoryResponse(category.getId(), category.getName()));
+        }
+        return response;
+    }
+
     public void addCategory(CategoryRequest request, UserEntity user) {
         log.info("{}",user.getUser_id());
         if (categoryRepository.existsByUserAndName(user, request.getName())){
@@ -53,10 +70,10 @@ public class CategoryService {
     public void updateCategory(Long id, CategoryRequest request, UserEntity user) {
         //카테고리 엔티티 가져옴
         CategoryEntity category= categoryRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("해당 카테고리 없음"));
+                .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다."));
         //카테고리 소유자가 아니라면
         if (!category.getUser().getId().equals(user.getId()))
-            throw new AccessDeniedException("요청 권한이 없습니다.");
+            throw new NotFoundException("존재하지 않는 카테고리입니다.");
         if(category.getName().equals("기타"))
             throw new BadRequestException("해당 카테고리는 수정할 수 없습니다.");
         if (categoryRepository.existsByUserAndName(user, request.getName()))
@@ -67,10 +84,10 @@ public class CategoryService {
     public void delCategory(Long id, UserEntity user) {
         //카테고리 엔티티 가져옴
         CategoryEntity category= categoryRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("해당 카테고리 없음"));
+                .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다."));
         //카테고리 소유자가 아니라면
         if (!category.getUser().getId().equals(user.getId()))
-            throw new AccessDeniedException("요청 권한이 없습니다.");
+            throw new NotFoundException("존재하지 않는 카테고리입니다.");
         if (category.getName().equals("기타"))
             throw new BadRequestException("해당 카테고리는 삭제할 수 없습니다.");
 

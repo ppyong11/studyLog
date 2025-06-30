@@ -15,7 +15,8 @@ import java.time.LocalTime;
 public class PlanEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long plan_id;
+    @Column(name= "plan_id")
+    private Long id;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
@@ -33,7 +34,8 @@ public class PlanEntity {
 
     @Column(nullable = false)
     private LocalDate end_date; //미지정 시 start_date와 같음
-    private int plan_minutes;
+
+    private int plan_minutes; //시간 지정
 
     @Column(nullable = false)
     private boolean plan_status; //계획 생성 시 0으로 설정
@@ -47,7 +49,7 @@ public class PlanEntity {
         this.plan_name = plan_name;
         this.start_date = start_date;
         this.end_date = end_date;
-        this.plan_minutes = plan_minutes;
+        this.plan_minutes = plan_minutes; //미지정 시 0
         this.plan_status = plan_status;
     } //plan_id는 DB에서 자동 설정
 

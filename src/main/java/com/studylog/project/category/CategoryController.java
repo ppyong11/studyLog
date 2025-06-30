@@ -10,14 +10,27 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Controller
 @Slf4j
-@RequestMapping("study-log/plan/categories")
+@RequestMapping("study-log/categories")
 @RequiredArgsConstructor
 public class CategoryController {
     private final CategoryService categoryService;
+    //카테고리 전체 조회
+    @GetMapping("")
+    public ResponseEntity<List<CategoryResponse>> getCategories(@AuthenticationPrincipal CustomUserDetail user) {
+        List<CategoryResponse> categoryList= categoryService.getCategories(user.getUser());
+        return ResponseEntity.ok(categoryList);
+    }
+
+    //카테고리에 해당하는 계획 조회
+
+    //카테고리에 해당하는 글 조회
+
     //카테고리 추가
-    @PostMapping("/add-cate")
+    @PostMapping("")
     public ResponseEntity<ApiResponse> newCategory(@Valid @RequestBody CategoryRequest request,
                                                    @AuthenticationPrincipal CustomUserDetail user) {
         categoryService.addCategory(request, user.getUser());
@@ -25,7 +38,7 @@ public class CategoryController {
     }
 
     //카테고리 수정
-    @PatchMapping("/update/{categoryId}")
+    @PatchMapping("/{categoryId}")
     public ResponseEntity<ApiResponse> updateCategory(@PathVariable Long categoryId,
                                                       @Valid @RequestBody CategoryRequest request,
                                                       @AuthenticationPrincipal CustomUserDetail user) {
@@ -34,7 +47,7 @@ public class CategoryController {
     }
 
     //카테고리 삭제
-    @DeleteMapping("/delete/{categoryId}")
+    @DeleteMapping("/{categoryId}")
     public ResponseEntity<ApiResponse> delCategory(@PathVariable Long categoryId,
                                                    @AuthenticationPrincipal CustomUserDetail user) {
         categoryService.delCategory(categoryId, user.getUser());
