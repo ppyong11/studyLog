@@ -10,6 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Service
 @Slf4j
 @Transactional
@@ -18,6 +21,22 @@ public class PlanService {
     private final PlanRepository planRepository;
     private final CategoryRepository categoryRepository;
 
+    public List<PlanResponse> getPlans(UserEntity user) {
+        List<PlanEntity> plans= planRepository.findAllByUser(user);
+        List<PlanResponse> responses = new ArrayList<>();
+        for (PlanEntity plan : plans) {
+            responses.add(new PlanResponse(plan.getId(), plan.getPlan_name(), plan.getStartDate(),
+                    plan.getEndDate(), plan.getMinutes(), plan.isStatus()));
+        }
+        return responses;
+    }
+
+    public PlanResponse getPlan(Long planId, UserEntity user) {
+        PlanEntity plan= planRepository.findByUserAndId(user, planId)
+                .orElseThrow(() -> new NotFoundException("존재하지 않는 계획입니다."));
+        return new PlanResponse(plan.getId(), plan.getPlan_name(), plan.getStartDate(),
+                plan.getEndDate(), plan.getMinutes(), plan.isStatus());
+    }
     public void addPlan(PlanCreateRequest request, UserEntity user) {
         //유저에게 존재하지 않는 카테고리일 경우
         if (!categoryRepository.existsByUserAndId(user, request.getCategory())){

@@ -2,16 +2,16 @@ package com.studylog.project.plan;
 
 import com.studylog.project.global.response.ApiResponse;
 import com.studylog.project.jwt.CustomUserDetail;
+import com.studylog.project.user.UserEntity;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Controller
 @Slf4j
@@ -19,6 +19,25 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("study-log/plans")
 public class PlanController {
     private final PlanService planService;
+
+    //전체 계획 조회
+    @GetMapping("")
+    public ResponseEntity<List<PlanResponse>> getPlans(@AuthenticationPrincipal CustomUserDetail user) {
+        List<PlanResponse> planList= planService.getPlans(user.getUser());
+        return ResponseEntity.ok(planList);
+    }
+
+    //계획 하나 조회
+    @GetMapping("{planId}")
+    public ResponseEntity<PlanResponse> getPlan(@PathVariable Long planId,
+                                                @AuthenticationPrincipal CustomUserDetail user) {
+        PlanResponse plan= planService.getPlan(planId, user.getUser());
+        return ResponseEntity.ok(plan);
+    }
+    //카테고리별 계획 조회
+
+    //계획 선택 조회
+
     //계획 등록
     @PostMapping("")
     public ResponseEntity<ApiResponse> setPlan(@Valid @RequestBody PlanCreateRequest request,
@@ -26,4 +45,9 @@ public class PlanController {
         planService.addPlan(request, user.getUser());
         return ResponseEntity.ok(new ApiResponse(200, true, "계획이 저장되었습니다."));
     }
+
+    //계획 수정
+    @PatchMapping("")
+    public ResponseEntity<ApiResponse> updatePlan(@RequestBody PlanUpdateRequest request,
+                                                  @AuthenticationPrincipal CustomUserDetail user) {}
 }

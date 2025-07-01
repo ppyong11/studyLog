@@ -41,7 +41,7 @@ public class CategoryService {
 
     //카테고리 전체 조회
     public List<CategoryResponse> getCategories(UserEntity user) {
-        List<CategoryEntity> categories = categoryRepository.findByUserOrderByName(user);
+        List<CategoryEntity> categories = categoryRepository.findAllByUserOrderByName(user);
         if (categories.isEmpty()) {
             throw new NoSuchElementException("카테고리가 존재하지 않습니다.");
         }

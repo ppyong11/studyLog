@@ -29,16 +29,17 @@ public class PlanEntity {
     @Column(nullable = false)
     private String plan_name;
 
-    @Column(nullable = false)
-    private LocalDate start_date;
+    @Column(name= "start_date",nullable = false)
+    private LocalDate startDate;
 
-    @Column(nullable = false)
-    private LocalDate end_date; //미지정 시 start_date와 같음
+    @Column(name= "end_date",nullable = false)
+    private LocalDate endDate; //미지정 시 start_date와 같음
 
-    private int plan_minutes; //시간 지정
+    @Column(name="plan_minutes")
+    private int minutes; //시간 지정
 
-    @Column(nullable = false)
-    private boolean plan_status; //계획 생성 시 0으로 설정
+    @Column(name = "plan_status",nullable = false)
+    private boolean status; //계획 생성 시 0으로 설정
 
     @Builder
     public PlanEntity (UserEntity user_id, CategoryEntity category_id, String plan_name,
@@ -47,10 +48,10 @@ public class PlanEntity {
         this.user = user_id;
         this.category = category_id;
         this.plan_name = plan_name;
-        this.start_date = start_date;
-        this.end_date = end_date;
-        this.plan_minutes = plan_minutes; //미지정 시 0
-        this.plan_status = plan_status;
+        this.startDate = start_date;
+        this.endDate = end_date;
+        this.minutes = plan_minutes; //미지정 시 0
+        this.status = plan_status;
     } //plan_id는 DB에서 자동 설정
 
     public void updateCategory(CategoryEntity category_id) {
