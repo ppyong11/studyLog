@@ -10,8 +10,9 @@ import java.time.LocalDate;
 public class PlanResponse {
     private Long planId;
     private String planName;
+    private String category;
     private LocalDate planStart;
     private LocalDate planEnd;
-    private int planMinutes;
+    private Integer planMinutes;
     private boolean planStatus;
 }

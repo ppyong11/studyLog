@@ -11,7 +11,7 @@ import java.time.LocalDate;
 
 @NoArgsConstructor
 @Getter
-public class PlanCreateRequest {
+public class PlanRequest {
     @NotBlank(message= "계획명을 입력해 주세요.")
     private String planName;
     @NotNull(message = "카테고리를 선택해 주세요.")
@@ -22,18 +22,16 @@ public class PlanCreateRequest {
     private LocalDate startDate;
     @NotNull(message = "종료 날짜를 입력해 주세요.")
     private LocalDate endDate;
-
-    private int planMinutes;
-
+    @NotNull(message = "시간을 입력해 주세요.")
+    private Integer planMinutes;
     public PlanEntity toEntity(UserEntity user, CategoryEntity category) {
         return PlanEntity.builder()
                 .user_id(user)
                 .category_id(category)
                 .plan_name(this.planName)
-                .start_date(this.startDate)
-                .end_date(this.endDate)
-                .plan_minutes(this.planMinutes)
-                .plan_status(false)
+                .startDate(this.startDate)
+                .endDate(this.endDate)
+                .minutes(this.planMinutes)
                 .build();
     }
 }

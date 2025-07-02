@@ -2,7 +2,6 @@ package com.studylog.project.plan;
 
 import com.studylog.project.global.response.ApiResponse;
 import com.studylog.project.jwt.CustomUserDetail;
-import com.studylog.project.user.UserEntity;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,14 +39,35 @@ public class PlanController {
 
     //계획 등록
     @PostMapping("")
-    public ResponseEntity<ApiResponse> setPlan(@Valid @RequestBody PlanCreateRequest request,
+    public ResponseEntity<ApiResponse> setPlan(@Valid @RequestBody PlanRequest request,
                                                @AuthenticationPrincipal CustomUserDetail user) {
         planService.addPlan(request, user.getUser());
         return ResponseEntity.ok(new ApiResponse(200, true, "계획이 저장되었습니다."));
     }
 
+    //계획 상태 수정
+    @PatchMapping("{planId}/status")
+    public ResponseEntity<ApiResponse> setPlanStatus(@PathVariable Long planId,
+                                                     @RequestParam("status") boolean status,
+                                                     @AuthenticationPrincipal CustomUserDetail user) {
+        planService.updateStatus(planId, status, user.getUser());
+        return ResponseEntity.ok(new ApiResponse(200, true, "계획 상태가 변경되었습니다."));
+    }
+
     //계획 수정
-    @PatchMapping("")
-    public ResponseEntity<ApiResponse> updatePlan(@RequestBody PlanUpdateRequest request,
-                                                  @AuthenticationPrincipal CustomUserDetail user) {}
+    @PatchMapping("{planId}")
+    public ResponseEntity<ApiResponse> updatePlan(@PathVariable Long planId,
+                                                  @Valid @RequestBody PlanRequest request,
+                                                  @AuthenticationPrincipal CustomUserDetail user) {
+        planService.updatePlan(planId, request, user.getUser());
+        return ResponseEntity.ok(new ApiResponse(200, true, "계획이 수정되었습니다."));
+    }
+
+    //계획 삭제
+    @DeleteMapping("{planId}")
+    public ResponseEntity<ApiResponse> deletePlan(@PathVariable Long planId,
+                                                  @AuthenticationPrincipal CustomUserDetail user) {
+        planService.deletePlan(planId, user.getUser());
+        return ResponseEntity.ok(new ApiResponse(200, true, "계획이 삭제되었습니다."));
+    }
 }

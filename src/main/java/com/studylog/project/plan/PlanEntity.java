@@ -1,9 +1,12 @@
 package com.studylog.project.plan;
 
 import com.studylog.project.category.CategoryEntity;
+import com.studylog.project.category.CategoryRequest;
+import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -12,6 +15,7 @@ import java.time.LocalTime;
 @Getter
 @Table(name= "plan")
 @Entity
+@Slf4j
 public class PlanEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,25 +40,56 @@ public class PlanEntity {
     private LocalDate endDate; //미지정 시 start_date와 같음
 
     @Column(name="plan_minutes")
-    private int minutes; //시간 지정
+    private Integer minutes; //시간 지정
 
     @Column(name = "plan_status",nullable = false)
     private boolean status; //계획 생성 시 0으로 설정
 
     @Builder
     public PlanEntity (UserEntity user_id, CategoryEntity category_id, String plan_name,
-                       LocalDate start_date, LocalDate end_date, int plan_minutes, boolean plan_status)
+                       LocalDate startDate, LocalDate endDate, int minutes)
     {
+        if(startDate.isAfter(endDate)){
+            throw new BadRequestException("시작 날짜가 종료 날짜보다 뒤일 수 없습니다.");
+        }
+        if(minutes < 0){
+            throw new BadRequestException("음수값은 입력될 수 없습니다.");
+        }
         this.user = user_id;
         this.category = category_id;
         this.plan_name = plan_name;
-        this.startDate = start_date;
-        this.endDate = end_date;
-        this.minutes = plan_minutes; //미지정 시 0
-        this.status = plan_status;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.minutes = minutes; //미지정 시 0
+        this.status = false;
     } //plan_id는 DB에서 자동 설정
 
-    public void updateCategory(CategoryEntity category_id) {
-        this.category = category_id;
+    public void updateCategory(CategoryEntity category){
+        this.category = category; //계획에 지정한 카테고리 삭제 시 "기타"로 바뀜
+    }
+    public void updatePlanName(String plan_name){
+        if (plan_name == null || plan_name.isBlank()) {
+            throw new BadRequestException("계획명을 입력해 주세요.");
+        }
+        this.plan_name = plan_name;
+    }
+
+    public void updateDate(LocalDate startDate, LocalDate endDate){
+        if(startDate.isAfter(endDate)){
+            throw new BadRequestException("시작 날짜가 종료 날짜보다 뒤일 수 없습니다.");
+        }
+        this.startDate = startDate;
+        this.endDate = endDate;
+    }
+
+    public void updateMinutes(int minutes){
+        if(minutes < 0){
+            throw new BadRequestException("음수값은 입력될 수 없습니다.");
+        }
+        this.minutes = minutes;
+    }
+
+    public void updateStatus(boolean status){
+        this.status = status;
     }
 }
