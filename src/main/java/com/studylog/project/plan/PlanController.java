@@ -1,5 +1,6 @@
 package com.studylog.project.plan;
 
+import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.response.ApiResponse;
 import com.studylog.project.jwt.CustomUserDetail;
 import jakarta.validation.Valid;
@@ -48,8 +49,10 @@ public class PlanController {
     //계획 상태 수정
     @PatchMapping("{planId}/status")
     public ResponseEntity<ApiResponse> setPlanStatus(@PathVariable Long planId,
-                                                     @RequestParam("status") boolean status,
+                                                     @RequestParam("status") String statusStr,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
+        log.info(statusStr); //" fAlse "
+        boolean status= parseStatus(statusStr);
         planService.updateStatus(planId, status, user.getUser());
         return ResponseEntity.ok(new ApiResponse(200, true, "계획 상태가 변경되었습니다."));
     }
@@ -69,5 +72,25 @@ public class PlanController {
                                                   @AuthenticationPrincipal CustomUserDetail user) {
         planService.deletePlan(planId, user.getUser());
         return ResponseEntity.ok(new ApiResponse(200, true, "계획이 삭제되었습니다."));
+    }
+
+    //status 파싱
+    private boolean parseStatus(String statusStr) {
+        if (statusStr == null)
+            throw new BadRequestException("올바르지 않은 입력 값입니다.");
+
+        String normalized= statusStr.trim().toLowerCase();
+        log.info("파싱 메서드 {}", normalized);
+        switch (normalized) {
+            case "0", "false" -> {
+                return false;
+            }
+            case "1", "true" -> {
+                return true;
+            }
+            //그 외 값들
+            default ->
+                throw new BadRequestException("올바르지 않은 입력 값입니다.");
+        }
     }
 }
