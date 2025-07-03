@@ -29,7 +29,8 @@ public class CategoryController {
     @GetMapping("/{categoryId}")
     public ResponseEntity<CategoryResponse> getCategory(@PathVariable Long categoryId,
                                                         @AuthenticationPrincipal CustomUserDetail user) {
-
+        CategoryResponse response = categoryService.getCategory(categoryId, user.getUser());
+        return ResponseEntity.ok(response);
     }
 
     //카테고리에 해당하는 계획 조회

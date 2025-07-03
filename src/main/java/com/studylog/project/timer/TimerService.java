@@ -32,6 +32,9 @@ public class TimerService {
             plan= planRepository.findByUserAndId(user, request.getPlan())
                     .orElseThrow(() -> new NotFoundException("존재하지 않는 계획입니다."));
             log.info("계획 검증 통과 O");
+            if(!plan.getCategory().getId().equals(request.getCategory())){ //달라도 입력 카테고리 무시하긴 하지만 일관성을 위해 넣음
+                throw new BadRequestException("입력된 카테고리가 계획 카테고리와 일치하지 않습니다.");
+            }
             //계획에 딸린 카테고리로 타이머 카테고리도 설정됨
             timer= request.toEntity(user, plan, plan.getCategory());
         } else { //plan == null, 카테고리만 검색
