@@ -25,6 +25,13 @@ public class CategoryController {
         return ResponseEntity.ok(categoryList);
     }
 
+    //카테고리 단일 조회
+    @GetMapping("/{categoryId}")
+    public ResponseEntity<CategoryResponse> getCategory(@PathVariable Long categoryId,
+                                                        @AuthenticationPrincipal CustomUserDetail user) {
+
+    }
+
     //카테고리에 해당하는 계획 조회
 
     //카테고리에 해당하는 글 조회

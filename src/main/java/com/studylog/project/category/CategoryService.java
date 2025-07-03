@@ -54,6 +54,13 @@ public class CategoryService {
         return response;
     }
 
+    //카테고리 단일 조회
+    public CategoryResponse getCategory(Long id, UserEntity user) {
+        CategoryEntity category = categoryRepository.findByUserAndId(user, id)
+                .orElseThrow(()-> new NotFoundException("존재하지 않는 카테고리입니다."));
+        return new CategoryResponse(category.getId(), category.getName());
+    }
+
     public void addCategory(CategoryRequest request, UserEntity user) {
         log.info("{}",user.getUser_id());
         if (categoryRepository.existsByUserAndName(user, request.getName())){

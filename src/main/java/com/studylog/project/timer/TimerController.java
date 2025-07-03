@@ -19,9 +19,10 @@ public class TimerController {
     private final TimerService timerService;
 
     @PostMapping("")
-    public ResponseEntity<TimerStartResponse> startTimer(@RequestBody TimerStartReqeust request,
+    public ResponseEntity<TimerResponse> startTimer(@RequestBody TimerStartReqeust request,
                                                          @AuthenticationPrincipal CustomUserDetail user) {
         timerService.setTimer(request, user.getUser());
+        return ResponseEntity.ok()
     }
 
 }

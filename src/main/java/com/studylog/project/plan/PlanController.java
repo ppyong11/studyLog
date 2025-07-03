@@ -27,6 +27,8 @@ public class PlanController {
         return ResponseEntity.ok(planList);
     }
 
+    //계획 일별 조회
+
     //계획 하나 조회
     @GetMapping("{planId}")
     public ResponseEntity<PlanResponse> getPlan(@PathVariable Long planId,

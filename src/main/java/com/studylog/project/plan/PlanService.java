@@ -78,11 +78,7 @@ public class PlanService {
     }
     //유효성 검사 후 카테고리 가져옴
     public CategoryEntity getCategory(Long category, UserEntity user) {
-        //유저에게 존재하지 않는 카테고리일 경우
-        if (!categoryRepository.existsByUserAndId(user, category)){
-            log.info("계획 등록 실패");
-            throw new NotFoundException("존재하지 않는 카테고리입니다.");
-        }
+        //유저에게 존재하지 않는 카테고리일 경우 반환 X
         //반환되는 카테고리도 영속 상태임 (@Transactional 써서 메서드 끝날 때까지 영속)
         return categoryRepository.findById(category)
                 .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다"));

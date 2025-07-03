@@ -18,5 +18,6 @@ public interface PlanRepository extends JpaRepository<PlanEntity, Long> {
     List<PlanEntity> findAllByCategoryAndUser(CategoryEntity category, UserEntity user); //카테고리, 유저별 검색
     List<PlanEntity> findAllByUserAndStatus(UserEntity user, boolean status);
 
-    boolean existsByUserAndId(UserEntity user, PlanEntity plan);
+    //조회 결과 없으면 false(null이어도), 있으면 true
+    boolean existsByUserAndId(UserEntity user, Long id);
 }

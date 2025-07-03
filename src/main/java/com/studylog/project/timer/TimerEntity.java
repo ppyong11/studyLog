@@ -15,7 +15,11 @@ import java.time.LocalDateTime;
 public class TimerEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long timer_id;
+    @Column(name= "timer_id")
+    private Long id;
+
+    @Column(name="timer_name")
+    private String timerName;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
@@ -35,14 +39,18 @@ public class TimerEntity {
     @Column(name= "end_at")
     private LocalDateTime endAt; //종료 시간, 처음엔 null
 
+    @Column(name= "pause_at")
+    private LocalDateTime pauseAt;
     @Builder
-    public TimerEntity(UserEntity user_id, PlanEntity plan_id, CategoryEntity category_id,
+    public TimerEntity(String timerName, UserEntity user_id, PlanEntity plan_id, CategoryEntity category_id,
                        LocalDateTime start_at) {
+        this.timerName= timerName;
         this.user = user_id;
         this.plan = plan_id;
         this.category = category_id;
         this.startAt = start_at;
-        //end_at은 자바 필드 초기값 가짐 (null)
+        this.endAt = null;
+        this.pauseAt = null;
     }
 
     //수정 가능 필드: plan_id(플랜명), category_id(카테고리명)
