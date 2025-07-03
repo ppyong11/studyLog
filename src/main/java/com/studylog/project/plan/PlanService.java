@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +35,18 @@ public class PlanService {
         PlanEntity plan= getPlanByUserAndId(planId, user);
         return new PlanResponse(plan.getId(), plan.getPlan_name(), plan.getCategory().getName(),
                 plan.getStartDate(), plan.getEndDate(), plan.getMinutes(), plan.isStatus());
+    }
+
+    public List<PlanResponse> getPlansDate(LocalDate startDate, LocalDate endDate, UserEntity user) {
+        log.info("start {}, end {}", startDate, endDate);
+        List<PlanEntity> plans= planRepository.findPlansDate(user, startDate, endDate);
+        List<PlanResponse> responses = new ArrayList<>();
+
+        for (PlanEntity plan : plans) {
+            responses.add(new PlanResponse(plan.getId(), plan.getPlan_name(), plan.getCategory().getName(),
+                    plan.getStartDate(), plan.getEndDate(), plan.getMinutes(), plan.isStatus()));
+        }
+        return responses;
     }
     public void addPlan(PlanRequest request, UserEntity user) {
         CategoryEntity category= getCategory(request.getCategory(), user);

@@ -11,6 +11,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Controller
@@ -28,7 +29,14 @@ public class PlanController {
     }
 
     //계획 일별 조회
-
+    @GetMapping("date")
+    public ResponseEntity<List<PlanResponse>> getPlansDate(@RequestParam("start") LocalDate start,
+                                                          @RequestParam(value = "end", required = false) LocalDate end,
+                                                          @AuthenticationPrincipal CustomUserDetail user) {
+        //바디에 end 값 없으면 null 들어감 (start~전체 일정, end도 설정해야 당일/start~end 일정 나옴)
+        List<PlanResponse> planList= planService.getPlansDate(start, end, user.getUser());
+        return ResponseEntity.ok(planList);
+    }
     //계획 하나 조회
     @GetMapping("{planId}")
     public ResponseEntity<PlanResponse> getPlan(@PathVariable Long planId,
