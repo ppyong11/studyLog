@@ -1,11 +1,14 @@
 package com.studylog.project.plan;
 
+import com.querydsl.core.BooleanBuilder;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
 import com.studylog.project.global.exception.NotFoundException;
 import com.studylog.project.user.UserEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.query.spi.QueryPlan;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +23,7 @@ import java.util.List;
 public class PlanService {
     private final PlanRepository planRepository;
     private final CategoryRepository categoryRepository;
+    private final JPAQueryFactory queryFactory; //동적 쿼리용
 
     public List<PlanResponse> getPlans(UserEntity user) {
         List<PlanEntity> plans= planRepository.findAllByUser(user);
@@ -37,7 +41,42 @@ public class PlanService {
                 plan.getStartDate(), plan.getEndDate(), plan.getMinutes(), plan.isStatus());
     }
 
-    public List<PlanResponse> getPlansDate(LocalDate startDate, LocalDate endDate, UserEntity user) {
+
+    public List<PlanResponse> searchPlans(UserEntity user, LocalDate startDate, LocalDate endDate,
+                                          List<Long> categoryList, String keyword, Boolean status) {
+        QPlanEntity planEntity = QPlanEntity.planEntity;
+
+        //유저 검색은 필수
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(planEntity.user.eq(user));
+
+        if(startDate != null) {
+            if (endDate != null) {
+                //start~end
+                builder.and(planEntity.startDate.loe(startDate));
+            }
+            //start~전 일자
+            builder.and(planEntity.startDate.goe(startDate));
+        }
+        if(!categoryList.isEmpty()) {
+            //빈 리스트가 아니라면, 빈 리스트인데 실행 시 모든 조건이 false처리됨 (and니께)
+            builder.and(planEntity.category.id.in(categoryList)); //in(1, 2, 3) 일케 들어감
+        }
+        if(keyword != null) { //앞에서부터 검색
+            builder.and(planEntity.plan_name.like(keyword + '%'));
+        }
+        if(status != null) {
+            builder.and(planEntity.status.eq(status));
+        }
+        List<PlanEntity> plans= queryFactory.selectFrom(planEntity) //select * from planEntity
+                .where(builder)
+                .fetch(); //전체 결과 반환 (List<planEntity> 타입)
+        return plans.stream()
+                .map(plan -> PlanResponse.toDto(plan))
+                .toList();
+    }
+
+    public List<PlanResponse> getPlansByDate(LocalDate startDate, LocalDate endDate, UserEntity user) {
         log.info("start {}, end {}", startDate, endDate);
         List<PlanEntity> plans= planRepository.findPlansDate(user, startDate, endDate);
         List<PlanResponse> responses = new ArrayList<>();

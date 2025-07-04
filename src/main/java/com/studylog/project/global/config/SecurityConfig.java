@@ -14,10 +14,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-@Configuration //Config 파일로 설정
+@Configuration //Config 파일로 설정,이거 있어야 @Bean 스캔 가능
 @EnableWebSecurity //WebSecurity 활성화
 public class SecurityConfig {
-    @Bean
+    @Bean //스프링 컨테이너에 bean 등록 & 주입된 것들을 싱글톤으로 관리하겠다
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter, CustomAuthenticationEntryPoint customAuthenticationEntryPoint) throws Exception {
         http
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
