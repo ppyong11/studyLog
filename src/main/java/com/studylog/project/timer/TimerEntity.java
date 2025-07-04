@@ -44,7 +44,8 @@ public class TimerEntity {
     @Builder
     public TimerEntity(String timerName, UserEntity user_id, PlanEntity plan_id, CategoryEntity category_id,
                        LocalDateTime start_at) {
-        this.timerName= timerName;
+        //null인데 trim하면 NPE 뜸
+        this.timerName= (timerName == null)? null:timerName.trim();
         this.user = user_id;
         this.plan = plan_id;
         this.category = category_id;

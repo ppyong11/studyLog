@@ -27,7 +27,7 @@ public class CategoryEntity {
     @Builder
     public CategoryEntity(UserEntity user_id, String category_name) {
         this.user = user_id;
-        this.name = category_name;
+        this.name = category_name.trim(); //공백 없애고 저장
     }
 
     //카테고리 수정

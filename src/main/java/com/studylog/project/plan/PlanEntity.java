@@ -57,7 +57,7 @@ public class PlanEntity {
         }
         this.user = user_id;
         this.category = category_id;
-        this.plan_name = plan_name;
+        this.plan_name = plan_name.trim();
         this.startDate = startDate;
         this.endDate = endDate;
         this.minutes = minutes; //미지정 시 0
