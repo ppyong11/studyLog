@@ -1,6 +1,7 @@
 package com.studylog.project.plan;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
@@ -43,12 +44,12 @@ public class PlanService {
 
 
     public List<PlanResponse> searchPlans(UserEntity user, LocalDate startDate, LocalDate endDate,
-                                          List<Long> categoryList, String keyword, Boolean status) {
+                                          List<Long> categoryList, String keyword, Boolean status, String sort) {
         QPlanEntity planEntity = QPlanEntity.planEntity;
 
-        //유저 검색은 필수
+        //where 조립 빌더
         BooleanBuilder builder = new BooleanBuilder();
-        builder.and(planEntity.user.eq(user));
+        builder.and(planEntity.user.eq(user)); //유저 것만 조회 결과로
 
         if(startDate != null) {
             if (endDate != null) {
@@ -62,33 +63,26 @@ public class PlanService {
             //빈 리스트가 아니라면, 빈 리스트인데 실행 시 모든 조건이 false처리됨 (and니께)
             builder.and(planEntity.category.id.in(categoryList)); //in(1, 2, 3) 일케 들어감
         }
-        if(keyword != null) { //앞에서부터 검색
-            builder.and(planEntity.plan_name.like(keyword + '%'));
+        if(keyword != null && !keyword.isEmpty()) {
+            builder.and(planEntity.plan_name.like('%' + keyword + '%'));
         }
         if(status != null) {
             builder.and(planEntity.status.eq(status));
         }
+
+        OrderSpecifier<?> order = sort.equals("desc")? planEntity.startDate.desc() : planEntity.startDate.asc();
         List<PlanEntity> plans= queryFactory.selectFrom(planEntity) //select * from planEntity
                 .where(builder)
-                .fetch(); //전체 결과 반환 (List<planEntity> 타입)
+                .orderBy(order)
+                .fetch(); //전체 결과 반환 (List<planEntity> 타입), 결과 없을 시 빈 리스트 (Null 반환 X)
+
         return plans.stream()
                 .map(plan -> PlanResponse.toDto(plan))
                 .toList();
     }
 
-    public List<PlanResponse> getPlansByDate(LocalDate startDate, LocalDate endDate, UserEntity user) {
-        log.info("start {}, end {}", startDate, endDate);
-        List<PlanEntity> plans= planRepository.findPlansDate(user, startDate, endDate);
-        List<PlanResponse> responses = new ArrayList<>();
-
-        for (PlanEntity plan : plans) {
-            responses.add(new PlanResponse(plan.getId(), plan.getPlan_name(), plan.getCategory().getName(),
-                    plan.getStartDate(), plan.getEndDate(), plan.getMinutes(), plan.isStatus()));
-        }
-        return responses;
-    }
     public void addPlan(PlanRequest request, UserEntity user) {
-        CategoryEntity category= getCategory(request.getCategory(), user);
+        CategoryEntity category= getCategory(request.getCategoryId(), user);
         PlanEntity plan= request.toEntity(user, category);
         planRepository.save(plan);
         log.info("계획 저장 완료");
@@ -97,12 +91,12 @@ public class PlanService {
     public void updatePlan(Long id, PlanRequest request, UserEntity user) {
         //유저, 계획 검사
         PlanEntity plan= getPlanByUserAndId(id, user);
-        CategoryEntity category= getCategory(request.getCategory(), user);
+        CategoryEntity category= getCategory(request.getCategoryId(), user);
         //reqeust에 들어온 값 확인, 값이 있고 빈 문자열이 아닐 경우에만 처리 (시간은
-        plan.updatePlanName(request.getPlanName());
+        plan.updatePlanName(request.getName());
         plan.updateCategory(category);
         plan.updateDate(request.getStartDate(), request.getEndDate());
-        plan.updateMinutes(request.getPlanMinutes());
+        plan.updateMinutes(request.getMinutes());
         //여기서 값 바뀐 거만 수정해 줌..
         /*나중에 추가할 로직
            일자, 공부시간이 달라졌다면 타이머랑 비교해서 미완료로 처리
@@ -132,7 +126,7 @@ public class PlanService {
     public CategoryEntity getCategory(Long category, UserEntity user) {
         //유저에게 존재하지 않는 카테고리일 경우 반환 X
         //반환되는 카테고리도 영속 상태임 (@Transactional 써서 메서드 끝날 때까지 영속)
-        return categoryRepository.findById(category)
+        return categoryRepository.findByUserAndId(user, category)
                 .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다"));
     }
     /*

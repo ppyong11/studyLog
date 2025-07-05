@@ -32,6 +32,6 @@ public class CategoryEntity {
 
     //카테고리 수정
     public void setCategory_name(String name) {
-        this.name = name;
+        this.name = name.trim();
     }
 }

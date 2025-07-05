@@ -1,5 +1,6 @@
 package com.studylog.project.plan;
 
+import com.studylog.project.global.CommonUtil;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.response.ApiResponse;
 import com.studylog.project.jwt.CustomUserDetail;
@@ -12,7 +13,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Controller
 @Slf4j
@@ -21,22 +25,55 @@ import java.util.List;
 public class PlanController {
     private final PlanService planService;
 
-    //전체 계획 조회
-    @GetMapping("")
-    public ResponseEntity<List<PlanResponse>> getPlans(@AuthenticationPrincipal CustomUserDetail user) {
-        List<PlanResponse> planList= planService.getPlans(user.getUser());
-        return ResponseEntity.ok(planList);
+    /*계획 여러 유형 조회
+    - 유저는 필수
+     1. date별 조회
+     2. 카테고리별 조회
+     3. 상태별 조회
+     4. 키워드별 조회
+     다 섞어서도 가능..*/
+    @GetMapping("/search")
+    public ResponseEntity<List<PlanResponse>> searchPlans(@RequestParam(required = false) LocalDate startDate,
+                                                          @RequestParam(required = false) LocalDate endDate,
+                                                          @RequestParam(required = false) String category,
+                                                          @RequestParam(required = false) String keyword,
+                                                          @RequestParam(name="status", required = false) String statusStr,
+                                                          @RequestParam(required = false, defaultValue = "asc") String sort,
+                                                          @AuthenticationPrincipal CustomUserDetail user) {
+        List<Long> categoryList= new ArrayList<>();
+        Boolean status= null; //null값 필요해서 객체 타입으로
+        log.info("user {}", user.getUser());
+
+        if (endDate != null && startDate == null) {
+            //종료 일자 입력됐으면 시작 일자는 필수
+            throw new BadRequestException("시작 일자는 필수 입력 값입니다.");
+        }
+        if (startDate != null && endDate != null) {
+            if(startDate.isAfter(endDate)) {
+                throw new BadRequestException("시작 날짜가 종료 날짜보다 뒤일 수 없습니다.");
+            }
+        }
+        if(category != null && !category.trim().isEmpty()) {
+            //여기 안 들어가면 categoryList는 null? ㄴㄴ 내가 위에 빈 리스트 집어넣음 .isEmpty로 검사
+            log.info("category 있음");
+            log.info("category: {}", category);
+            categoryList= CommonUtil.parseAndValidateCategory(category);
+        }
+        log.info("categoryList: {}", categoryList); //빈 리스트 or 찬 리스트
+        if(statusStr != null && !statusStr.trim().isEmpty()) {
+            //입력했으면 검사
+            status= parseStatus(statusStr);
+        }
+        log.info("status 값: {}", status);
+        keyword= (keyword == null)? null : keyword.trim(); //공백 제거
+
+        //sort값 검사.. ㅎ
+        //바디에 end 값 없으면 null 들어감 (start~전체 일정, end도 설정해야 당일/start~end 일정 나옴)
+        List<PlanResponse> planList= planService.searchPlans(user.getUser(), startDate, endDate,
+                                                            categoryList, keyword, status, sort);
+        return ResponseEntity.ok(planList); //빈 리스트도 보내짐
     }
 
-    //계획 일별 조회
-    @GetMapping("date")
-    public ResponseEntity<List<PlanResponse>> getPlansDate(@RequestParam("start") LocalDate start,
-                                                          @RequestParam(value = "end", required = false) LocalDate end,
-                                                          @AuthenticationPrincipal CustomUserDetail user) {
-        //바디에 end 값 없으면 null 들어감 (start~전체 일정, end도 설정해야 당일/start~end 일정 나옴)
-        List<PlanResponse> planList= planService.getPlansDate(start, end, user.getUser());
-        return ResponseEntity.ok(planList);
-    }
     //계획 하나 조회
     @GetMapping("{planId}")
     public ResponseEntity<PlanResponse> getPlan(@PathVariable Long planId,
@@ -44,9 +81,6 @@ public class PlanController {
         PlanResponse plan= planService.getPlan(planId, user.getUser());
         return ResponseEntity.ok(plan);
     }
-    //카테고리별 계획 조회
-
-    //계획 선택 조회
 
     //계획 등록
     @PostMapping("")
@@ -87,7 +121,7 @@ public class PlanController {
     //status 파싱
     private boolean parseStatus(String statusStr) {
         if (statusStr == null)
-            throw new BadRequestException("올바르지 않은 입력 값입니다.");
+            throw new BadRequestException("완료 여부 값이 올바르지 않습니다.");
 
         String normalized= statusStr.trim().toLowerCase();
         log.info("파싱 메서드 {}", normalized);
@@ -100,7 +134,7 @@ public class PlanController {
             }
             //그 외 값들
             default ->
-                throw new BadRequestException("올바르지 않은 입력 값입니다.");
+                throw new BadRequestException("완료 여부 값이 올바르지 않습니다.");
         }
     }
 }

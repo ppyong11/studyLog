@@ -1,5 +1,8 @@
 package com.studylog.project.category;
 
+import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.board.BoardEntity;
 import com.studylog.project.board.BoardRepository;
 import com.studylog.project.global.exception.AccessDeniedException;
@@ -29,6 +32,7 @@ public class CategoryService {
     private final CategoryRepository categoryRepository;
     private final PlanRepository planRepository;
     private final BoardRepository boardRepository;
+    private final JPAQueryFactory queryFactory;
 
     public void defaultCategory(UserEntity user) {
         CategoryEntity category = CategoryEntity.builder()
@@ -39,19 +43,31 @@ public class CategoryService {
         log.info("기본 카테고리 저장 완료");
     }
 
-    //카테고리 전체 조회
-    public List<CategoryResponse> getCategories(UserEntity user) {
-        List<CategoryEntity> categories = categoryRepository.findAllByUserOrderByName(user);
+    //카테고리 전체&키워드 조회
+    public List<CategoryResponse> searchCategories(String keyword, String sort,UserEntity user) {
+        QCategoryEntity categoryEntity = QCategoryEntity.categoryEntity;
+
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(categoryEntity.user.eq(user)); //이거만 해도 전체 카테고리 나옴
+
+        if (keyword != null && !keyword.isEmpty()) {
+            builder.and(categoryEntity.name.like('%' + keyword + '%'));
+        }
+
+        OrderSpecifier<?> order= sort.equals("desc")? categoryEntity.name.desc():categoryEntity.name.asc();
+
+        List<CategoryEntity> categories = queryFactory.selectFrom(categoryEntity)
+                .where(builder)
+                .orderBy(order)
+                .fetch();
+
         if (categories.isEmpty()) {
-            throw new NoSuchElementException("카테고리가 존재하지 않습니다.");
+            throw new NoSuchElementException("카테고리가 존재하지 않습니다."); //기타 카테고리는 필수라서 에러 나감
         }
-        //entity to reponseDTO 변환
-        List<CategoryResponse> response = new ArrayList<>();
-        for(CategoryEntity category : categories) {
-            //dto 객체 생성하면서 추가
-            response.add(new CategoryResponse(category.getId(), category.getName()));
-        }
-        return response;
+        //빈 리스트여도 문제 없이 controller에 빈 리스트로 반환돼서 위에서 에러 터뜨림
+        return categories.stream()
+                .map(category -> CategoryResponse.toDto(category))
+                .toList();
     }
 
     //카테고리 단일 조회

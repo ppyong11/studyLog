@@ -1,7 +1,6 @@
 package com.studylog.project.plan;
 
 import com.studylog.project.category.CategoryEntity;
-import com.studylog.project.category.CategoryRequest;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.user.UserEntity;
 import jakarta.persistence.*;
@@ -9,7 +8,6 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 
 @NoArgsConstructor
 @Getter
@@ -71,7 +69,7 @@ public class PlanEntity {
         if (plan_name == null || plan_name.isBlank()) {
             throw new BadRequestException("계획명을 입력해 주세요.");
         }
-        this.plan_name = plan_name;
+        this.plan_name = plan_name.trim();
     }
 
     public void updateDate(LocalDate startDate, LocalDate endDate){

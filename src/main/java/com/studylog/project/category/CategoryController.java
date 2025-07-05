@@ -18,10 +18,16 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CategoryController {
     private final CategoryService categoryService;
-    //카테고리 전체 조회
-    @GetMapping("")
-    public ResponseEntity<List<CategoryResponse>> getCategories(@AuthenticationPrincipal CustomUserDetail user) {
-        List<CategoryResponse> categoryList= categoryService.getCategories(user.getUser());
+
+    //카테고리 전체&키워드 조회
+    @GetMapping("search")
+    public ResponseEntity<List<CategoryResponse>> searchCategories(@RequestParam(required = false) String keyword,
+                                                                   @RequestParam(required = false, defaultValue = "asc") String sort,
+                                                                   @AuthenticationPrincipal CustomUserDetail user) {
+        keyword = keyword == null ? null : keyword.trim();
+
+        //sort값 검사.. ㅎ
+        List<CategoryResponse> categoryList= categoryService.searchCategories(keyword, sort, user.getUser());
         return ResponseEntity.ok(categoryList);
     }
 
@@ -32,10 +38,6 @@ public class CategoryController {
         CategoryResponse response = categoryService.getCategory(categoryId, user.getUser());
         return ResponseEntity.ok(response);
     }
-
-    //카테고리에 해당하는 계획 조회
-
-    //카테고리에 해당하는 글 조회
 
     //카테고리 추가
     @PostMapping("")
