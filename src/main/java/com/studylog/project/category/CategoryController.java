@@ -1,5 +1,6 @@
 package com.studylog.project.category;
 
+import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.response.ApiResponse;
 import com.studylog.project.jwt.CustomUserDetail;
 import jakarta.validation.Valid;
@@ -25,8 +26,11 @@ public class CategoryController {
                                                                    @RequestParam(required = false, defaultValue = "asc") String sort,
                                                                    @AuthenticationPrincipal CustomUserDetail user) {
         keyword = keyword == null ? null : keyword.trim();
-
-        //sort값 검사.. ㅎ
+        sort= sort.trim().toLowerCase(); //공백 제거 & 소문자 (null이 될 리 X)
+        log.info("sort {}", sort);
+        if (!sort.equals("asc") && !sort.equals("desc")) {
+            throw new BadRequestException("지원하지 않는 정렬입니다.");
+        }
         List<CategoryResponse> categoryList= categoryService.searchCategories(keyword, sort, user.getUser());
         return ResponseEntity.ok(categoryList);
     }

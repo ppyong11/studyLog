@@ -42,7 +42,12 @@ public class PlanController {
                                                           @AuthenticationPrincipal CustomUserDetail user) {
         List<Long> categoryList= new ArrayList<>();
         Boolean status= null; //null값 필요해서 객체 타입으로
-        log.info("user {}", user.getUser());
+
+        sort= sort.trim().toLowerCase(); //공백 제거 & 소문자 (null이 될 리 X)
+        log.info("sort {}", sort);
+        if (!sort.equals("asc") && !sort.equals("desc")) {
+            throw new BadRequestException("지원하지 않는 정렬입니다.");
+        }
 
         if (endDate != null && startDate == null) {
             //종료 일자 입력됐으면 시작 일자는 필수
@@ -67,7 +72,6 @@ public class PlanController {
         log.info("status 값: {}", status);
         keyword= (keyword == null)? null : keyword.trim(); //공백 제거
 
-        //sort값 검사.. ㅎ
         //바디에 end 값 없으면 null 들어감 (start~전체 일정, end도 설정해야 당일/start~end 일정 나옴)
         List<PlanResponse> planList= planService.searchPlans(user.getUser(), startDate, endDate,
                                                             categoryList, keyword, status, sort);
