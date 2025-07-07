@@ -26,4 +26,6 @@ public class TimerController {
         return ResponseEntity.ok(response);
     }
 
+    //타이머 계획 or 카테고리 업데이트 시, 계획/카테고리 대조 잘하기 계획 잇는데 카테고리 다른 거로 바꿀 수 X
+
 }

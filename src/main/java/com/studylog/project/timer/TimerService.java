@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -36,13 +38,13 @@ public class TimerService {
                 throw new BadRequestException("입력된 카테고리가 계획 카테고리와 일치하지 않습니다.");
             }
             //계획에 딸린 카테고리로 타이머 카테고리도 설정됨
-            timer= request.toEntity(user, plan, plan.getCategory());
+            timer= request.toEntity(user, plan, plan.getCategory(), LocalDateTime.now());
         } else { //plan == null, 카테고리만 검색
             log.info("입력된 계획 없음");
             category= categoryRepository.findByUserAndId(user, request.getCategory())
                             .orElseThrow(()-> new NotFoundException("존재하지 않는 카테고리입니다."));
             log.info("카테고리 검증 통과 O");
-            timer= request.toEntity(user, null, category);
+            timer= request.toEntity(user, null, category, LocalDateTime.now());
         }
         timerRepository.saveAndFlush(timer); //이때 timer에도 id 매핑됨 (AI 된 값)
 

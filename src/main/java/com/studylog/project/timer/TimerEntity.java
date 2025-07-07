@@ -6,6 +6,7 @@ import com.studylog.project.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @NoArgsConstructor
@@ -33,6 +34,9 @@ public class TimerEntity {
     @JoinColumn(name = "category_id", nullable = false)
     private CategoryEntity category;
 
+    @Column(name= "create_date")
+    private LocalDate createDate;
+
     @Column(name= "start_at", nullable = false)
     private LocalDateTime startAt;
 
@@ -41,17 +45,32 @@ public class TimerEntity {
 
     @Column(name= "pause_at")
     private LocalDateTime pauseAt;
+
     @Builder
-    public TimerEntity(String timerName, UserEntity user_id, PlanEntity plan_id, CategoryEntity category_id,
-                       LocalDateTime start_at) {
+    public TimerEntity(String timerName, UserEntity user_id, PlanEntity plan_id, CategoryEntity category_id) {
         //null인데 trim하면 NPE 뜸
         this.timerName= (timerName == null)? null:timerName.trim();
         this.user = user_id;
         this.plan = plan_id;
         this.category = category_id;
-        this.startAt = start_at;
+        this.createDate = LocalDate.now();
+        this.startAt = null;
         this.endAt = null;
         this.pauseAt = null;
+    }
+
+    //타이머 시작 시
+    public void activateTimer(){
+        this.startAt = LocalDateTime.now();
+    }
+    //타이머 종료 시
+    public void updateEndTimer() {
+        this.endAt = LocalDateTime.now();
+    }
+
+    //타이머 정지 시
+    public void pauseTimer() {
+        this.pauseAt = LocalDateTime.now();
     }
 
     //수정 가능 필드: plan_id(플랜명), category_id(카테고리명)
@@ -64,10 +83,5 @@ public class TimerEntity {
         else{ //plan 설정 X 시
             this.category = generalCateogry;
         }
-    }
-
-    //타이머 종료 시
-    public void endTimer(LocalDateTime endAt) {
-        this.endAt = endAt;
     }
 }

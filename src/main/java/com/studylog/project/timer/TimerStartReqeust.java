@@ -19,16 +19,15 @@ public class TimerStartReqeust {
     private Long plan; //null 가능
     @NotNull(message = "카테고리를 선택해 주세요.")
     private Long category; //필수
-    @NotNull(message = "시작 시간은 필수 값입니다.")
-    private LocalDateTime startAt;
 
-    public TimerEntity toEntity(UserEntity user, PlanEntity plan, CategoryEntity category) {
+    public TimerEntity toEntity(UserEntity user, PlanEntity plan, CategoryEntity category,
+                                LocalDateTime startTime) {
         return TimerEntity.builder()
                 .timerName(this.name)
                 .user_id(user)
                 .plan_id(plan)
                 .category_id(category)
-                .start_at(this.startAt)
+                .start_at(startTime)
                 .build();
         //endAt은 엔티티 빌더에서 초기화됨
     }
