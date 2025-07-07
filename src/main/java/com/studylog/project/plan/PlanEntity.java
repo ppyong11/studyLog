@@ -65,26 +65,23 @@ public class PlanEntity {
     public void updateCategory(CategoryEntity category){
         this.category = category; //계획에 지정한 카테고리 삭제 시 "기타"로 바뀜
     }
-    public void updatePlanName(String plan_name){
-        if (plan_name == null || plan_name.isBlank()) {
+
+    public void updatePlan(PlanRequest request, CategoryEntity category){
+        if (request.getName() == null || request.getName().isBlank()) {
             throw new BadRequestException("계획명을 입력해 주세요.");
         }
-        this.plan_name = plan_name.trim();
-    }
-
-    public void updateDate(LocalDate startDate, LocalDate endDate){
-        if(startDate.isAfter(endDate)){
+        if(request.getStartDate().isAfter(request.getEndDate())){
             throw new BadRequestException("시작 날짜가 종료 날짜보다 뒤일 수 없습니다.");
         }
-        this.startDate = startDate;
-        this.endDate = endDate;
-    }
-
-    public void updateMinutes(int minutes){
-        if(minutes < 0){
+        if(request.getMinutes() < 0){
             throw new BadRequestException("음수값은 입력될 수 없습니다.");
         }
-        this.minutes = minutes;
+
+        this.plan_name = request.getName().trim();
+        this.category = category;
+        this.startDate = request.getStartDate();
+        this.endDate = request.getEndDate();
+        this.minutes = request.getMinutes();
     }
 
     public void updateStatus(boolean status){

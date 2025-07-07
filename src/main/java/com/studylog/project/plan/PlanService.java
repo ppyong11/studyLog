@@ -93,10 +93,7 @@ public class PlanService {
         PlanEntity plan= getPlanByUserAndId(id, user);
         CategoryEntity category= getCategory(request.getCategoryId(), user);
         //reqeust에 들어온 값 확인, 값이 있고 빈 문자열이 아닐 경우에만 처리 (시간은
-        plan.updatePlanName(request.getName());
-        plan.updateCategory(category);
-        plan.updateDate(request.getStartDate(), request.getEndDate());
-        plan.updateMinutes(request.getMinutes());
+        plan.updatePlan(request, category);
         //여기서 값 바뀐 거만 수정해 줌..
         /*나중에 추가할 로직
            일자, 공부시간이 달라졌다면 타이머랑 비교해서 미완료로 처리
