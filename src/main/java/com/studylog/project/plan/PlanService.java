@@ -5,10 +5,12 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
+import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.exception.NotFoundException;
 import com.studylog.project.user.UserEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.aspectj.weaver.ast.Or;
 import org.hibernate.query.spi.QueryPlan;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,15 +28,6 @@ public class PlanService {
     private final CategoryRepository categoryRepository;
     private final JPAQueryFactory queryFactory; //동적 쿼리용
 
-    public List<PlanResponse> getPlans(UserEntity user) {
-        List<PlanEntity> plans= planRepository.findAllByUser(user);
-        List<PlanResponse> responses = new ArrayList<>();
-        for (PlanEntity plan : plans) {
-            responses.add(new PlanResponse(plan.getId(), plan.getPlan_name(), plan.getCategory().getName(),
-                    plan.getStartDate(), plan.getEndDate(), plan.getMinutes(), plan.isStatus()));
-        }
-        return responses;
-    }
 
     public PlanResponse getPlan(Long planId, UserEntity user) {
         PlanEntity plan= getPlanByUserAndId(planId, user);
@@ -42,19 +35,46 @@ public class PlanService {
                 plan.getStartDate(), plan.getEndDate(), plan.getMinutes(), plan.isStatus());
     }
 
-
     public List<PlanResponse> searchPlans(UserEntity user, LocalDate startDate, LocalDate endDate,
-                                          List<Long> categoryList, String keyword, Boolean status, String sort) {
+                                          List<Long> categoryList, String keyword, Boolean status, List<String> sort) {
         QPlanEntity planEntity = QPlanEntity.planEntity;
 
         //where 조립 빌더
         BooleanBuilder builder = new BooleanBuilder();
-        builder.and(planEntity.user.eq(user)); //유저 것만 조회 결과로
 
+        List<OrderSpecifier<?>> orders = new ArrayList<>();
+        OrderSpecifier<?> dateOrder = null;
+
+        for(String s : sort){
+            String[] arr= s.split(",");
+            if(arr.length != 2){
+                throw new BadRequestException("지원하지 않는 정렬입니다.");
+            }
+            String field= arr[0].trim().toLowerCase();
+            String value= arr[1].trim().toLowerCase();
+            if(!value.equals("asc") && !value.equals("desc")){
+                throw new BadRequestException("지원하지 않는 정렬입니다.");
+            }
+
+            switch (field){
+                case "date" ->
+                    dateOrder= value.equals("desc")? planEntity.startDate.desc() : planEntity.startDate.asc();
+                case "category" ->
+                    orders.add(value.equals("desc")? planEntity.category.name.desc() : planEntity.category.name.asc());
+                default -> throw new BadRequestException("지원하지 않는 정렬입니다.");
+            }
+        }
+
+        //date 정렬 맨 앞으로 (우선)
+        if(dateOrder != null){
+            orders.add(0, dateOrder); //카테고리가 index 0에 있다면 뒤로 가짐
+        }
+
+        builder.and(planEntity.user.eq(user)); //유저 것만 조회 결과로
         if(startDate != null) {
             if (endDate != null) {
                 //start~end
-                builder.and(planEntity.startDate.loe(startDate));
+                builder.and(planEntity.endDate.loe(endDate));
             }
             //start~전 일자
             builder.and(planEntity.startDate.goe(startDate));
@@ -70,10 +90,9 @@ public class PlanService {
             builder.and(planEntity.status.eq(status));
         }
 
-        OrderSpecifier<?> order = sort.equals("desc")? planEntity.startDate.desc() : planEntity.startDate.asc();
         List<PlanEntity> plans= queryFactory.selectFrom(planEntity) //select * from planEntity
                 .where(builder)
-                .orderBy(order)
+                .orderBy(orders.toArray(new OrderSpecifier[0]))
                 .fetch(); //전체 결과 반환 (List<planEntity> 타입), 결과 없을 시 빈 리스트 (Null 반환 X)
 
         return plans.stream()

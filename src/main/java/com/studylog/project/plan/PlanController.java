@@ -38,45 +38,44 @@ public class PlanController {
                                                           @RequestParam(required = false) String category,
                                                           @RequestParam(required = false) String keyword,
                                                           @RequestParam(name="status", required = false) String statusStr,
-                                                          @RequestParam(required = false, defaultValue = "asc") String sort,
+                                                          @RequestParam(required = false) List<String> sort,
                                                           @AuthenticationPrincipal CustomUserDetail user) {
-        List<Long> categoryList= new ArrayList<>();
-        Boolean status= null; //null값 필요해서 객체 타입으로
-
-        sort= sort.trim().toLowerCase(); //공백 제거 & 소문자 (null이 될 리 X)
-        log.info("sort {}", sort);
-        if (!sort.equals("asc") && !sort.equals("desc")) {
-            throw new BadRequestException("지원하지 않는 정렬입니다.");
+        List<Long> categoryList = new ArrayList<>();
+        Boolean status = null; //null값 필요해서 객체 타입으로
+        if (sort == null || sort.isEmpty()) { //null or 빈 리스트
+            sort = List.of("date,asc", "category,asc"); //기본값 설정
+            log.info("sort {}", sort);
         }
-
         if (endDate != null && startDate == null) {
             //종료 일자 입력됐으면 시작 일자는 필수
             throw new BadRequestException("시작 일자는 필수 입력 값입니다.");
         }
         if (startDate != null && endDate != null) {
-            if(startDate.isAfter(endDate)) {
+            if (startDate.isAfter(endDate)) {
                 throw new BadRequestException("시작 날짜가 종료 날짜보다 뒤일 수 없습니다.");
             }
         }
-        if(category != null && !category.trim().isEmpty()) {
+        if (category != null && !category.trim().isEmpty()) {
             //여기 안 들어가면 categoryList는 null? ㄴㄴ 내가 위에 빈 리스트 집어넣음 .isEmpty로 검사
             log.info("category 있음");
             log.info("category: {}", category);
-            categoryList= CommonUtil.parseAndValidateCategory(category);
+            categoryList = CommonUtil.parseAndValidateCategory(category);
         }
         log.info("categoryList: {}", categoryList); //빈 리스트 or 찬 리스트
-        if(statusStr != null && !statusStr.trim().isEmpty()) {
+        if (statusStr != null && !statusStr.trim().isEmpty()) {
             //입력했으면 검사
-            status= parseStatus(statusStr);
+            status = parseStatus(statusStr);
         }
         log.info("status 값: {}", status);
-        keyword= (keyword == null)? null : keyword.trim(); //공백 제거
+        keyword = (keyword == null) ? null : keyword.trim(); //공백 제거
 
         //바디에 end 값 없으면 null 들어감 (start~전체 일정, end도 설정해야 당일/start~end 일정 나옴)
-        List<PlanResponse> planList= planService.searchPlans(user.getUser(), startDate, endDate,
-                                                            categoryList, keyword, status, sort);
+        List<PlanResponse> planList = planService.searchPlans(user.getUser(), startDate, endDate,
+                categoryList, keyword, status, sort);
         return ResponseEntity.ok(planList); //빈 리스트도 보내짐
-    }
+        }
+
+
 
     //계획 하나 조회
     @GetMapping("{planId}")

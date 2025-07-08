@@ -126,7 +126,7 @@ public class CategoryService {
 
         List<BoardEntity> boards= boardRepository.findByCategory(category);
         for (BoardEntity board : boards) {
-            board.updateCategory(defaultCategory, LocalDateTime.now());
+            board.updateCategory(defaultCategory);
         }
         categoryRepository.delete(category);
     }
