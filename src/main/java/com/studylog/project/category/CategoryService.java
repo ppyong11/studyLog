@@ -11,6 +11,8 @@ import com.studylog.project.global.exception.DuplicateException;
 import com.studylog.project.global.exception.NotFoundException;
 import com.studylog.project.plan.PlanEntity;
 import com.studylog.project.plan.PlanRepository;
+import com.studylog.project.timer.TimerEntity;
+import com.studylog.project.timer.TimerRepository;
 import com.studylog.project.user.UserEntity;
 import com.studylog.project.user.UserService;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,7 @@ public class CategoryService {
     private final PlanRepository planRepository;
     private final BoardRepository boardRepository;
     private final JPAQueryFactory queryFactory;
+    private final TimerRepository timerRepository;
 
     public void defaultCategory(UserEntity user) {
         CategoryEntity category = CategoryEntity.builder()
@@ -127,6 +130,11 @@ public class CategoryService {
         List<BoardEntity> boards= boardRepository.findByCategory(category);
         for (BoardEntity board : boards) {
             board.updateCategory(defaultCategory);
+        }
+
+        List<TimerEntity> timers= timerRepository.findAllByCategory(category);
+        for (TimerEntity timer : timers) {
+            timer.updateCategory(defaultCategory); //생성할 때 플랜.카테고리로 만든 카테고리라도 동기화 필요함 (이어져있지 X)
         }
         categoryRepository.delete(category);
     }
