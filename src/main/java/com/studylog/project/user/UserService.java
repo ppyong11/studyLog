@@ -142,7 +142,7 @@ public class UserService {
         log.info("탈퇴 처리 완료: 여부 {}, 시간 {}, ", userEntity.isDelete(), userEntity.getDeleteAt());
     }
 
-    @Scheduled(cron= "0 0/30 * * * ?") //매시 0분, 30분마다 실행
+    @Scheduled(fixedRate = 30 * 60 * 1000) //서버 실행 시간부터 30분마다 실행
     @Transactional
     public void deleteUser(){
         //isDelete == true && deleteAt < 지금 일자 - 3일 튜플 찾음
