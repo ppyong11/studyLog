@@ -130,23 +130,19 @@ public class PlanService {
     public void deletePlan(Long id, UserEntity user) {
         PlanEntity plan= planRepository.findByUserAndId(user, id)
                 .orElseThrow(() -> new NotFoundException("존재하지 않는 계획입니다."));
-        planRepository.delete(plan);
+        planRepository.delete(plan); //DB cascade로 타이머도 삭제됨
     }
 
     //유저, planId 검사
-    public PlanEntity getPlanByUserAndId(Long id, UserEntity user) {
+    private PlanEntity getPlanByUserAndId(Long id, UserEntity user) {
         return planRepository.findByUserAndId(user, id)
                 .orElseThrow(() -> new NotFoundException("존재하지 않는 계획입니다."));
     }
     //유효성 검사 후 카테고리 가져옴
-    public CategoryEntity getCategory(Long category, UserEntity user) {
+    private CategoryEntity getCategory(Long category, UserEntity user) {
         //유저에게 존재하지 않는 카테고리일 경우 반환 X
         //반환되는 카테고리도 영속 상태임 (@Transactional 써서 메서드 끝날 때까지 영속)
         return categoryRepository.findByUserAndId(user, category)
                 .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다"));
     }
-    /*
-    public void checkStatus(Long planId, UserEntity user) {
-        //일
-    }*/
 }
