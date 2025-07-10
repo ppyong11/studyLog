@@ -7,6 +7,8 @@ import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.exception.NotFoundException;
+import com.studylog.project.timer.TimerEntity;
+import com.studylog.project.timer.TimerRepository;
 import com.studylog.project.user.UserEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
 
 @Service
 @Slf4j
@@ -27,6 +30,7 @@ public class PlanService {
     private final PlanRepository planRepository;
     private final CategoryRepository categoryRepository;
     private final JPAQueryFactory queryFactory; //동적 쿼리용
+    private final TimerRepository timerRepository;
 
 
     public PlanResponse getPlan(Long planId, UserEntity user) {
@@ -112,6 +116,12 @@ public class PlanService {
         PlanEntity plan= getPlanByUserAndId(id, user);
         CategoryEntity category= getCategory(request.getCategoryId(), user);
         //reqeust에 들어온 값 확인, 값이 있고 빈 문자열이 아닐 경우에만 처리 (시간은
+
+        TimerEntity timer= timerRepository.findByPlan(plan);
+        if(timer != null){
+            timer.updateCategory(category);
+        }
+
         plan.updatePlan(request, category);
         //여기서 값 바뀐 거만 수정해 줌..
         /*나중에 추가할 로직

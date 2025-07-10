@@ -31,6 +31,8 @@ public class PlanEntity {
     @Column(nullable = false)
     private String plan_name;
 
+    private String plan_memo;
+
     @Column(name= "start_date",nullable = false)
     private LocalDate startDate;
 
@@ -44,7 +46,7 @@ public class PlanEntity {
     private boolean status; //계획 생성 시 0으로 설정
 
     @Builder
-    public PlanEntity (UserEntity user_id, CategoryEntity category_id, String plan_name,
+    public PlanEntity (UserEntity user_id, CategoryEntity category_id, String plan_name, String memo,
                        LocalDate startDate, LocalDate endDate, int minutes)
     {
         if(startDate.isAfter(endDate)){
@@ -56,6 +58,7 @@ public class PlanEntity {
         this.user = user_id;
         this.category = category_id;
         this.plan_name = plan_name.trim();
+        this.plan_memo = memo;
         this.startDate = startDate;
         this.endDate = endDate;
         this.minutes = minutes; //미지정 시 0

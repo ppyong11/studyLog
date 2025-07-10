@@ -11,6 +11,7 @@ import java.time.LocalDate;
 public class PlanResponse {
     private Long planId;
     private String planName;
+    private String memo;
     private String categoryName;
     private LocalDate startDate;
     private LocalDate endDate;
@@ -22,6 +23,7 @@ public class PlanResponse {
         return new PlanResponse(
                 plan.getId(),
                 plan.getPlan_name(),
+                plan.getPlan_memo(),
                 plan.getCategory().getName(), //id to name
                 plan.getStartDate(),
                 plan.getEndDate(),

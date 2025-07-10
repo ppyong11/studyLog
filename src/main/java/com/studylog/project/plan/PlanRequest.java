@@ -16,6 +16,7 @@ import java.time.LocalDate;
 public class PlanRequest {
     @NotBlank(message= "계획명을 입력해 주세요.")
     private String name;
+    private String memo;
     @NotNull(message = "카테고리를 선택해 주세요.")
     //json string -> long 타입 알아서 바꿔줌
     //숫자 값 아닐 시 ("abc") spring이 오류 잡아줌
@@ -31,6 +32,7 @@ public class PlanRequest {
                 .user_id(user)
                 .category_id(category)
                 .plan_name(this.name)
+                .memo(this.memo)
                 .startDate(this.startDate)
                 .endDate(this.endDate)
                 .minutes(this.minutes)
