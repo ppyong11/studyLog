@@ -35,7 +35,7 @@ public class PlanService {
 
     public PlanResponse getPlan(Long planId, UserEntity user) {
         PlanEntity plan= getPlanByUserAndId(planId, user);
-        return new PlanResponse(plan.getId(), plan.getPlan_name(), plan.getCategory().getName(),
+        return new PlanResponse(plan.getId(), plan.getPlan_name(), plan.getCategory().getName(), plan.getPlan_memo(),
                 plan.getStartDate(), plan.getEndDate(), plan.getMinutes(), plan.isStatus());
     }
 
