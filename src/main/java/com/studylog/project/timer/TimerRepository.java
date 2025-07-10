@@ -1,6 +1,7 @@
 package com.studylog.project.timer;
 
 import com.studylog.project.category.CategoryEntity;
+import com.studylog.project.plan.PlanEntity;
 import com.studylog.project.user.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -15,6 +16,8 @@ public interface TimerRepository extends JpaRepository<TimerEntity, Long> {
 
     List<TimerEntity> findAllByStatus(TimerStatus status);
     List<TimerEntity> findAllByCategory(CategoryEntity category);
+    TimerEntity findByPlan(PlanEntity plan);
 
     boolean existsByUserAndStatus(UserEntity user, TimerStatus status);
+    boolean existsByPlanId(Long planId);
 }

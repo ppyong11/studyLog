@@ -3,6 +3,7 @@ package com.studylog.project.board;
 import com.studylog.project.global.CommonUtil;
 import com.studylog.project.global.response.ApiResponse;
 import com.studylog.project.jwt.CustomUserDetail;
+import com.studylog.project.timer.TimerService;
 import jakarta.persistence.Column;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,7 @@ public class BoardController {
         BoardResponse response= boardService.getBoard(id, user.getUser());
         return ResponseEntity.ok(response);
     }
-    
+
     @GetMapping("/search")
     public ResponseEntity<List<BoardResponse>> searchBoards(@RequestParam(required = false) String category,
                                                             @RequestParam(required = false) String keyword,

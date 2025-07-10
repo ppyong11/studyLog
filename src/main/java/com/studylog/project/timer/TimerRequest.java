@@ -27,7 +27,7 @@ public class TimerRequest {
                 .timerName(this.name) //빌더로 값 넘김 -> 빌더를 통해 생성자로 전달됨 -> 생성자에서 trim 처리됨
                 .user_id(user)
                 .plan_id(plan) //null 갈 수 O
-                .category_id(plan == null? category : plan.getCategory())
+                .category_id(category)
                 .build();
         //endAt은 엔티티 빌더에서 초기화됨
     }

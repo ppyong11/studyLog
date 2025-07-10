@@ -39,11 +39,33 @@ public class TimerController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/{timerId}/pause")
+    public ResponseEntity<TimerResponse> pauseTimer(@PathVariable("timerId") Long id,
+                                                    @AuthenticationPrincipal CustomUserDetail user) {
+        TimerResponse response= timerService.pauseTimer(id, user.getUser());
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{timerId}/end")
+    public ResponseEntity<TimerResponse> endTimer(@PathVariable("timerId") Long id,
+                                                    @AuthenticationPrincipal CustomUserDetail user) {
+        TimerResponse response= timerService.endTimer(id, user.getUser());
+        return ResponseEntity.ok(response);
+    }
+
     @PatchMapping("/{timerId}")
     public ResponseEntity<TimerResponse> updateTimer(@PathVariable("timerId") Long id,
                                                      @Valid @RequestBody TimerRequest request,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
-        TimerResponse response= timerService.updateTimer(id, user.getUser());
+        TimerResponse response= timerService.updateTimer(id, request,user.getUser());
+        return ResponseEntity.ok(response);
+    }
+
+    //경과 시간 리셋
+    @PatchMapping("{timerId}/reset")
+    public ResponseEntity<TimerResponse> resetTimer(@PathVariable("timerId") Long id,
+                                                    @AuthenticationPrincipal CustomUserDetail user) {
+        TimerResponse response= timerService.resetTimer(id, user.getUser());
         return ResponseEntity.ok(response);
     }
 

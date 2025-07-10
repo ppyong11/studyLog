@@ -76,13 +76,19 @@ public class TimerEntity {
         this.status = TimerStatus.READY; //생성만 하고 사용 X
     }
 
-    //타이머 업데이트
-    public void updateTimer(TimerRequest request, PlanEntity plan, CategoryEntity category){
-        this.timerName= timerName.trim();
-        this.plan = plan; //null도 들어갈 수 o
-        //플랜이 없으면 카테고리 알아서 설정, 있다면 플랜 카테고리 따라감
-        this.category = plan == null? category : plan.getCategory();
+    //타이머 이름 업데이트
+    public void updateTimerName(String name){
+        this.timerName= name.trim();
     }
+
+    //타이머 계획-카테고리 업데이트
+    public void updatePlan(PlanEntity plan){
+        this.plan = plan; //null도 들어갈 수 o
+    }
+    public void updateCategory(CategoryEntity category){
+        this.category = category;
+    }
+
     //타이머 첫 시작 시
     public void startTimer() {
         this.startAt = LocalDateTime.now();
@@ -98,7 +104,17 @@ public class TimerEntity {
     //타이머 종료 시
     public void updateEndTimer(LocalDateTime endAt) {
         this.endAt = endAt;
-        status = TimerStatus.RUNNING;
+        status = TimerStatus.ENDED;
+    }
+
+    //타이머 리셋 시
+    public void resetTimer() {
+        this.startAt = null;
+        this.restartAt = null;
+        this.pauseAt = null;
+        this.syncedAt = null;
+        this.elapsedSecond = 0L;
+        this.status = TimerStatus.READY;
     }
 
     //타이머 정지 시
@@ -115,11 +131,6 @@ public class TimerEntity {
     //동기화 시간
     public void updateSyncedAt() {
         this.syncedAt = LocalDateTime.now();
-    }
-
-    //카테고리 업데이트
-    public void updateCategory(CategoryEntity category) {
-        this.category = category;
     }
 
     //수정 가능 필드: plan_id(플랜명), category_id(카테고리명)
