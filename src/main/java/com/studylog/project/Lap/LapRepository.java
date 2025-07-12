@@ -19,4 +19,5 @@ public interface LapRepository extends JpaRepository<LapEntity, Long> {
     Optional<LapEntity> findByIdAndTimer(Long lapId, TimerEntity timer);
 
     List<LapEntity> findAllByTimerAndStatus(TimerEntity timer, TimerStatus status);
+    List<LapEntity> findAllByTimer(TimerEntity timer);
 }

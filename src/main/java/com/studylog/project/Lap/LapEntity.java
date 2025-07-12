@@ -83,6 +83,16 @@ public class LapEntity {
         status = TimerStatus.ENDED;
     }
 
+    public void resetLap(){
+        this.startAt= null;
+        this.restartAt= null;
+        this.pauseAt= null;
+        this.endAt= null;
+        this.elapsed= 0L;
+        this.syncedAt= null;
+        this.status= TimerStatus.READY;
+    }
+
     public void updateElapsed(Long elapsed) {
         this.elapsed= elapsed;
     }
