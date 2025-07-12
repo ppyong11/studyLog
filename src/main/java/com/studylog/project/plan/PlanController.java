@@ -56,6 +56,7 @@ public class PlanController {
         }
         if (category != null && !category.trim().isEmpty()) {
             //여기 안 들어가면 categoryList는 null? ㄴㄴ 내가 위에 빈 리스트 집어넣음 .isEmpty로 검사
+            log.info("category: {}", category);
             categoryList = CommonUtil.parseAndValidateCategory(category);
         }
         if (statusStr != null && !statusStr.trim().isEmpty()) {

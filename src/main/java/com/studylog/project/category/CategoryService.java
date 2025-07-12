@@ -102,8 +102,10 @@ public class CategoryService {
             throw new NotFoundException("존재하지 않는 카테고리입니다.");
         if(category.getName().equals("기타"))
             throw new BadRequestException("해당 카테고리는 수정할 수 없습니다.");
-        if (categoryRepository.existsByUserAndName(user, request.getName()))
-            throw new DuplicateException("동일한 카테고리가 있습니다.");
+        if (categoryRepository.existsByUserAndName(user, request.getName().trim())){
+            if(!category.getName().equals(request.getName().trim()))
+                throw new DuplicateException("동일한 카테고리가 있습니다.");
+        }
         category.setCategory_name(request.getName());
     }
 

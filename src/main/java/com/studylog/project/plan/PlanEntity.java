@@ -58,7 +58,7 @@ public class PlanEntity {
         this.user = user;
         this.category = category;
         this.plan_name = plan_name.trim();
-        this.plan_memo = memo;
+        this.plan_memo = memo.trim();
         this.startDate = startDate;
         this.endDate = endDate;
         this.minutes = minutes; //미지정 시 0
@@ -79,7 +79,7 @@ public class PlanEntity {
         if(request.getMinutes() < 0){
             throw new BadRequestException("음수값은 입력될 수 없습니다.");
         }
-
+        this.plan_memo= request.getMemo().trim();
         this.plan_name = request.getName().trim();
         this.category = category;
         this.startDate = request.getStartDate();

@@ -12,6 +12,8 @@ public class CommonUtil {
 
     //카테고리 조회 검증 로직 (static이라 다른 파일에서 객체 선언 없이 사용 O)
     public static List<Long> parseAndValidateCategory(String category) {
+        if(!category.matches("^[0-9,]+$"))
+            throw new BadRequestException("숫자와 콤마만 입력할 수 있습니다.");
         if(!category.contains(",") && category.contains(" ")){
             //category=1  2 (거름)
             throw new BadRequestException("카테고리는 콤마(,)로 구분되어야 합니다.");

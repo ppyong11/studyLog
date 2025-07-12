@@ -29,8 +29,8 @@ public class PlanRequest {
     private Integer minutes;
     public PlanEntity toEntity(UserEntity user, CategoryEntity category) {
         return PlanEntity.builder()
-                .user_id(user)
-                .category_id(category)
+                .user(user)
+                .category(category)
                 .plan_name(this.name)
                 .memo(this.memo)
                 .startDate(this.startDate)

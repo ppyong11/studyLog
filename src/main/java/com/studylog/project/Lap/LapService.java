@@ -29,7 +29,7 @@ public class LapService {
         if(timer.getStatus().equals(TimerStatus.ENDED))
             throw new BadRequestException("종료된 타이머는 랩 생성이 불가합니다.");
         //타이머에 동일 랩 네임 X
-        if(lapRepository.findByTimerIdAndLapName(timerId, request.getName().trim()))
+        if(lapRepository.existsByTimerIdAndLapName(timerId, request.getName().trim()))
             throw new BadRequestException("해당 랩명이 존재합니다.");
         //존재 X 랩명이면
         LapEntity lap= request.toEntity(request, timer);
@@ -39,12 +39,11 @@ public class LapService {
 
     public TimerDetailResponse updateLap(Long timerId, Long lapId, LapRequest request, UserEntity user) {
         LapEntity lap= getLapByUserAndTimer(timerId, lapId, user);
-        if(lapRepository.findByTimerIdAndLapName(timerId, request.getName().trim())) {
+        if(lapRepository.existsByTimerIdAndLapName(timerId, request.getName().trim())) {
             if(!lap.getLapName().equals(request.getName().trim()))
                 throw new BadRequestException("해당 랩명이 존재합니다.");
-            else //동일한 랩명이 수정하려는 랩의 이름이라면 (동일명 수정 시 더티 체킹 안 걸려서 쿼리 안 나감)
-                lap.updateName(request.getName());
         }
+        lap.updateName(request.getName());
         return TimerDetailResponse.toDto(lap.getTimer());
     }
 
@@ -88,7 +87,7 @@ public class LapService {
         LapEntity lap= getLapByUserAndTimer(timerId, lapId, user);
         TimerEntity timer= lap.getTimer();
 
-        switch (timer.getStatus()) { //디폴트 안 써도 됨
+        switch (lap.getStatus()) { //디폴트 안 써도 됨
             case RUNNING -> {
                 lap.updateEndLap(LocalDateTime.now());
                 lap.updateElapsed(getTotalElapsed(lap)); //누적 시간 갱신
@@ -106,6 +105,7 @@ public class LapService {
     public TimerDetailResponse deleteLap(Long timerId, Long lapId, UserEntity user) {
         LapEntity lap= getLapByUserAndTimer(timerId, lapId, user);
         lapRepository.delete(lap);
+        lapRepository.flush(); //delete 쿼리 안 나가서 넣음
         return TimerDetailResponse.toDto(lap.getTimer());
     }
 

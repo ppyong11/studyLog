@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
 
 @Service
 @Slf4j
@@ -87,6 +88,7 @@ public class TimerService {
         if(planId != null) {
             builder.and(timerEntity.plan.id.eq(planId));
         }
+
         if(!categoryList.isEmpty()) {
             builder.and(timerEntity.category.id.in(categoryList));
         }
@@ -114,39 +116,46 @@ public class TimerService {
     }
 
     public TimerDetailResponse createTimer(TimerRequest request, UserEntity user) {
-
-        if(request.getPlan() != null)
-            checkDuplicatePlan(null, request.getPlan());
-
-        //유저 검증 & 계획-카테고리 검증
-        PlanAndCategory pac= checkPlanAndCategory(request, user);
-        PlanEntity plan= pac.plan();
-        CategoryEntity category= pac.category();
-
-        //계획이 있어도 카테고리랑 계획 일치하는지 검증해서 문제 없을 것
-        //계획에 딸린 카테고리로 타이머 카테고리도 설정됨
-        TimerEntity timer= request.toEntity(user, plan, category);
-
-        timerRepository.saveAndFlush(timer); //이때 timer에도 id 매핑됨 (AI 된 값)
-        return TimerDetailResponse.toDto(timer); //첫 생성 후 조회
+        PlanEntity plan= null;
+        CategoryEntity category;
+        TimerEntity timer;
+        if(request.getPlan() != null){
+            plan= planRepository.findByUserAndId(user, request.getPlan())
+                    .orElseThrow(() -> new BadRequestException("존재하지 않는 계획입니다."));
+            checkPlan(plan, null, request);
+            category= plan.getCategory();
+        } else{ //request에 플랜 X
+            category= categoryRepository.findByUserAndId(user, request.getCategory())
+                    .orElseThrow(() -> new BadRequestException("존재하지 않는 카테고리입니다."));
         }
 
-    //타이머 업데이트 (실행 중엔 변경 X)
-    /* 기존 계획id != 수정 계획id, 기존 계획 카테고리 != 수정 계획 카테고리 -> 계획 + 카테고리 검사
-       기존 계획 != 수정 계획, 기존 계획 카테고리 == 수정 계획 카테고리 -> 계획만 변경
-       -> 카테고리 서로 다른 거 확인하려면 check 메서드 타야 함
-       계획, 카테고리 바뀐 거 없으면 타이머 이름만 변경
-       종료된 타이머 수정해도 바뀐 계획에 완료 여부 반영 안 됨
-     */
+        timer= request.toEntity(user, plan, category);
+        timerRepository.saveAndFlush(timer); //이때 timer에도 id 매핑됨 (AI 된 값)
+        return TimerDetailResponse.toDto(timer); //첫 생성 후 조회
+    }
+    /*
+    원래 타이머의 계획이 없지 않는 이상, request 계획은 항상 들어옴 (수정 X일 경우 내 거로 채워서)
+    우선, 내 플랜이 완료처리됨 -> 동일 계획으로 요청들어오면 수정 O
+                         -> 다른 계획으로 요청 들어오면 수정 X
+    플랜 완료 처리 안됐으면 수정할 계획이 완료 처리 안 됐으면 수정 O
+    */
     public TimerDetailResponse updateTimer(Long id, TimerRequest request, UserEntity user) {
         TimerEntity timer= getTimerByUserAndId(user, id); //timer 존재 여부
+        PlanEntity plan= null;
+        CategoryEntity category;
 
-        if(request.getPlan() != null)
-            checkDuplicatePlan(timer, request.getPlan());
+        if(request.getPlan() != null){
+            plan= planRepository.findByUserAndId(user, request.getPlan())
+                    .orElseThrow(() -> new BadRequestException("존재하지 않는 계획입니다."));
+            checkPlan(plan, timer, request);
+            category= plan.getCategory();
+        } else{ //request에 플랜 X
+            if(timer.getPlan() != null && timer.getPlan().isStatus())
+                throw new BadRequestException("완료 처리된 계획은 수정할 수 없습니다.");
+            category= categoryRepository.findByUserAndId(user, request.getCategory())
+                    .orElseThrow(() -> new BadRequestException("존재하지 않는 카테고리입니다."));
+        }
 
-        PlanAndCategory pac= checkPlanAndCategory(request, user);
-        PlanEntity plan= pac.plan(); //입력된 plan 없으면 null
-        CategoryEntity category= pac.category();
         timer.updateTimerName(request.getName());
         timer.updatePlan(plan);
         timer.updateCategory(category);
@@ -168,7 +177,6 @@ public class TimerService {
             case READY -> timer.startTimer(); //첫 실행
             case PAUSED -> timer.updateRestartTimer(); //재시작
         }
-
         return TimerDetailResponse.toDto(timer);
     }
 
@@ -198,7 +206,6 @@ public class TimerService {
     public TimerDetailResponse pauseTimer(Long id, UserEntity user) {
         TimerEntity timer= getTimerByUserAndId(user, id);
 
-
         switch (timer.getStatus()) { //디폴트 안 써도 됨
             case RUNNING -> {
                 timer.updatePauseTimer();
@@ -213,6 +220,7 @@ public class TimerService {
         }
 
         timer.updateElapsed(getTotalElapsed(timer)); //누적 시간 갱신
+        if(timer.getPlan() != null) checkCompleted(timer);
         return TimerDetailResponse.toDto(timer);
     }
 
@@ -223,26 +231,30 @@ public class TimerService {
             case RUNNING -> {
                 timer.updateEndTimer(LocalDateTime.now());
                 timer.updateElapsed(getTotalElapsed(timer)); //누적 시간 갱신
-                lapRepository.findByTimerAndStatus(timer, TimerStatus.RUNNING)
-                        .ifPresent(lap -> {
-                            lap.updateEndLap(LocalDateTime.now());
-                            lap.updateElapsed(lapService.getTotalElapsed(lap));
-                        });
             }
             case ENDED -> throw new BadRequestException("이미 종료된 타이머입니다.");
             case READY -> throw new BadRequestException("실행 중인 타이머가 아닙니다.");
-            case PAUSED -> {
-                timer.updateEndTimer(timer.getPauseAt()); //정지된 타이머라면 정지 시간 == 종료 시간 (누적 시간 갱신은 정지할 때 함)
-                List<LapEntity> laps= lapRepository.findAllByTimerAndStatus(timer, TimerStatus.PAUSED);
-                for (LapEntity lap : laps) { //정지된 랩들 모두 종료 처리 (정합성)
-                    lap.updateEndLap(lap.getPauseAt());
+            case PAUSED -> timer.updateEndTimer(timer.getPauseAt()); //정지된 타이머라면 정지 시간 == 종료 시간 (누적 시간 갱신은 정지할 때 함)
+        }
+        List<LapEntity> laps= lapRepository.findAllByTimer(timer);
+        for (LapEntity lap : laps) {
+            switch (lap.getStatus()) {
+                case RUNNING -> {
+                    lap.updateEndLap(LocalDateTime.now());
                     lap.updateElapsed(lapService.getTotalElapsed(lap));
                 }
+                case PAUSED -> {
+                    lap.updateEndLap(lap.getPauseAt()); //pasue -> end는 pauseAt == endAt
+                    lap.updateElapsed(lapService.getTotalElapsed(lap));
+                }
+                case READY -> lap.updateEndLap(null);
             }
         }
+        if(timer.getPlan() != null) checkCompleted(timer);
         return TimerDetailResponse.toDto(timer);
     }
 
+    //완료 체킹은 그대로
     public TimerDetailResponse resetTimer(Long id, UserEntity user) {
         TimerEntity timer= getTimerByUserAndId(user, id);
         switch (timer.getStatus()) {
@@ -289,34 +301,27 @@ public class TimerService {
         return timerRepository.findByUserAndId(user, id).orElseThrow(() -> new NotFoundException("존재하지 않는 타이머입니다."));
     }
 
-    //계획-카테고리 검증
-    private PlanAndCategory checkPlanAndCategory(TimerRequest request, UserEntity user) {
-        PlanEntity plan= null;
-        CategoryEntity category= null;
-
-        if (request.getPlan() != null){
-            plan= planRepository.findByUserAndId(user, request.getPlan())
-                    .orElseThrow(() -> new NotFoundException("존재하지 않는 계획입니다."));
-            if(!plan.getCategory().getId().equals(request.getCategory())){ //달라도 입력 카테고리 무시하긴 하지만 일관성을 위해 넣음
+    private void checkPlan(PlanEntity plan, TimerEntity timer, TimerRequest request) {
+        if(timer == null || timer.getPlan() == null || !timer.getPlan().getId().equals(plan.getId())){
+            if(timerRepository.existsByPlanId(plan.getId())) throw new BadRequestException("선택한 계획의 타이머가 이미 존재합니다.");
+            if(plan.isStatus()) throw new BadRequestException("이미 완료된 계획은 설정할 수 없습니다.");
+            if(!plan.getCategory().getId().equals(request.getCategory())){
                 throw new BadRequestException("입력된 카테고리가 계획 카테고리와 일치하지 않습니다.");
             }
-            category= plan.getCategory();
-        } else { //plan == null, 카테고리만 검색
-            category= categoryRepository.findByUserAndId(user, request.getCategory())
-                    .orElseThrow(()-> new NotFoundException("존재하지 않는 카테고리입니다."));
+        } else{ //타이머에 plan 있고 수정하려는 plan과 동일할 때
+            if(!timer.getPlan().getCategory().getId().equals(request.getCategory()))
+                throw new BadRequestException("입력된 카테고리가 계획 카테고리와 일치하지 않습니다.");
         }
-        return new PlanAndCategory(plan, category); //입력된 plan 없으면 null 반환
     }
 
-    //계획 중복 검사
-    private void checkDuplicatePlan(TimerEntity timer, Long planId) {
-        if (timerRepository.existsByPlanId(planId)) {
-            if(timer == null) throw new BadRequestException("선택한 계획의 타이머가 이미 존재합니다.");
-            else { //타이머가 있을 때 겹치면 (현재 타이머의 계획과 수정할 계획이 같으면 문제 X)
-                if(timer.getPlan() == null || !timer.getPlan().getId().equals(planId)) { //타이머 엔티티의 계획이 null이면 다른 타이머와 겹친다는 것
-                    throw new BadRequestException("선택한 계획의 타이머가 이미 존재합니다.");
-                }
-            }
+    //계획 체킹 (미완료 & 목표 시간 넘었으면)
+    private void checkCompleted(TimerEntity timer){
+        if (!timer.getPlan().isStatus() && timer.getElapsed() >= timer.getPlan().getMinutes() * 60) {
+            EventPayload payload = new EventPayload();
+            payload.setType("plan-completed");
+            payload.setId(timer.getUser().getUser_id());
+            payload.setMessage("🎉계획 목표 달성 시간을 채웠습니다! 설정한 계획이 완료 처리되었습니다.");
+            sseEmitterService.broadcast(timer.getUser(), payload);
         }
     }
 
@@ -330,13 +335,7 @@ public class TimerService {
                 timer.updateElapsed(getTotalElapsed(timer)); //누적 경과+startAt+동기화 시간
                 timer.updateSyncedAt(); //자동 동기화
                 if(timer.getPlan() != null){ //타이머에 계획이 있다면
-                    if (timer.getElapsed() >= timer.getPlan().getMinutes() * 60) {
-                        EventPayload payload = new EventPayload();
-                        payload.setType("plan-completed");
-                        payload.setId(timer.getUser().getUser_id());
-                        payload.setMessage("계획 목표 달성 시간을 채웠습니다! 타이머를 정지 및 종료하면 계획이 완료돼요");
-                        sseEmitterService.broadcast(timer.getUser(), payload);
-                    } //타이머에 계획 없으면 동기화만..
+                    checkCompleted(timer);
                 }
                 lapRepository.findByTimerAndStatus(timer, TimerStatus.RUNNING)
                         .ifPresent(lap -> {

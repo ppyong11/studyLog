@@ -11,7 +11,7 @@ import java.util.Optional;
 @Repository
 public interface LapRepository extends JpaRepository<LapEntity, Long> {
     //Timer 객체 + JPA 네이밍 파싱으로 알아서 id 찾아줌
-    boolean findByTimerIdAndLapName(Long timerId, String name);
+    boolean existsByTimerIdAndLapName(Long timerId, String name);
     boolean existsByTimerAndStatus(TimerEntity timerEntity, TimerStatus status);
 
     //실행 중인 랩 가져오기

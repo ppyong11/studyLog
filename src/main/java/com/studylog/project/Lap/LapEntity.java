@@ -42,6 +42,8 @@ public class LapEntity {
     @Column(name="synced_at")
     private LocalDateTime syncedAt;
 
+    @Column(length = 10, columnDefinition = "varchar")
+    @Enumerated(EnumType.STRING)
     private TimerStatus status;
 
     @Builder
