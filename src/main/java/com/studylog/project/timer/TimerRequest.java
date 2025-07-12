@@ -9,13 +9,11 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
 @NoArgsConstructor
 @Getter
 public class TimerRequest {
     @NotBlank(message = "타이머 제목을 입력해 주세요.")
-    @Size(max= 30, message = "30자 이내로 입력해 주세요.")
+    @Size(max= 20, message = "20자 이내로 입력해 주세요.")
     private String name; //null 가능
 
     private Long plan; //null 가능
