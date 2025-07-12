@@ -46,7 +46,7 @@ public class PlanEntity {
     private boolean status; //계획 생성 시 0으로 설정
 
     @Builder
-    public PlanEntity (UserEntity user_id, CategoryEntity category_id, String plan_name, String memo,
+    public PlanEntity (UserEntity user, CategoryEntity category, String plan_name, String memo,
                        LocalDate startDate, LocalDate endDate, int minutes)
     {
         if(startDate.isAfter(endDate)){
@@ -55,8 +55,8 @@ public class PlanEntity {
         if(minutes < 0){
             throw new BadRequestException("음수값은 입력될 수 없습니다.");
         }
-        this.user = user_id;
-        this.category = category_id;
+        this.user = user;
+        this.category = category;
         this.plan_name = plan_name.trim();
         this.plan_memo = memo;
         this.startDate = startDate;

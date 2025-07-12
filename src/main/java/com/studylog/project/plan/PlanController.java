@@ -44,7 +44,6 @@ public class PlanController {
         Boolean status = null; //null값 필요해서 객체 타입으로
         if (sort == null || sort.isEmpty()) { //null or 빈 리스트
             sort = List.of("date,asc", "category,asc"); //기본값 설정
-            log.info("sort {}", sort);
         }
         if (endDate != null && startDate == null) {
             //종료 일자 입력됐으면 시작 일자는 필수
@@ -57,11 +56,8 @@ public class PlanController {
         }
         if (category != null && !category.trim().isEmpty()) {
             //여기 안 들어가면 categoryList는 null? ㄴㄴ 내가 위에 빈 리스트 집어넣음 .isEmpty로 검사
-            log.info("category 있음");
-            log.info("category: {}", category);
             categoryList = CommonUtil.parseAndValidateCategory(category);
         }
-        log.info("categoryList: {}", categoryList); //빈 리스트 or 찬 리스트
         if (statusStr != null && !statusStr.trim().isEmpty()) {
             //입력했으면 검사
             status = parseStatus(statusStr);
