@@ -1,10 +1,9 @@
 package com.studylog.project.board;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.studylog.project.global.CommonUtil;
 import com.studylog.project.global.response.ApiResponse;
 import com.studylog.project.jwt.CustomUserDetail;
-import com.studylog.project.timer.TimerService;
-import jakarta.persistence.Column;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,9 +23,9 @@ public class BoardController {
     private final BoardService boardService;
 
     @GetMapping("/{boardId}")
-    public ResponseEntity<BoardResponse> getBoards(@PathVariable("boardId") Long id,
+    public ResponseEntity<BoardDetailResponse> getBoards(@PathVariable("boardId") Long id,
                                    @AuthenticationPrincipal CustomUserDetail user) {
-        BoardResponse response= boardService.getBoard(id, user.getUser());
+        BoardDetailResponse response= boardService.getBoard(id, user.getUser());
         return ResponseEntity.ok(response);
     }
 
@@ -51,18 +50,17 @@ public class BoardController {
     }
 
     @PostMapping("")
-    public ResponseEntity<BoardResponse> createBoard(@Valid @RequestBody BoardRequest request,
+    public ResponseEntity<BoardDetailResponse> createBoard(@Valid @RequestBody BoardCreateRequest request,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
-        BoardResponse response= boardService.createBoard(request, user.getUser());
+        BoardDetailResponse response= boardService.createBoard(request, user.getUser());
         return ResponseEntity.ok(response);
     }
 
     @PatchMapping("{boardId}")
-    public ResponseEntity<BoardResponse> updateBoard(@PathVariable("boardId") Long id,
-                                                     @Valid @RequestBody BoardRequest request,
+    public ResponseEntity<BoardDetailResponse> updateBoard(@PathVariable("boardId") Long id,
+                                                     @Valid @RequestBody BoardUpdateRequest request,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
-        BoardResponse response= boardService.updateBoard(id, request, user.getUser());
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(boardService.updateBoard(id, request, user.getUser()));
     }
 
     @DeleteMapping("{boardId}")

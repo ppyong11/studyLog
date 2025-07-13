@@ -1,12 +1,15 @@
 package com.studylog.project.board;
 
 import com.studylog.project.category.CategoryEntity;
+import com.studylog.project.file.FileEntity;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @NoArgsConstructor
 @Getter
@@ -34,6 +37,10 @@ public class BoardEntity {
     private LocalDateTime upload_at;
     private LocalDateTime update_at;
 
+    //FileEntity의 board_id를 참조해서 BoardEntity의 files 리스트에 들어가는 구조
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL)
+    private List<FileEntity> files= new ArrayList<>();
+
     @Builder
     public BoardEntity(UserEntity user_id, CategoryEntity category_id, String title, String content
     , LocalDateTime upload_at) {
@@ -46,7 +53,7 @@ public class BoardEntity {
     }
 
     //게시판 수정 (카테고리, 제목, 내용, 수정일)
-    public void updateBoard(CategoryEntity category, BoardRequest request) {
+    public void updateBoard(CategoryEntity category, BoardUpdateRequest request) {
         this.category = category;
         if (request.getTitle() == null || request.getTitle().isBlank())
             throw new BadRequestException("제목을 입력해 주세요.");

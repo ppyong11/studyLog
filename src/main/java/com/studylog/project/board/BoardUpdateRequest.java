@@ -1,5 +1,6 @@
 package com.studylog.project.board;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.user.UserEntity;
 import jakarta.validation.constraints.NotBlank;
@@ -11,7 +12,8 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 @Getter
-public class BoardRequest {
+@JsonIgnoreProperties(ignoreUnknown = false) //DTO에 없는 필드 들어오면 에러
+public class BoardUpdateRequest {
     @NotNull(message = "카테고리를 선택해 주세요.")
     private Long categoryId;
     @NotBlank(message = "제목을 입력해 주세요.")

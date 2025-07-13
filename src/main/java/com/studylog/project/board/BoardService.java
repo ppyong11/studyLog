@@ -5,14 +5,17 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
+import com.studylog.project.file.FileEntity;
+import com.studylog.project.file.FileRepository;
+import com.studylog.project.file.FileService;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.exception.NotFoundException;
 import com.studylog.project.user.UserEntity;
-import com.studylog.project.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,10 +28,12 @@ public class BoardService {
     private final BoardRepository boardRepository;
     private final CategoryRepository categoryRepository;
     private final JPAQueryFactory queryFactory;
+    private final FileService fileService;
+    private final FileRepository fileRepository;
 
-    public BoardResponse getBoard(Long id, UserEntity user) {
+    public BoardDetailResponse getBoard(Long id, UserEntity user) {
         BoardEntity board = getBoardByUserAndId(user, id);
-        return BoardResponse.toDto(board);
+        return BoardDetailResponse.toDto(board);
     }
 
     public List<BoardResponse> searchBoards(List<Long> categoryList, String keyword, List<String> sort,
@@ -80,24 +85,34 @@ public class BoardService {
                 .toList();
     }
 
-    public BoardResponse createBoard(BoardRequest request, UserEntity user) {
+    public BoardDetailResponse createBoard(BoardCreateRequest request, UserEntity user) {
+        if(request.getDraftId() == null) throw new BadRequestException("게시글 고유 값이 없습니다.");
         //board의 category는 categoryEntity타입으로 조회하고 엔티티로 받기
         CategoryEntity category= categoryRepository.findByUserAndId(user, request.getCategoryId())
                 .orElseThrow(() -> new BadRequestException("존재하지 않는 카테고리입니다."));
+
         BoardEntity board = request.toEntity(user, category);
         boardRepository.saveAndFlush(board); //이때는 board.id 있음
-
-        return BoardResponse.toDto(board);
+        List<FileEntity> files= fileRepository.findAllByUserAndDraftId(user, request.getDraftId());
+        for (FileEntity file : files) {
+            file.updateBoard(board);
+            file.resetDraftIdAndDraftFalse(); //임시파일 게시글 연결됐으니까 초기화
+            board.getFiles().add(file); //파일 반영 안 돼서 직접 추가
+        }
+        return BoardDetailResponse.toDto(board);
     }
 
-    public BoardResponse updateBoard(Long id, BoardRequest request, UserEntity user) {
+    public BoardDetailResponse updateBoard(Long id, BoardUpdateRequest request, UserEntity user) {
         BoardEntity board = getBoardByUserAndId(user, id);
         CategoryEntity category= categoryRepository.findByUserAndId(user, request.getCategoryId())
                 .orElseThrow(() -> new BadRequestException("존재하지 않는 카테고리입니다."));
 
         board.updateBoard(category, request);
-        log.info("게시글 수정 완료");
-        return BoardResponse.toDto(board);
+        List<FileEntity> files= fileRepository.findAllByUserAndBoard(user, board);
+        for(FileEntity file : files) {
+            file.resetDraftIdAndDraftFalse();
+        }
+        return BoardDetailResponse.toDto(board);
 
     }
 
