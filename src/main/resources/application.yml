@@ -34,6 +34,14 @@ spring:
     properties:
       hibernate:
         format_sql: true #SQL 예쁘게 출력
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true #DTO에 없는 필드 막기
 
 logging:
   pattern:
