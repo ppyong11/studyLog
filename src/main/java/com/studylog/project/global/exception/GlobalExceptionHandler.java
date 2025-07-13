@@ -2,12 +2,14 @@ package com.studylog.project.global.exception;
 
 import com.studylog.project.global.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.util.http.fileupload.FileUploadException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -47,7 +49,19 @@ public class GlobalExceptionHandler {
                 .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
     }
 
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException e) {
+        HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(httpStatus)
+                .body(new ApiResponse(httpStatus.value(), false, "파일 용량 제한 20MB를 넘어 업로드할 수 없습니다."));
+    }
 
+    @ExceptionHandler(FileUploadException.class)
+    public ResponseEntity<ApiResponse> handleFileUpload(FileUploadException e) {
+        HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(httpStatus)
+                .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
+    }
     @ExceptionHandler(LoginFaildException.class)
     public ResponseEntity<ApiResponse> handleLogFaild(LoginFaildException e) {
         HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
