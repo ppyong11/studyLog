@@ -129,9 +129,8 @@ public class TimerController {
 
     //동기화 컨트롤러
     @PatchMapping("{timerId}/sync")
-    public ResponseEntity<ApiResponse> syncedTimer(@PathVariable("timerId") Long id,
+    public ResponseEntity<TimerDetailResponse> syncedTimer(@PathVariable("timerId") Long id,
                                                    @AuthenticationPrincipal CustomUserDetail user) {
-        timerService.syncedTimer(id, user.getUser());
-        return ResponseEntity.ok(new ApiResponse(200, true, "동기화 되었습니다."));
+        return ResponseEntity.ok(timerService.syncedTimer(id, user.getUser()));
     }
 }

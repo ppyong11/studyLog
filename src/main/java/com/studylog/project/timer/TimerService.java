@@ -172,11 +172,10 @@ public class TimerService {
         if(timerRepository.existsByUserAndStatus(user, TimerStatus.RUNNING))
             throw new BadRequestException("실행 중인 타이머가 있습니다. 정지/종료 후 다시 시도해 주세요.");
 
-        switch (timer.getStatus()) { //디폴트 안 써도 됨
-            case ENDED -> throw new BadRequestException("종료된 타이머는 재실행이 불가합니다.");
-            case READY -> timer.startTimer(); //첫 실행
-            case PAUSED -> timer.updateRestartTimer(); //재시작
-        }
+        if(timer.getStatus().equals(TimerStatus.ENDED))
+            throw new BadRequestException("종료된 타이머는 실행이 불가합니다.");
+
+        timer.startTimer();
         return TimerDetailResponse.toDto(timer);
     }
 
@@ -188,7 +187,7 @@ public class TimerService {
 
     //타이머 동기화
     //실행 중인 타이머의 실행 중인 랩 동기화
-    public void syncedTimer(Long id, UserEntity user) {
+    public TimerDetailResponse syncedTimer(Long id, UserEntity user) {
         TimerEntity timer= getTimerByUserAndId(user, id);
         if(!timer.getStatus().equals(TimerStatus.RUNNING))
             throw new BadRequestException("실행 중인 타이머가 아닙니다.");
@@ -200,6 +199,8 @@ public class TimerService {
                         });
         timer.updateElapsed(getTotalElapsed(timer)); //누적 경과+startAt+동기화 시간
         timer.updateSyncedAt(); //동기화
+        syncedCheckCompleted(timer);
+        return TimerDetailResponse.toDto(timer);
     }
 
     //정지 시 실행 중인 랩도 정지됨
@@ -278,7 +279,7 @@ public class TimerService {
         LocalDateTime startAt;
 
         if(timer.getSyncedAt() == null){ //동기화 전
-            startAt = timer.getRestartAt() == null ? timer.getStartAt() : timer.getRestartAt();
+            startAt = timer.getStartAt();
             switch (timer.getStatus()) { //디폴트 안 써도 됨
                 case RUNNING -> time = LocalDateTime.now();
                 case PAUSED -> time= timer.getPauseAt();
@@ -314,15 +315,49 @@ public class TimerService {
         }
     }
 
-    //계획 체킹 (미완료 & 목표 시간 넘었으면)
-    private void checkCompleted(TimerEntity timer){
-        if (!timer.getPlan().isStatus() && timer.getElapsed() >= timer.getPlan().getMinutes() * 60) {
-            EventPayload payload = new EventPayload();
-            payload.setType("plan-completed");
-            payload.setId(timer.getUser().getUser_id());
-            payload.setMessage("🎉계획 목표 달성 시간을 채웠습니다! 설정한 계획이 완료 처리되었습니다.");
-            sseEmitterService.broadcast(timer.getUser(), payload);
+    //동기화 시 활용 (syncedAt 항상 있음), end 필요 X
+    private void syncedCheckCompleted(TimerEntity timer){
+        LocalDate timerStartDate= timer.getSyncedAt().toLocalDate();
+        LocalDate planStart= timer.getPlan().getStartDate();
+        LocalDate planEnd= timer.getPlan().getEndDate();
+
+        //미완료 & 계획 일자 이후에 수행되었으면
+        if (!timer.getPlan().isStatus()) { //planStart <= timerStart <= planEnd
+            if((timerStartDate.isEqual(planStart) || timerStartDate.isAfter(planStart))
+            && (timerStartDate.isEqual(planEnd) || timerStartDate.isBefore(planEnd))){
+                if(timer.getElapsed() >= timer.getPlan().getMinutes() * 60){
+                    timer.getPlan().updateStatus(true);
+                    alert(timer);
+                }
+            }
         }
+    }
+
+    //정지/종료 후 활용
+    private void checkCompleted(TimerEntity timer){
+        LocalDate timerStartDate= timer.getSyncedAt() == null? timer.getStartAt().toLocalDate():timer.getSyncedAt().toLocalDate();
+        LocalDate timerEndDate= timer.getEndAt() == null? timer.getPauseAt().toLocalDate():timer.getEndAt().toLocalDate();
+        LocalDate planStart= timer.getPlan().getStartDate();
+        LocalDate planEnd= timer.getPlan().getEndDate();
+
+        //미완료 & 계획 일자 이후에 수행되었으면
+        if (!timer.getPlan().isStatus()) { //timerStart >= planStart && timerEnd <= planEnd
+            if((timerStartDate.isEqual(planStart) || timerStartDate.isAfter(planStart))
+                    && (timerEndDate.isEqual(planEnd) || timerEndDate.isBefore(planEnd))){
+                if(timer.getElapsed() >= timer.getPlan().getMinutes() * 60){
+                    timer.getPlan().updateStatus(true);
+                    alert(timer);
+                }
+            }
+        }
+    }
+
+    private void alert(TimerEntity timer){
+        EventPayload payload = new EventPayload();
+        payload.setType("plan-completed");
+        payload.setId(timer.getUser().getUser_id());
+        payload.setMessage(String.format("🎉계획 목표 달성 시간을 채웠습니다! [%s] 계획이 완료 처리되었습니다.", timer.getPlan().getPlan_name()));
+        sseEmitterService.broadcast(timer.getUser(), payload);
     }
 
     @Scheduled(cron= "0 0/5 * * * *") //5분 간격 스케쥴링
@@ -335,7 +370,7 @@ public class TimerService {
                 timer.updateElapsed(getTotalElapsed(timer)); //누적 경과+startAt+동기화 시간
                 timer.updateSyncedAt(); //자동 동기화
                 if(timer.getPlan() != null){ //타이머에 계획이 있다면
-                    checkCompleted(timer);
+                    syncedCheckCompleted(timer);
                 }
                 lapRepository.findByTimerAndStatus(timer, TimerStatus.RUNNING)
                         .ifPresent(lap -> {

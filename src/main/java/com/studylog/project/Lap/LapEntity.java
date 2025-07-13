@@ -32,8 +32,6 @@ public class LapEntity {
 
     @Column(name="start_at")
     private LocalDateTime startAt;
-    @Column(name="restart_at")
-    private LocalDateTime restartAt;
     @Column(name="pause_at")
     private LocalDateTime pauseAt;
     @Column(name="end_at")
@@ -52,7 +50,6 @@ public class LapEntity {
         this.lapName= name.trim();
         this.createDate= LocalDate.now();
         this.startAt= null;
-        this.restartAt= null;
         this.pauseAt= null;
         this.endAt= null;
         this.syncedAt= null;
@@ -67,11 +64,6 @@ public class LapEntity {
     public void startLap() {
         this.startAt = LocalDateTime.now();
         this.status = TimerStatus.RUNNING;
-    }
-
-    public void updateRestartLap(){
-        this.restartAt = LocalDateTime.now();
-        status = TimerStatus.RUNNING;
         this.syncedAt = null;
     }
 
@@ -87,7 +79,6 @@ public class LapEntity {
 
     public void resetLap(){
         this.startAt= null;
-        this.restartAt= null;
         this.pauseAt= null;
         this.endAt= null;
         this.elapsed= 0L;

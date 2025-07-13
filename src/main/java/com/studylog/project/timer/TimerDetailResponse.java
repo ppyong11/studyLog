@@ -16,13 +16,15 @@ public class TimerDetailResponse {
     private Long timerId;
     private String timerName;
     //수정창 들어가면 드롭다운 전체 조회됨
+    private Long planId;
     private String planName;
+    private LocalDate planStartDate;
+    private LocalDate planEndDate;
+    private Boolean planStatus;
     private String categoryName;
     private LocalDate createDate;
     @JsonFormat(shape= JsonFormat.Shape.STRING, pattern = "yy-MM-dd HH:mm:ss")
     private LocalDateTime startAt;
-    @JsonFormat(shape= JsonFormat.Shape.STRING, pattern = "yy-MM-dd HH:mm:ss")
-    private LocalDateTime restartAt;
     @JsonFormat(shape= JsonFormat.Shape.STRING, pattern = "yy-MM-dd HH:mm:ss")
     private LocalDateTime endAt;
     @JsonFormat(shape= JsonFormat.Shape.STRING, pattern = "yy-MM-dd HH:mm:ss")
@@ -37,9 +39,13 @@ public class TimerDetailResponse {
                 .collect(Collectors.toList());
 
         return new TimerDetailResponse(timer.getId(), timer.getTimerName(),
+                timer.getPlan() == null? null: timer.getPlan().getId(),
                 timer.getPlan() == null? null: timer.getPlan().getPlan_name(),
+                timer.getPlan() == null? null: timer.getPlan().getStartDate(),
+                timer.getPlan() == null? null: timer.getPlan().getEndDate(),
+                timer.getPlan() == null? null: timer.getPlan().isStatus(),
                 timer.getCategory().getName(), timer.getCreateDate(),
-                timer.getStartAt(), timer.getRestartAt(),timer.getEndAt(), timer.getPauseAt(),
+                timer.getStartAt() ,timer.getEndAt(), timer.getPauseAt(),
                 timer.getElapsed(), timer.getStatus(), laps);
     }
 }

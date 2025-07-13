@@ -61,11 +61,10 @@ public class LapService {
         if(lapRepository.existsByTimerAndStatus(timer, TimerStatus.RUNNING))
             throw new BadRequestException("실행 중인 랩이 있습니다. 정지/종료 후 다시 시도해 주세요.");
 
-        switch (lap.getStatus()) {
-            case READY -> lap.startLap();
-            case PAUSED -> lap.updateRestartLap();
-            case ENDED -> throw new BadRequestException("종료된 랩은 재실행이 불가합니다.");
-        }
+        if(lap.getStatus().equals(TimerStatus.ENDED))
+            throw new BadRequestException("종료된 랩은 재실행이 불가합니다.");
+
+        lap.startLap();
         return TimerDetailResponse.toDto(timer);
     }
 
@@ -115,7 +114,7 @@ public class LapService {
         LocalDateTime startAt;
 
         if(lap.getSyncedAt() == null){ //동기화 전
-            startAt = lap.getRestartAt() == null ? lap.getStartAt() : lap.getRestartAt();
+            startAt = lap.getStartAt();
             switch (lap.getStatus()) { //디폴트 안 써도 됨
                 case RUNNING -> time = LocalDateTime.now();
                 case PAUSED -> time= lap.getPauseAt();

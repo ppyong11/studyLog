@@ -43,9 +43,6 @@ public class TimerEntity {
     @Column(name= "start_at")
     private LocalDateTime startAt;
 
-    @Column(name= "restart_at")
-    private LocalDateTime restartAt;
-
     @Column(name= "end_at")
     private LocalDateTime endAt; //종료 시간, 처음엔 null
 
@@ -75,7 +72,6 @@ public class TimerEntity {
         this.createDate = LocalDate.now();
         this.startAt = null;
         this.elapsed = 0L; //첫 생성 시 0초
-        this.restartAt = null;
         this.endAt = null;
         this.pauseAt = null;
         this.syncedAt = null;
@@ -95,16 +91,10 @@ public class TimerEntity {
         this.category = category;
     }
 
-    //타이머 첫 시작 시
+    //타이머 시작 시
     public void startTimer() {
         this.startAt = LocalDateTime.now();
         this.status = TimerStatus.RUNNING;
-    }
-
-    //타이머 시작 시
-    public void updateRestartTimer(){
-        this.restartAt = LocalDateTime.now();
-        status = TimerStatus.RUNNING;
         this.syncedAt = null;
     }
 
@@ -117,7 +107,6 @@ public class TimerEntity {
     //타이머 리셋 시
     public void resetTimer() {
         this.startAt = null;
-        this.restartAt = null;
         this.pauseAt = null;
         this.syncedAt = null;
         this.elapsed = 0L;
