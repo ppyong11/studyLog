@@ -46,7 +46,10 @@ jobs:
       run: ./gradlew build -x test
     #이름 변수
     - name: Set datetime var
-      run: echo "DATETIME=$(date+'%Y%m%d-%H%M')" >> $GITHUB_ENV
+      run: echo "DATETIME=$(date '+%Y%m%d-%H%M')" >> $GITHUB_ENV
+    - name: Check datetime var
+      run: echo "DATETIME=$DATETIME"
+
     #빌드된 파일 이름 변경
     - name: Change Build Name
       run: mv build/libs/studyLog-0.0.1-SNAPSHOT.jar build/libs/studyLog-${{ env.DATETIME }}.jar
@@ -68,8 +71,8 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
           pkill -f 'java -jar' || echo "No existing process"
-          nohup java -jar /home/ubuntu/studyLog-${{ env.DATETIME }}.jar > app.log 2>&1 &
-
+          nohup java -jar /home/ubuntu/studyLog-$DATETIME.jar > app.log 2>&1 &
+        envs: DATETIME
 
 
 
