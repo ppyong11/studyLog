@@ -38,12 +38,37 @@ jobs:
     #gradle 설치
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+    #실행 권한 주기
+    - name: Grant execute permission to graldew
+      run: chomd +x gradlew
     #빌드
     - name: Build with Gradle Wrapper
       run: ./gradlew build
+    #이름 변수
+    - name: Set datetime var
+      run: echo "DATETIME=$(date+'%Y%m%d-%H%M')" >> $GITHUB_ENV
     #빌드된 파일 이름 변경
     - name: Change Build Name
-
+      run: mv build/libs/studyLog-0.0.1-SNAPSHOT.jar build/libs/studyLog-${{ env.DATETIME }}.jar
+    #EC2에 전송
+    - name: Send jar to EC2
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        source: build/libs/studyLog-${{ env.DATETIME }}.jar #로컬 경로
+        target: /home/ec2-user/ #전송되는 경로
+    #서버 재실행
+    - name: SSH into EC2 and run jar
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          pkill -f 'java -jar' || echo "No existing process"
+          nohub java -jar /home/ec2-user/studyLog-${{ env.DATETIME }}.jar > app.log 2>&1 &
 
 
 
