@@ -34,7 +34,7 @@ jobs:
     - name: application 파일 설정
       run: |
         mkdir -p src/main/resources
-        echo "${{ secrets.APPLICATION }}" > src/main/resources/application.yml
+        echo "${{ secrets.APPLICATION }}" | base64 -d > src/main/resources/application.yml
     #gradle 설치
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
@@ -58,7 +58,7 @@ jobs:
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_SSH_KEY }}
         source: build/libs/studyLog-${{ env.DATETIME }}.jar #로컬 경로
-        target: /home/ec2-user/ #전송되는 경로
+        target: /home/ubuntu/ #전송되는 경로
     #서버 재실행
     - name: SSH into EC2 and run jar
       uses: appleboy/ssh-action@v1.0.3
