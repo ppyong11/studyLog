@@ -68,7 +68,7 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
           pkill -f 'java -jar' || echo "No existing process"
-          nohub java -jar /home/ec2-user/studyLog-${{ env.DATETIME }}.jar > app.log 2>&1 &
+          nohup java -jar /home/ec2-user/studyLog-${{ env.DATETIME }}.jar > app.log 2>&1 &
 
 
 
