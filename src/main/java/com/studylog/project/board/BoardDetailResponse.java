@@ -1,13 +1,11 @@
 package com.studylog.project.board;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.studylog.project.file.FileEntity;
 import com.studylog.project.file.FileResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 

@@ -1,6 +1,5 @@
 package com.studylog.project.board;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.studylog.project.global.CommonUtil;
 import com.studylog.project.global.response.ApiResponse;
 import com.studylog.project.jwt.CustomUserDetail;

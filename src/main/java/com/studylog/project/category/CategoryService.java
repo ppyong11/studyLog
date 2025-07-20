@@ -5,7 +5,6 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.board.BoardEntity;
 import com.studylog.project.board.BoardRepository;
-import com.studylog.project.global.exception.AccessDeniedException;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.exception.DuplicateException;
 import com.studylog.project.global.exception.NotFoundException;
@@ -14,15 +13,11 @@ import com.studylog.project.plan.PlanRepository;
 import com.studylog.project.timer.TimerEntity;
 import com.studylog.project.timer.TimerRepository;
 import com.studylog.project.user.UserEntity;
-import com.studylog.project.user.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 

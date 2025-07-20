@@ -7,7 +7,6 @@ import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
 import com.studylog.project.file.FileEntity;
 import com.studylog.project.file.FileRepository;
-import com.studylog.project.file.FileService;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.exception.NotFoundException;
 import com.studylog.project.user.UserEntity;
@@ -15,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +26,6 @@ public class BoardService {
     private final BoardRepository boardRepository;
     private final CategoryRepository categoryRepository;
     private final JPAQueryFactory queryFactory;
-    private final FileService fileService;
     private final FileRepository fileRepository;
 
     public BoardDetailResponse getBoard(Long id, UserEntity user) {
