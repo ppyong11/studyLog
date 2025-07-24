@@ -64,7 +64,7 @@ jobs:
         target: /home/ubuntu/ #전송되는 경로
     #서버 재실행
     - name: SSH into EC2 and run jar
-      uses: appleboy/ssh-action@v1.0.3
+      uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USERNAME }}
