@@ -71,7 +71,7 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
           pkill -f 'java -jar' || echo "No existing process"
-          nohup java -jar /home/ubuntu/studyLog-$DATETIME.jar > app.log 2>&1 &
+          nohup java -jar /home/ubuntu/studyLog-$DATETIME.jar > app.log 2>&1 < /dev/null &
         envs: DATETIME
 
 
