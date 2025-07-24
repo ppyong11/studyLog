@@ -21,7 +21,7 @@ import java.util.Set;
 @Controller
 @RequiredArgsConstructor
 @Slf4j
-@RequestMapping("study-log/timers")
+@RequestMapping("api/timers")
 public class TimerController {
     private final TimerService timerService;
     private static final Set<String> VALID_STATUS= Set.of(

@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Controller
-@RequestMapping("study-log/boards")
+@RequestMapping("api/boards")
 @Slf4j
 @RequiredArgsConstructor
 public class BoardController {

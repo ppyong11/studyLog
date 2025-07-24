@@ -17,7 +17,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/study-log")
+@RequestMapping("api")
 @RequiredArgsConstructor
 @Slf4j
 public class UserController {
