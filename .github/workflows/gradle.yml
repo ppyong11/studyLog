@@ -46,8 +46,7 @@ jobs:
     #이름 변수
     - name: Set datetime var (KST)
       run: |
-        TZ= Asia/Seoul date
-        echo "DATETIME=$(date '+%Y%m%d-%H%M')" >> $GITHUB_ENV
+        echo "DATETIME=$(TZ=Asia/Seoul date '+%Y%m%d-%H%M')" >> $GITHUB_ENV
     - name: Check datetime var
       run: echo "DATETIME=$DATETIME"
 
