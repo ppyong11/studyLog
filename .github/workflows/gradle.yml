@@ -70,6 +70,8 @@ jobs:
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
+          echo "Launching studyLog-$DATETIME.jar"
+          ls -l /home/ubuntu  
           pkill -f 'java -jar' || echo "No existing process"
           nohup java -jar /home/ubuntu/studyLog-$DATETIME.jar > app.log 2>&1 < /dev/null &
         envs: DATETIME
