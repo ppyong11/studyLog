@@ -11,7 +11,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 @Controller
-@RequestMapping("api/timers")
+@RequestMapping("/api/timers")
 @Slf4j
 @RequiredArgsConstructor
 public class LapController {

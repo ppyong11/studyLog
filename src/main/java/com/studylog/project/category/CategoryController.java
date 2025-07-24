@@ -15,7 +15,7 @@ import java.util.List;
 
 @Controller
 @Slf4j
-@RequestMapping("api/categories")
+@RequestMapping("/api/categories")
 @RequiredArgsConstructor
 public class CategoryController {
     private final CategoryService categoryService;

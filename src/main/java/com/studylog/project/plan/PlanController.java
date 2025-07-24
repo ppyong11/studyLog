@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 @Controller
 @Slf4j
 @RequiredArgsConstructor
-@RequestMapping("api/plans")
+@RequestMapping("/api/plans")
 public class PlanController {
     private final PlanService planService;
 
