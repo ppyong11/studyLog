@@ -73,7 +73,7 @@ jobs:
           echo "Launching studyLog-$DATETIME.jar"
           ls -l /home/ubuntu  
           pkill -f 'java -jar' || echo "No existing process"
-          nohup java -jar /home/ubuntu/build/libs/studyLog-20250724-2021.jar > app.log 2>&1 < /dev/null & disown
+          setsid java -jar /home/ubuntu/build/libs/studyLog-20250724-2021.jar > app.log 2>&1 < /dev/null &
         envs: DATETIME
 
 
