@@ -27,7 +27,7 @@ public class LapEntity {
     @Column(name="lap_name", nullable=false)
     private String lapName;
 
-    @Column(name="create_at", nullable=false)
+    @Column(name="create_date", nullable=false)
     private LocalDate createDate;
 
     @Column(name="start_at")
