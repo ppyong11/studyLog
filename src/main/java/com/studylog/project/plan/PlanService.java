@@ -12,15 +12,13 @@ import com.studylog.project.timer.TimerRepository;
 import com.studylog.project.user.UserEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.weaver.ast.Or;
-import org.hibernate.query.spi.QueryPlan;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -32,15 +30,14 @@ public class PlanService {
     private final JPAQueryFactory queryFactory; //동적 쿼리용
     private final TimerRepository timerRepository;
 
-
     public PlanResponse getPlan(Long planId, UserEntity user) {
         PlanEntity plan= getPlanByUserAndId(planId, user);
         return new PlanResponse(plan.getId(), plan.getPlan_name(), plan.getCategory().getName(), plan.getPlan_memo(),
                 plan.getStartDate(), plan.getEndDate(), plan.getMinutes(), plan.isStatus());
     }
 
-    public List<PlanResponse> searchPlans(UserEntity user, LocalDate startDate, LocalDate endDate,
-                                          List<Long> categoryList, String keyword, Boolean status, List<String> sort) {
+    public Object searchPlans(UserEntity user, LocalDate startDate, LocalDate endDate,
+                               List<Long> categoryList, String keyword, Boolean status, List<String> sort, String range) {
         QPlanEntity planEntity = QPlanEntity.planEntity;
 
         //where 조립 빌더
@@ -99,9 +96,54 @@ public class PlanService {
                 .orderBy(orders.toArray(new OrderSpecifier[0]))
                 .fetch(); //전체 결과 반환 (List<planEntity> 타입), 결과 없을 시 빈 리스트 (Null 반환 X)
 
-        return plans.stream()
-                .map(plan -> PlanResponse.toDto(plan))
-                .toList();
+        List<PlanResponse> planResponse= plans.stream()
+                                            .map(plan -> PlanResponse.toDto(plan))
+                                            .toList(); //통계 빼고 반환
+        if(range == null) return planResponse;
+
+        //null이 아니면 통계 포함 반환
+        long totalCount= queryFactory.select(planEntity.count())
+                .from(planEntity)
+                .where(builder)
+                .fetchOne();
+        long achievedCount= queryFactory.select(planEntity.count())
+                .from(planEntity)
+                .where(builder.and(planEntity.status.isTrue())) //조회 결과 중 달성한 계획 count
+                .fetchOne();
+
+        //일, 주, 월 범위일 때만 메시지 함께 반환
+        double rate = totalCount == 0 ? 0.0 : (double) achievedCount / totalCount * 100;
+        String message= returnMessage(user.getNickname(), range, rate);
+
+        return PlanDetailResponse.toDto(planResponse, achievedCount, totalCount, rate, message);
+    }
+
+    private String returnMessage(String nickname, String range, double rate){
+        //range는 day, week, month만 받음 (컨트롤러에서 분기 처리)
+        String unit= range.equals("week")? "주":"달";
+
+        if (rate == 0.0){
+            if(range.equals("day")) return "아직 달성한 계획이 없어요. 시작해 볼까요? 😎";
+            return String.format("이번 %s에 달성한 계획이 없어요. 지금부터 해도 충분해요 🍀",
+                    unit);
+        } else if (rate < 50.0) {
+            if(range.equals("day")) return String.format("시작이 제일 어려운 거 아시죠? %s 님은 그걸 해냈어요!",
+                    nickname);
+            return "천천히 쌓아가는 중이에요. 남은 기간 동안 더 쌓아봐요! 🏃";
+        } else if (rate < 70) {
+            if(range.equals("day")) return "오늘 계획의 반을 완료했어요! 잘하고 있어요 👏";
+            return String.format("한 %s 목표의 절반 이상을 완료했어요! 조금만 더 힘내 볼까요? 🔥",
+                    unit);
+        } else if (rate < 100) {
+            if(range.equals("day")) return "거의 다 했네요! 마무리만 잘하면 완벽해요 🔥";
+            return String.format("한 %s간 열심히 달렸네요! 이제 마무리만 남았어요 👊",
+                    unit);
+
+        } else{
+            if(range.equals("day")) return "오늘 계획을 모두 완료했어요! 최고예요!";
+            return String.format("🎉 이번 %s 목표 달성! %s 님의 꾸준한 노력의 결과예요. 멋져요!",
+                    unit, nickname);
+        }
     }
 
     public void addPlan(PlanRequest request, UserEntity user) {
@@ -155,4 +197,5 @@ public class PlanService {
         return categoryRepository.findByUserAndId(user, category)
                 .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다"));
     }
+
 }

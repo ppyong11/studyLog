@@ -12,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,13 +34,39 @@ public class PlanController {
      4. 키워드별 조회
      다 섞어서도 가능..*/
     @GetMapping("/search")
-    public ResponseEntity<List<PlanResponse>> searchPlans(@RequestParam(required = false) LocalDate startDate,
-                                                          @RequestParam(required = false) LocalDate endDate,
-                                                          @RequestParam(required = false) String category,
-                                                          @RequestParam(required = false) String keyword,
-                                                          @RequestParam(name="status", required = false) String statusStr,
-                                                          @RequestParam(required = false) List<String> sort,
-                                                          @AuthenticationPrincipal CustomUserDetail user) {
+    public ResponseEntity<?> searchPlans( @RequestParam(required = false) String range,
+                                          @RequestParam(required = false) LocalDate startDate,
+                                          @RequestParam(required = false) LocalDate endDate,
+                                          @RequestParam(required = false) String category,
+                                          @RequestParam(required = false) String keyword,
+                                          @RequestParam(name="status", required = false) String statusStr,
+                                          @RequestParam(required = false) List<String> sort,
+                                          @AuthenticationPrincipal CustomUserDetail user) {
+        //range 있으면 달성률+메시지 함께 반환
+        //없으면 Plans만 반환
+        range= range == null? null:range.trim().toLowerCase();
+        if(range != null) {
+            //공통
+            if(startDate == null || endDate == null)
+                throw new BadRequestException("조회 범위를 지정한 경우, 시작일과 종료일은 필수입니다.");
+
+            switch (range){
+                case "day" -> {
+                    if(!startDate.equals(endDate)) throw new BadRequestException("일간 조회는 시작, 종료 일자가 같아야 합니다.");
+                }
+                case "week" -> {
+                    if(startDate.getDayOfWeek() != DayOfWeek.MONDAY) throw new BadRequestException("주간 조회는 시작 요일이 월요일이어야 합니다");
+                    if(!endDate.equals(startDate.plusDays(6))) throw new BadRequestException("주간 조회는 월~일(7일) 범위여야 합니다.");
+                }
+                case "month" -> {
+                    if(startDate.getDayOfMonth() != 1) throw new BadRequestException("월간 조회는 시작일이 1일이어야 합니다.");
+                    LocalDate monthEndDate= startDate.withDayOfMonth(startDate.lengthOfMonth());
+                    if(!endDate.equals(monthEndDate)) throw new BadRequestException("월간 조회는 해당 월의 마지막 날까지 조회해야 합니다.");
+                }
+                default -> throw new BadRequestException("조회 범위는 day, week, month 중 하나여야 합니다."); //"" 포함 이상한 값 다 걸림
+            }
+        }
+
         List<Long> categoryList = new ArrayList<>();
         Boolean status = null; //null값 필요해서 객체 타입으로
         if (sort == null || sort.isEmpty()) { //null or 빈 리스트
@@ -49,7 +76,7 @@ public class PlanController {
             //종료 일자 입력됐으면 시작 일자는 필수
             throw new BadRequestException("시작 일자는 필수 입력 값입니다.");
         }
-        if (startDate != null && endDate != null) {
+        if (startDate != null && endDate != null) { //둘 다 입력됐을 때
             if (startDate.isAfter(endDate)) {
                 throw new BadRequestException("시작 날짜가 종료 날짜보다 뒤일 수 없습니다.");
             }
@@ -67,12 +94,10 @@ public class PlanController {
         keyword = (keyword == null) ? null : keyword.trim(); //공백 제거
 
         //바디에 end 값 없으면 null 들어감 (start~전체 일정, end도 설정해야 당일/start~end 일정 나옴)
-        List<PlanResponse> planList = planService.searchPlans(user.getUser(), startDate, endDate,
-                categoryList, keyword, status, sort);
-        return ResponseEntity.ok(planList); //빈 리스트도 보내짐
+        Object response= planService.searchPlans(user.getUser(), startDate, endDate,
+                categoryList, keyword, status, sort, range);
+        return ResponseEntity.ok(response); //빈 리스트도 보내짐
         }
-
-
 
     //계획 하나 조회
     @GetMapping("{planId}")
