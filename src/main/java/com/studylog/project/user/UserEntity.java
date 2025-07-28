@@ -1,15 +1,9 @@
 package com.studylog.project.user;
 
-import com.studylog.project.board.BoardEntity;
-import com.studylog.project.category.CategoryEntity;
-import com.studylog.project.plan.PlanEntity;
-import com.studylog.project.timer.TimerEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @NoArgsConstructor
 @Getter
@@ -40,18 +34,6 @@ public class UserEntity {
 
     @Column(name= "delete_at") //탈퇴 일자, DB 속성명이랑 달라서 명시 필요
     private LocalDateTime deleteAt;
-
-    @OneToMany(mappedBy = "user")
-    private List<BoardEntity> boards= new ArrayList<>();
-
-    @OneToMany(mappedBy = "user")
-    private List<PlanEntity> plans= new ArrayList<>();
-
-    @OneToMany(mappedBy = "user")
-    private List<CategoryEntity> categories= new ArrayList<>();
-
-    @OneToMany(mappedBy = "user")
-    private List<TimerEntity> timers = new ArrayList<>();
 
     @Builder
     public UserEntity(String id, String pw, String nickname, String email) {
