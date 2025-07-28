@@ -1,5 +1,8 @@
 package com.studylog.project.jwt;
 
+import com.studylog.project.global.exception.BadRequestException;
+import com.studylog.project.timer.TimerRepository;
+import com.studylog.project.timer.TimerStatus;
 import com.studylog.project.user.UserEntity;
 import com.studylog.project.user.UserRepository;
 import io.jsonwebtoken.Claims;
@@ -29,6 +32,7 @@ public class JwtService {
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final RedisTemplate<String, String> redisTemplate;
     private final UserRepository userRepository;
+    private final TimerRepository timerRepository;
 
     public JwtToken logIn(String id, String password) {
         //1. 로그인 정보를 기반으로 Authentication 객체 생성
@@ -80,13 +84,15 @@ public class JwtService {
     }
 
     //블랙리스트 저장 (로그아웃)
-    public void saveBlacklistToken(String token, String userId){
+    public void saveBlacklistToken(CustomUserDetail userDetail, String token){
+        if(timerRepository.existsByUserAndStatus(userDetail.getUser(), TimerStatus.RUNNING))
+            throw new BadRequestException("실행 중인 타이머를 종료 후 다시 시도해 주세요.");
         saveToken("AT:"+ token, token, null, "로그아웃"); //액세스 저장
-        String refreshToken= redisTemplate.opsForValue().get("RT:"+ userId);
+        String refreshToken= redisTemplate.opsForValue().get("RT:"+ userDetail.getUsername());
         //accessToken 검증 후라서 보안 문제 약함 + 리프레시 바로 삭제
-        redisTemplate.delete("RT:"+ userId); //리프레시 토큰 삭제 (강제 무효화)
+        redisTemplate.delete("RT:"+ userDetail.getUsername()); //리프레시 토큰 삭제 (강제 무효화)
         redisTemplate.delete("RT:" + refreshToken); //토큰에 저장된 id 삭제
-        log.info("로그아웃 확인 {}, {}", redisTemplate.opsForValue().get("RT: "+userId), redisTemplate.opsForValue().get("RT: "+refreshToken));
+        log.info("로그아웃 확인 {}, {}", redisTemplate.opsForValue().get("RT: "+userDetail.getUsername()), redisTemplate.opsForValue().get("RT: "+refreshToken));
     }
 
     //토큰 재발급
