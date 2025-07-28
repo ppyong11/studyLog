@@ -190,7 +190,7 @@ public class TimerService {
             noti.deletedTimer();
         }
 
-        timerRepository.delete(timer);
+        timerRepository.delete(timer); //랩도 알아서 삭제됨
     }
 
     //타이머 동기화

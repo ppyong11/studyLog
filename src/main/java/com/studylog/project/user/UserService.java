@@ -3,8 +3,8 @@ package com.studylog.project.user;
 import com.studylog.project.category.CategoryService;
 import com.studylog.project.global.exception.*;
 import com.studylog.project.jwt.CustomUserDetail;
+import com.studylog.project.timer.TimerRepository;
 import jakarta.transaction.Transactional;
-import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -26,11 +26,7 @@ public class UserService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final RedisTemplate<String, String> redisTemplate; //제네릭 타입 명시
     private final CategoryService categoryService;
-
-    /* @RequiredArgsConstructor 사용으로 생략
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }*/
+    private final TimerRepository timerRepository;
 
     @Transactional
     //회원 DB에 저장
@@ -44,6 +40,7 @@ public class UserService {
         if(existsEmail(user.getEmail())){
             throw new DuplicateException(String.format("[%s] 이미 가입된 회원입니다.", user.getEmail()));
         }
+        //null안정 보장
         if(!Boolean.TRUE.equals(redisTemplate.hasKey("verified:" + user.getEmail())))
         {//키 없는 경우
             throw new MailException("인증 세션이 만료됐거나 인증된 메일이 아닙니다.");
@@ -76,8 +73,7 @@ public class UserService {
             if(userEntity.isDelete()){//회원탈퇴한 회원이라면
                 //3일 지났는데 스케쥴러 안 돌아서 삭제 안 된 경우
                 if(userEntity.getDeleteAt().isBefore(LocalDateTime.now().minusMinutes(3))){
-                    throw new AlreadyDeleteUserException("회원 탈퇴 철회 기간이 지나 복구가 불가합니다." +
-                            "");
+                    throw new AlreadyDeleteUserException("회원 탈퇴 철회 기간이 지나 복구가 불가합니다.");
                 }
                 restore(userEntity); //복구 처리
             }
@@ -135,8 +131,8 @@ public class UserService {
 
     //회원탈퇴
     @Transactional
-    public void withdraw(CustomUserDetail customUserDTO){
-        UserEntity userEntity= userRepository.findById(customUserDTO.getUser().getUser_id())
+    public void withdraw(UserEntity user){
+        UserEntity userEntity= userRepository.findById(user.getUser_id())
                 .orElseThrow(() -> new NoSuchElementException("존재하지 않는 회원입니다.")); //회원 객체 받기
         userEntity.withdraw(LocalDateTime.now()); //기존 객체를 바꾸는 거니까 빌더 필요 X
         log.info("탈퇴 처리 완료: 여부 {}, 시간 {}, ", userEntity.isDelete(), userEntity.getDeleteAt());

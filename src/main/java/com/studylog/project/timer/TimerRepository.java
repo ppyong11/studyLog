@@ -20,5 +20,4 @@ public interface TimerRepository extends JpaRepository<TimerEntity, Long> {
 
     boolean existsByUserAndStatus(UserEntity user, TimerStatus status);
     boolean existsByPlanId(Long planId);
-    boolean existsByUserAndId(UserEntity user, Long id);
 }
