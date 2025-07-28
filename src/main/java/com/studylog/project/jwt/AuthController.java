@@ -51,7 +51,7 @@ public class AuthController {
                                               @AuthenticationPrincipal CustomUserDetail user) {
         //토큰 없는 경우엔 필터에서 다 걸러서 여기까지 안 옴 -> 토큰은 항상 있음! 인증된 객체라는 뜻 (authenticated)
         //로그아웃  시 액세스 토큰 필요해서 파라미터 받기 (컨트롤러에서 필요없으면 필터에서만 검증하면 됨)
-        jwtService.saveBlacklistToken(accessToken, user.getUsername()); //액세스 토큰 저장
+        jwtService.saveBlacklistToken(user, accessToken); //액세스 토큰 저장
 
         String deleteAccessCookie= jwtService.deleteCookie("access_token", "/");
         String deleteRefreshCookie= jwtService.deleteCookie("refresh_token", "/study-log/refresh");
@@ -67,13 +67,13 @@ public class AuthController {
                                                 HttpServletResponse response,
                                                 @AuthenticationPrincipal CustomUserDetail user) {
         //자동 로그아웃 + user 속성 바꾸기
-        jwtService.saveBlacklistToken(accessToken, user.getUsername()); //액세스 토큰 저장
+        jwtService.saveBlacklistToken(user, accessToken); //액세스 토큰 저장
         String deleteAccessCookie= jwtService.deleteCookie("access_token", "/");
         String deleteRefreshCookie= jwtService.deleteCookie("refresh_token", "/study-log/refresh");
         response.addHeader(HttpHeaders.SET_COOKIE, deleteAccessCookie);
         response.addHeader(HttpHeaders.SET_COOKIE, deleteRefreshCookie);
 
-        userService.withdraw(user);
+        userService.withdraw(user.getUser());
         return ResponseEntity.ok(new ApiResponse( true, "회원탈퇴 되었습니다."));
     }
 
