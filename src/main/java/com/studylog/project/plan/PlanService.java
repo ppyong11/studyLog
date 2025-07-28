@@ -113,14 +113,15 @@ public class PlanService {
 
         //일, 주, 월 범위일 때만 메시지 함께 반환
         double rate = totalCount == 0 ? 0.0 : (double) achievedCount / totalCount * 100;
-        String message= returnMessage(user.getNickname(), range, rate);
+        String message= returnMessage(user.getNickname(), range, rate, totalCount);
 
         return PlanDetailResponse.toDto(planResponse, achievedCount, totalCount, rate, message);
     }
 
-    private String returnMessage(String nickname, String range, double rate){
+    private String returnMessage(String nickname, String range, double rate, long total){
         //range는 day, week, month만 받음 (컨트롤러에서 분기 처리)
         String unit= range.equals("week")? "주":"달";
+        if(total == 0) return "해당 일자에 등록된 계획이 없어요.";
 
         if (rate == 0.0){
             if(range.equals("day")) return "아직 달성한 계획이 없어요. 시작해 볼까요? 😎";

@@ -21,8 +21,8 @@ public class SseController {
     @GetMapping("/subscribe/status")
     public ResponseEntity<ApiResponse> isSubscribe(@AuthenticationPrincipal CustomUserDetail user) {
         if (!sseEmitterService.isSubscribe(user.getUser()))
-            return ResponseEntity.ok(new ApiResponse(200, true, "구독된 알림 채널이 없습니다."));
-        return ResponseEntity.ok(new ApiResponse(200, true, "구독된 알림 채널이 있습니다."));
+            return ResponseEntity.ok(new ApiResponse(true, "구독된 알림 채널이 없습니다."));
+        return ResponseEntity.ok(new ApiResponse(true, "구독된 알림 채널이 있습니다."));
     }
     //구독
     @GetMapping(value= "/subscribe", produces = "text/event-stream")

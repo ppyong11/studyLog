@@ -29,10 +29,10 @@ public class UserController {
         //permitAll 경로
         if (customUserDetail == null) {
             //액세스 토큰 X 경우 (비회원)
-            return ResponseEntity.ok(new ApiResponse(200, true, "비회원 메인 페이지입니다."));
+            return ResponseEntity.ok(new ApiResponse(true, "비회원 메인 페이지입니다."));
         } else {
             //나중에 DTO 보내기
-            return ResponseEntity.ok(new ApiResponse(200, true, "비회원 메인 페이지입니다."));
+            return ResponseEntity.ok(new ApiResponse(true, "비회원 메인 페이지입니다."));
         }
     }
 
@@ -41,10 +41,10 @@ public class UserController {
         //permitAll 경로
         if (customUserDetail == null) {
             //액세스 토큰 X 경우 (비회원)
-            return ResponseEntity.ok(new ApiResponse(200, true, "비회원 메인 페이지입니다."));
+            return ResponseEntity.ok(new ApiResponse(true, "비회원 메인 페이지입니다."));
         } else {
             //나중에 DTO 보내기
-            return ResponseEntity.ok(new ApiResponse(200, true, "비회원 메인 페이지입니다."));
+            return ResponseEntity.ok(new ApiResponse(true, "비회원 메인 페이지입니다."));
         }
     }
 
@@ -58,14 +58,14 @@ public class UserController {
                throw new BadRequestException("아이디는 4~12자 영문 또는 숫자여야 합니다.");
             } else { //유효성 검사 통과
                 //id 중복 시 1 반환, available은 0이 됨
-                if(!userService.existsId(id)) return ResponseEntity.ok(new ApiResponse(200, true, "사용 가능한 아이디입니다."));
+                if(!userService.existsId(id)) return ResponseEntity.ok(new ApiResponse( true, "사용 가능한 아이디입니다."));
                 else throw new DuplicateException("이미 사용 중인 아이디입니다.");
             }
         } else if (nickname != null) {//닉네임 중복 확인
             if (!nickname.matches("^[가-힣a-zA-Z0-9]{2,10}$")) { //한글, 영어, 숫자, 2~10자 사이의 닉네임만 가능
                 throw new BadRequestException("닉네임은 2~10자 한글, 영어, 숫자여야 합니다");
             } else {
-                if(!userService.existsNickname(nickname)) return ResponseEntity.ok(new ApiResponse(200, true, "사용 가능한 닉네임입니다."));
+                if(!userService.existsNickname(nickname)) return ResponseEntity.ok(new ApiResponse(true, "사용 가능한 닉네임입니다."));
                 else throw new DuplicateException("이미 사용 중인 닉네임입니다.");
             }
         }else { // 아무 값도 없는 경우, 상태코드 400
@@ -79,25 +79,25 @@ public class UserController {
         String email = reqeust.getEmail(); //유효성 검사 후 받은 이메일 string형 변환
         if (userService.existsEmail(email)) {
             return ResponseEntity.status(HttpStatus.CONFLICT).
-                    body(new ApiResponse(409, false, "이미 사용 중인 이메일입니다."));
+                    body(new ApiResponse( false, "이미 사용 중인 이메일입니다."));
         }
         mailService.sendEmailCode(email); //랜덤 코드 생성 후 이메일 발송, 에러 시 핸들러가 처리
-        return ResponseEntity.ok(new ApiResponse(200, true, "사용 가능한 이메일입니다. 이메일 발송 완료"));
+        return ResponseEntity.ok(new ApiResponse( true, "사용 가능한 이메일입니다. 이메일 발송 완료"));
     }
 
     @PostMapping("/sign-in/verify-email-code")
     public ResponseEntity<ApiResponse> verifyCode(@RequestBody @Valid MailRequest reqeust) {
         if (reqeust.getCode() == null || reqeust.getCode().isBlank()) { //code 입력 안 했을 때
-            return ResponseEntity.badRequest().body(new ApiResponse(400, false, "인증 코드를 입력하세요."));
+            return ResponseEntity.badRequest().body(new ApiResponse( false, "인증 코드를 입력하세요."));
         }
         mailService.verifyEmailCode(reqeust.getEmail(), reqeust.getCode()); //Redis 값 비교, 오류 시 핸들러 처리
-        return ResponseEntity.ok(new ApiResponse(200, true, "이메일 인증 완료")); //mailService에서 문제 없으면 처리
+        return ResponseEntity.ok(new ApiResponse(true, "이메일 인증 완료")); //mailService에서 문제 없으면 처리
     }
 
     @PostMapping("/sign-in")
     public ResponseEntity<ApiResponse> signIn(@RequestBody @Valid SignInRequest signInRequest) {
         userService.register(signInRequest);
-        return ResponseEntity.ok(new ApiResponse(200, true, "회원가입 되었습니다."));
+        return ResponseEntity.ok(new ApiResponse(true, "회원가입 되었습니다."));
     }
 
     @PatchMapping("/member/change-pw")
@@ -106,7 +106,7 @@ public class UserController {
                                                 @RequestBody @Valid UpdatePwRequest request) {
         //유효 토큰 및 로그인 상태 확인(redis) 필터에서 검증됨
         userService.changePw(user, request);
-        return ResponseEntity.ok(new ApiResponse(200, true, "비밀번호가 변경되었습니다."));
+        return ResponseEntity.ok(new ApiResponse(true, "비밀번호가 변경되었습니다."));
     }
 
     @PatchMapping("/member/change-nickname")
@@ -116,6 +116,6 @@ public class UserController {
         //유효 토큰 및 로그인 상태 확인(redis) 필터에서 검증됨
         userService.changeNickname(user, request);
         log.info(user.getUsername());
-        return ResponseEntity.ok(new ApiResponse(200, true, "닉네임이 변경되었습니다."));
+        return ResponseEntity.ok(new ApiResponse(true, "닉네임이 변경되었습니다."));
     }
 }

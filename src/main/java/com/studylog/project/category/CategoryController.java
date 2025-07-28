@@ -48,7 +48,7 @@ public class CategoryController {
     public ResponseEntity<ApiResponse> newCategory(@Valid @RequestBody CategoryRequest request,
                                                    @AuthenticationPrincipal CustomUserDetail user) {
         categoryService.addCategory(request, user.getUser());
-        return ResponseEntity.ok(new ApiResponse(200, true, "새 카테고리 등록 완료"));
+        return ResponseEntity.ok(new ApiResponse( true, "카테고리가 등록되었습니다."));
     }
 
     //카테고리 수정
@@ -57,7 +57,7 @@ public class CategoryController {
                                                       @Valid @RequestBody CategoryRequest request,
                                                       @AuthenticationPrincipal CustomUserDetail user) {
         categoryService.updateCategory(categoryId, request, user.getUser());
-        return ResponseEntity.ok(new ApiResponse(200, true, "카테고리 수정 완료"));
+        return ResponseEntity.ok(new ApiResponse(true, "카테고리가 수정되었습니다."));
     }
 
     //카테고리 삭제
@@ -65,6 +65,6 @@ public class CategoryController {
     public ResponseEntity<ApiResponse> delCategory(@PathVariable Long categoryId,
                                                    @AuthenticationPrincipal CustomUserDetail user) {
         categoryService.delCategory(categoryId, user.getUser());
-        return ResponseEntity.ok(new ApiResponse(200, true, "카테고리 삭제 완료"));
+        return ResponseEntity.ok(new ApiResponse( true, "카테고리가 삭제되었습니다."));
     }
 }

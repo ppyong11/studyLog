@@ -124,7 +124,7 @@ public class TimerController {
     public ResponseEntity<ApiResponse> deleteTimer(@PathVariable("timerId") Long id,
                                                    @AuthenticationPrincipal CustomUserDetail user) {
         timerService.deleteTimer(id, user.getUser());
-        return ResponseEntity.ok(new ApiResponse(200, true, "타이머가 삭제되었습니다."));
+        return ResponseEntity.ok(new ApiResponse( true, "타이머가 삭제되었습니다."));
     }
 
     //동기화 컨트롤러

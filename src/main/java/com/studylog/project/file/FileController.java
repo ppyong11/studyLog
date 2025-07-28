@@ -39,6 +39,6 @@ public class FileController {
                                                   @RequestParam(required = false) String draftId,
                                                   @AuthenticationPrincipal CustomUserDetail user) {
         fileService.deleteMeta(fileId, boardId, draftId, user.getUser());
-        return ResponseEntity.ok(new ApiResponse(200, true, "파일이 삭제되었습니다."));
+        return ResponseEntity.ok(new ApiResponse(true, "파일이 삭제되었습니다."));
     }
 }

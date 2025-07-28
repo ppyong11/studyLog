@@ -41,7 +41,7 @@ public class AuthController {
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie);
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie);
-        return ResponseEntity.ok(new ApiResponse(200, true, String.format("%s 님, 반갑습니다. ☺️", nickname)));
+        return ResponseEntity.ok(new ApiResponse( true, String.format("%s 님, 반갑습니다. ☺️", nickname)));
     }
 
     @PostMapping("/log-out")
@@ -58,7 +58,7 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE, deleteAccessCookie);
         response.addHeader(HttpHeaders.SET_COOKIE, deleteRefreshCookie);
 
-        return ResponseEntity.ok(new ApiResponse(200, true, "로그아웃 처리되었습니다."));
+        return ResponseEntity.ok(new ApiResponse( true, "로그아웃 처리되었습니다."));
     }
 
     @PostMapping("/member/withdraw")
@@ -74,7 +74,7 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE, deleteRefreshCookie);
 
         userService.withdraw(user);
-        return ResponseEntity.ok(new ApiResponse(200, true, "회원탈퇴 되었습니다."));
+        return ResponseEntity.ok(new ApiResponse( true, "회원탈퇴 되었습니다."));
     }
 
     @PostMapping("/refresh")
@@ -106,6 +106,6 @@ public class AuthController {
         log.info("재발급 후 refresh: {}", newToken.getRefreshToken());
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie);
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie);
-        return ResponseEntity.ok(new ApiResponse(200, true, "로그인이 연장되었습니다."));
+        return ResponseEntity.ok(new ApiResponse( true, "로그인이 연장되었습니다."));
     }
 }

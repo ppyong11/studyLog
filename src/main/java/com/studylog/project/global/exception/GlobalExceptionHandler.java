@@ -20,16 +20,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse> handleRuntime(RuntimeException e) {
-        HttpStatus httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
-        return ResponseEntity.status(httpStatus)
-                .body(new ApiResponse(httpStatus.value(), false, e.getMessage())); //오류 내용 축약해서 출력
+        return ResponseEntity.status(500)
+                .body(new ApiResponse(false, e.getMessage())); //오류 내용 축약해서 출력
     }
 
     @ExceptionHandler(DuplicateException.class)
     public ResponseEntity<ApiResponse> handleDuplicate(DuplicateException e) {
-        HttpStatus httpStatus = HttpStatus.CONFLICT;
-        return ResponseEntity.status(httpStatus)
-                .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
+        return ResponseEntity.status(409)
+                .body(new ApiResponse(false, e.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -39,82 +37,70 @@ public class GlobalExceptionHandler {
                 .map(DefaultMessageSourceResolvable::getDefaultMessage)
                 .collect(Collectors.toList());
         //축약 메시지 뽑음
-        HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
-        return ResponseEntity.status(httpStatus).body(new ApiResponse(httpStatus.value(), false, String.join(" / ", messages)));
+        return ResponseEntity.status(400).body(new ApiResponse(false, String.join(" / ", messages)));
     }
     @ExceptionHandler(MailException.class)
     public ResponseEntity<ApiResponse> handleMail(MailException e) {
-        HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
-        return ResponseEntity.status(httpStatus)
-                .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
+        return ResponseEntity.status(400)
+                .body(new ApiResponse( false, e.getMessage()));
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiResponse> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException e) {
-        HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
-        return ResponseEntity.status(httpStatus)
-                .body(new ApiResponse(httpStatus.value(), false, "파일 용량 제한 20MB를 넘어 업로드할 수 없습니다."));
+        return ResponseEntity.status(400)
+                .body(new ApiResponse(false, "파일 용량 제한 20MB를 넘어 업로드할 수 없습니다."));
     }
 
     @ExceptionHandler(FileUploadException.class)
     public ResponseEntity<ApiResponse> handleFileUpload(FileUploadException e) {
-        HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
-        return ResponseEntity.status(httpStatus)
-                .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
+        return ResponseEntity.status(400)
+                .body(new ApiResponse(false, e.getMessage()));
     }
     @ExceptionHandler(LoginFaildException.class)
     public ResponseEntity<ApiResponse> handleLogFaild(LoginFaildException e) {
-        HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
-        return ResponseEntity.status(httpStatus)
-                .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
+        return ResponseEntity.status(400)
+                .body(new ApiResponse(false, e.getMessage()));
     }
 
     @ExceptionHandler(LogoutFaildException.class)
     public ResponseEntity<ApiResponse> handleLogoutFaild(LogoutFaildException e) {
-        HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
-        return ResponseEntity.status(httpStatus)
-                .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
+        return ResponseEntity.status(400)
+                .body(new ApiResponse(false, e.getMessage()));
     }
 
     @ExceptionHandler(InvalidRequestException.class)
     public ResponseEntity<ApiResponse> handleInvalidRequest(InvalidRequestException e) {
-        HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
-        return ResponseEntity.status(httpStatus)
-                .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
+        return ResponseEntity.status(400)
+                .body(new ApiResponse(false, e.getMessage()));
     }
 
     @ExceptionHandler(JwtException.class) //jwt 관련 exception
     public ResponseEntity<ApiResponse> handleJwtException(JwtException e) {
-        HttpStatus httpStatus = HttpStatus.UNAUTHORIZED;
-        return ResponseEntity.status(httpStatus)
-                .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
+        return ResponseEntity.status(401)
+                .body(new ApiResponse(false, e.getMessage()));
     }
 
     @ExceptionHandler(AlreadyDeleteUserException.class)
     public ResponseEntity<ApiResponse> handleAlreadyDeleteUser(AlreadyDeleteUserException e) {
-        HttpStatus httpStatus = HttpStatus.CONFLICT;
-        return ResponseEntity.status(httpStatus)
-                .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
+        return ResponseEntity.status(409)
+                .body(new ApiResponse(false, e.getMessage()));
     }
 
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ApiResponse> handleSignup(BadRequestException e) {
-        HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
-        return ResponseEntity.status(httpStatus)
-                .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
+        return ResponseEntity.status(400)
+                .body(new ApiResponse(false, e.getMessage()));
     }
 
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ApiResponse> handleNotFound(NotFoundException e) {
-        HttpStatus httpStatus = HttpStatus.NOT_FOUND;
-        return ResponseEntity.status(httpStatus)
-                .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
+        return ResponseEntity.status(404)
+                .body(new ApiResponse(false, e.getMessage()));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse> handleAccessDenied(AccessDeniedException e) {
-        HttpStatus httpStatus = HttpStatus.FORBIDDEN;
-        return ResponseEntity.status(httpStatus)
-                .body(new ApiResponse(httpStatus.value(), false, e.getMessage()));
+        return ResponseEntity.status(403)
+                .body(new ApiResponse(false, e.getMessage()));
     }
 }

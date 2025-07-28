@@ -112,7 +112,7 @@ public class PlanController {
     public ResponseEntity<ApiResponse> setPlan(@Valid @RequestBody PlanRequest request,
                                                @AuthenticationPrincipal CustomUserDetail user) {
         planService.addPlan(request, user.getUser());
-        return ResponseEntity.ok(new ApiResponse(200, true, "계획이 저장되었습니다."));
+        return ResponseEntity.ok(new ApiResponse( true, "계획이 저장되었습니다."));
     }
 
     //계획 상태 수정
@@ -123,7 +123,7 @@ public class PlanController {
         log.info(statusStr); //" fAlse "
         boolean status= parseStatus(statusStr);
         planService.updateStatus(planId, status, user.getUser());
-        return ResponseEntity.ok(new ApiResponse(200, true, "계획 상태가 변경되었습니다."));
+        return ResponseEntity.ok(new ApiResponse( true, "계획 상태가 변경되었습니다."));
     }
 
     //계획 수정
@@ -132,7 +132,7 @@ public class PlanController {
                                                   @Valid @RequestBody PlanRequest request,
                                                   @AuthenticationPrincipal CustomUserDetail user) {
         planService.updatePlan(planId, request, user.getUser());
-        return ResponseEntity.ok(new ApiResponse(200, true, "계획이 수정되었습니다."));
+        return ResponseEntity.ok(new ApiResponse( true, "계획이 수정되었습니다."));
     }
 
     //계획 삭제
@@ -140,7 +140,7 @@ public class PlanController {
     public ResponseEntity<ApiResponse> deletePlan(@PathVariable Long planId,
                                                   @AuthenticationPrincipal CustomUserDetail user) {
         planService.deletePlan(planId, user.getUser());
-        return ResponseEntity.ok(new ApiResponse(200, true, "계획이 삭제되었습니다."));
+        return ResponseEntity.ok(new ApiResponse(true, "계획이 삭제되었습니다."));
     }
 
     //status 파싱

@@ -6,10 +6,8 @@ import lombok.Getter;
 public class ApiResponse {
     private boolean success;
     private String message;
-    private int status;
 
-    public ApiResponse(int status, boolean success, String message) {
-        this.status = status;
+    public ApiResponse(boolean success, String message) {
         this.success = success;
         this.message = message;
     }

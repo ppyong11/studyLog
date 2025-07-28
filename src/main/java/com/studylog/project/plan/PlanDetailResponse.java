@@ -8,14 +8,14 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 public class PlanDetailResponse {
-    private List<PlanResponse> planResponse;
+    private List<PlanResponse> planList;
     private long achievedPlan;
     private long totalPlan;
-    private double rate;
+    private String rate;
     private String message;
 
     public static PlanDetailResponse toDto(List<PlanResponse> response, long achieved, long total,
-                                           Double rate, String message){
-        return new PlanDetailResponse(response, achieved, total, rate, message);
+                                           double rate, String message){
+        return new PlanDetailResponse(response, achieved, total, String.format("%.1f", rate), message);
     }
 }

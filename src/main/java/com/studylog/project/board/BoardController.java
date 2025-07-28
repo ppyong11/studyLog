@@ -66,6 +66,6 @@ public class BoardController {
     public ResponseEntity<ApiResponse> deleteBoard(@PathVariable("boardId") Long boardId,
                                                    @AuthenticationPrincipal CustomUserDetail user) {
         boardService.deleteBoard(boardId, user.getUser());
-        return ResponseEntity.ok(new ApiResponse(200, true, "게시글이 삭제되었습니다."));
+        return ResponseEntity.ok(new ApiResponse(true, "게시글이 삭제되었습니다."));
     }
 }
