@@ -55,6 +55,7 @@ public class NotificationEntity {
         this.isRead= true;
     }
     public void deletedTimer(){
+        this.timer= null;
         this.url= null;
         this.isDeleted= true;
     }

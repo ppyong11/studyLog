@@ -16,11 +16,15 @@ import java.util.List;
 public class NotificationService {
     private final NotificationRepository notificationRepository;
 
-    public List<NotificationResponse> getNotifications(UserEntity user){
-        List<NotificationEntity> notifications= notificationRepository.findAllbyUser(user);
+    public List<NotificationResponse> getAllNoti(UserEntity user){
+        List<NotificationEntity> notifications= notificationRepository.findAllByUser(user);
         return notifications.stream()
                 .map(notification -> NotificationResponse.toDto(notification))
                 .toList();
+    }
+
+    public long getUnreadCount(UserEntity user){
+        return notificationRepository.countByUserAndIsReadFalse(user);
     }
     public void saveNotification(UserEntity user, TimerEntity timer, boolean isSyncCheck) {
         //DB에 알림 저장
@@ -40,15 +44,31 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
-    public ApiResponse deleteAllNotification(UserEntity user){
-        List<NotificationEntity> notifications= notificationRepository.findAllbyUser(user);
+    public ApiResponse deleteAllNoti(UserEntity user){
+        List<NotificationEntity> notifications= notificationRepository.findAllByUser(user);
         if(notifications.isEmpty()) return new ApiResponse(true, "삭제할 알림이 없습니다.");
         notificationRepository.deleteAll(notifications); //인자 없으면 모든 행 삭제
         return new ApiResponse(true, "모든 알림이 삭제되었습니다.");
     }
-    public void deleteNotification(Long id, UserEntity user){
+    public void deleteNoti(Long id, UserEntity user){
         NotificationEntity notification= notificationRepository.findByUserAndId(user, id)
                 .orElseThrow(()-> new NotFoundException("존재하지 않는 알림입니다."));
         notificationRepository.delete(notification);
     }
+
+    public void readNoti(Long id, UserEntity user){
+        NotificationEntity notification= notificationRepository.findByUserAndId(user, id)
+                .orElseThrow(()-> new NotFoundException("존재하지 않는 알림입니다."));
+        notification.updateIsRead();
+    }
+
+    public ApiResponse readAllNoti(UserEntity user){
+        List<NotificationEntity> notifications= notificationRepository.findAllByUserAndIsReadFalse(user);
+        if(notifications.isEmpty()) return new ApiResponse(true, "읽음 처리할 알림이 없습니다.");
+        for(NotificationEntity noti:notifications) {
+            noti.updateIsRead();
+        }
+        return new ApiResponse(true, "모든 알림이 읽음 처리되었습니다.");
+    }
+
 }
