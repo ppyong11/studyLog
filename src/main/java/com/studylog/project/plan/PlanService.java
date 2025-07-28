@@ -183,7 +183,8 @@ public class PlanService {
     public void deletePlan(Long id, UserEntity user) {
         PlanEntity plan= planRepository.findByUserAndId(user, id)
                 .orElseThrow(() -> new NotFoundException("존재하지 않는 계획입니다."));
-        planRepository.delete(plan); //DB cascade로 타이머도 삭제됨
+        TimerEntity timer= plan.getTimer(); //Lazy 로딩 강제 초기화
+        planRepository.delete(plan); //cascade로 타이머도 삭제됨
     }
 
     //유저, planId 검사
