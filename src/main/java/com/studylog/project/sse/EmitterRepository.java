@@ -1,6 +1,5 @@
 package com.studylog.project.sse;
 
-import com.studylog.project.user.UserEntity;
 import org.springframework.stereotype.Repository;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 

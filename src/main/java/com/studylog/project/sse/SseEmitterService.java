@@ -1,6 +1,9 @@
 package com.studylog.project.sse;
 
+import com.studylog.project.notification.NotificationService;
+import com.studylog.project.timer.TimerEntity;
 import com.studylog.project.user.UserEntity;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -14,10 +17,12 @@ import java.util.UUID;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Transactional
 public class SseEmitterService {
     //SSE 이벤트 타임아웃 시간
     private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 60; //1시간
     private final EmitterRepository emitterRepository;
+    private final NotificationService notificationService;
 
     //유저가 구독 조회
     public boolean isSubscribe(UserEntity user) {
@@ -68,5 +73,17 @@ public class SseEmitterService {
                 emitterRepository.deleteByUserId(user.getUser_id(), emitter); //연결 오류 emitter 삭제
                 log.warn("에러 emitter 삭제"); //다음 emitter 진행
             }
+    }
+
+    public void alert(TimerEntity timer, UserEntity user, boolean isSyncCheck){
+        notificationService.saveNotification(user, timer, isSyncCheck);
+
+        EventPayload payload = new EventPayload();
+        payload.setType("plan-completed");
+        payload.setId(timer.getUser().getUser_id());
+        payload.setTitle(String.format("[%s] 계획이 목표 달성 시간을 채워 %s완료 처리되었어요. 🥳",
+                timer.getPlan().getPlan_name(), isSyncCheck? "자동":""));
+
+        broadcast(timer.getUser(), payload);
     }
 }
