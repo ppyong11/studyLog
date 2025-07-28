@@ -187,7 +187,9 @@ public class TimerService {
         //삭제한 타이머의 알림 받기 (영속 상태)
         List<NotificationEntity> notifications= notificationRepository.findAllByUserAndTimer(user, timer);
         for(NotificationEntity noti : notifications){ //해당 타이머를 가진 알림 없으면 패스
-            noti.deletedTimer();
+            noti.updateTimerId(); //null 처리
+            if(!noti.getUrl().equals("/plans")) //타이머 url일 경우 삭제
+                noti.updateUrl();
         }
 
         timerRepository.delete(timer); //랩도 알아서 삭제됨
@@ -328,7 +330,7 @@ public class TimerService {
         LocalDate planStart= timer.getPlan().getStartDate();
         LocalDate planEnd= timer.getPlan().getEndDate();
 
-        if(timer.getPlan().isStatus()) return; //이미 완료된 계획이면 함수 종료
+        if(timer.getPlan().isStatus() || timer.getPlan().getMinutes() == 0) return; //이미 완료된 계획이거나 목표 시간이 0이라면
         //미완료 & 계획 일자 이후에 수행되었으면
 
         boolean inRange= false; //체킹 값 저장

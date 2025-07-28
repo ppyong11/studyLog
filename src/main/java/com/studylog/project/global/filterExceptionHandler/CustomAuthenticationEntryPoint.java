@@ -24,7 +24,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
                          AuthenticationException authException) throws IOException{
         log.info("entry 호출 완");
         HttpStatus status = HttpStatus.UNAUTHORIZED;
-        ApiResponse apiResponse= new ApiResponse(status.value(), false, "로그인이 필요한 요청입니다.");
+        ApiResponse apiResponse= new ApiResponse(false, "로그인이 필요한 요청입니다.");
 
         response.setStatus(status.value());
         response.setContentType("application/json; charset=UTF-8");

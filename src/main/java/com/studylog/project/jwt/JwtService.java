@@ -86,7 +86,7 @@ public class JwtService {
     //블랙리스트 저장 (로그아웃)
     public void saveBlacklistToken(CustomUserDetail userDetail, String token){
         if(timerRepository.existsByUserAndStatus(userDetail.getUser(), TimerStatus.RUNNING))
-            throw new BadRequestException("실행 중인 타이머를 종료 후 다시 시도해 주세요.");
+            throw new BadRequestException("실행 중인 타이머를 종료한 후 다시 시도해 주세요.");
         saveToken("AT:"+ token, token, null, "로그아웃"); //액세스 저장
         String refreshToken= redisTemplate.opsForValue().get("RT:"+ userDetail.getUsername());
         //accessToken 검증 후라서 보안 문제 약함 + 리프레시 바로 삭제

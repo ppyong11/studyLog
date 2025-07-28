@@ -23,7 +23,7 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
         log.info("denied Handler 호출 완");
         HttpStatus status = HttpStatus.FORBIDDEN;
 
-        ApiResponse apiResponse= new ApiResponse(status.value(), false, "접근 권한이 없습니다.");
+        ApiResponse apiResponse= new ApiResponse(false, "접근 권한이 없습니다.");
         response.setStatus(status.value());
         response.setContentType("application/json; charset=UTF-8");
 

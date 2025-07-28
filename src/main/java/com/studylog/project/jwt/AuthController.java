@@ -74,7 +74,7 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE, deleteRefreshCookie);
 
         userService.withdraw(user.getUser());
-        return ResponseEntity.ok(new ApiResponse( true, "회원탈퇴 되었습니다."));
+        return ResponseEntity.ok(new ApiResponse( true, "회원탈퇴 처리 되었습니다."));
     }
 
     @PostMapping("/refresh")
