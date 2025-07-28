@@ -12,6 +12,6 @@ import java.util.Optional;
 public interface BoardRepository extends JpaRepository<BoardEntity, Long> {
     //엔티티로 파라미터 넘겨도 알아서 카테고리 PK값으로 찾아짐
     List<BoardEntity> findByCategory(CategoryEntity categoryEntity);
-
+    void deleteAllByUser(UserEntity user);
     Optional<BoardEntity> findByUserAndId(UserEntity user, Long id);
 }

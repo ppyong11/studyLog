@@ -8,11 +8,11 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Timer;
 
 @Repository
 public interface TimerRepository extends JpaRepository<TimerEntity, Long> {
     Optional<TimerEntity> findByUserAndId(UserEntity user, Long id);
+    void deleteAllByUser(UserEntity user);
 
     List<TimerEntity> findAllByStatus(TimerStatus status);
     List<TimerEntity> findAllByCategory(CategoryEntity category);

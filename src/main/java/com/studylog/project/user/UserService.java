@@ -1,8 +1,11 @@
 package com.studylog.project.user;
 
+import com.studylog.project.board.BoardRepository;
+import com.studylog.project.category.CategoryRepository;
 import com.studylog.project.category.CategoryService;
 import com.studylog.project.global.exception.*;
 import com.studylog.project.jwt.CustomUserDetail;
+import com.studylog.project.plan.PlanRepository;
 import com.studylog.project.timer.TimerRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -26,8 +29,10 @@ public class UserService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final RedisTemplate<String, String> redisTemplate; //제네릭 타입 명시
     private final CategoryService categoryService;
+    private final PlanRepository planRepository;
+    private final CategoryRepository categoryRepository;
+    private final BoardRepository boardRepository;
     private final TimerRepository timerRepository;
-
     @Transactional
     //회원 DB에 저장
     public void register(SignInRequest user) {
@@ -71,8 +76,8 @@ public class UserService {
         if (passwordEncoder.matches(request.getPw(), userEntity.getPw())) {
             log.info(String.format("id: [%s], 로그인 성공", userEntity.getId()));
             if(userEntity.isDelete()){//회원탈퇴한 회원이라면
-                //3일 지났는데 스케쥴러 안 돌아서 삭제 안 된 경우
-                if(userEntity.getDeleteAt().isBefore(LocalDateTime.now().minusMinutes(3))){
+                //7일 지났는데 스케쥴러 안 돌아서 삭제 안 된 경우
+                if(userEntity.getDeleteAt().isBefore(LocalDateTime.now().minusDays(7))){
                     throw new AlreadyDeleteUserException("회원 탈퇴 철회 기간이 지나 복구가 불가합니다.");
                 }
                 restore(userEntity); //복구 처리
@@ -142,8 +147,15 @@ public class UserService {
     @Transactional
     public void deleteUser(){
         //isDelete == true && deleteAt < 지금 일자 - 3일 튜플 찾음
-        List<UserEntity> users = userRepository.findAllByDeleteTrueAndDeleteAtBefore(LocalDateTime.now().minusMinutes(3));
-        userRepository.deleteAll(users);
+        List<UserEntity> users = userRepository.findAllByDeleteTrueAndDeleteAtBefore(LocalDateTime.now().minusDays(7));
+        for(UserEntity user : users){
+            //카테고리 먼저 삭제하면 카테고리를 가진 테이블에 제약사항 에러 터짐
+            boardRepository.deleteAllByUser(user);
+            timerRepository.deleteAllByUser(user);
+            planRepository.deleteAllByUser(user);
+            categoryRepository.deleteAllByUser(user);
+            userRepository.delete(user);
+        }
     }
     //컨트롤러에서도 repo 접근해야 돼서 만듦... 이왕 만든 김에 서비스에서도 그냥 사용
     //서비스에서는 레포로 바로 접근해도 문제 X, 컨트롤러->서비스->레포
