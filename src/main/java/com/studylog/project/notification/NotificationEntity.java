@@ -36,8 +36,6 @@ public class NotificationEntity {
 
     @Column(name = "is_read")
     private boolean isRead;
-    @Column(name = "is_deleted")
-    private boolean isDeleted;
 
     @Builder
     public NotificationEntity(UserEntity user, TimerEntity timer, String title, String content, String url){
@@ -48,15 +46,15 @@ public class NotificationEntity {
         this.alertAt= LocalDateTime.now();
         this.url= url;
         this.isRead= false;
-        this.isDeleted= false;
     }
 
     public void updateIsRead(){
         this.isRead= true;
     }
-    public void deletedTimer(){
+    public void updateTimerId(){
         this.timer= null;
+    }
+    public void updateUrl(){
         this.url= null;
-        this.isDeleted= true;
     }
 }
