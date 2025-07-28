@@ -34,7 +34,7 @@ public class PlanController {
      4. 키워드별 조회
      다 섞어서도 가능..*/
     @GetMapping("/search")
-    public ResponseEntity<?> searchPlans( @RequestParam(required = false) String range,
+    public ResponseEntity<PlanDetailResponse> searchPlans( @RequestParam(required = false) String range,
                                           @RequestParam(required = false) LocalDate startDate,
                                           @RequestParam(required = false) LocalDate endDate,
                                           @RequestParam(required = false) String category,
@@ -94,7 +94,7 @@ public class PlanController {
         keyword = (keyword == null) ? null : keyword.trim(); //공백 제거
 
         //바디에 end 값 없으면 null 들어감 (start~전체 일정, end도 설정해야 당일/start~end 일정 나옴)
-        Object response= planService.searchPlans(user.getUser(), startDate, endDate,
+        PlanDetailResponse response= planService.searchPlans(user.getUser(), startDate, endDate,
                 categoryList, keyword, status, sort, range);
         return ResponseEntity.ok(response); //빈 리스트도 보내짐
         }

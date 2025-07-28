@@ -36,7 +36,7 @@ public class PlanService {
                 plan.getStartDate(), plan.getEndDate(), plan.getMinutes(), plan.isStatus());
     }
 
-    public Object searchPlans(UserEntity user, LocalDate startDate, LocalDate endDate,
+    public PlanDetailResponse searchPlans(UserEntity user, LocalDate startDate, LocalDate endDate,
                                List<Long> categoryList, String keyword, Boolean status, List<String> sort, String range) {
         QPlanEntity planEntity = QPlanEntity.planEntity;
 
@@ -99,9 +99,7 @@ public class PlanService {
         List<PlanResponse> planResponse= plans.stream()
                                             .map(plan -> PlanResponse.toDto(plan))
                                             .toList(); //통계 빼고 반환
-        if(range == null) return planResponse;
 
-        //null이 아니면 통계 포함 반환
         long totalCount= queryFactory.select(planEntity.count())
                 .from(planEntity)
                 .where(builder)
@@ -113,8 +111,10 @@ public class PlanService {
 
         //일, 주, 월 범위일 때만 메시지 함께 반환
         double rate = totalCount == 0 ? 0.0 : (double) achievedCount / totalCount * 100;
-        String message= returnMessage(user.getNickname(), range, rate, totalCount);
 
+        if(range == null) return PlanDetailResponse.toDto(planResponse, achievedCount, totalCount, rate, null); //메시지는 null 처리
+
+        String message= returnMessage(user.getNickname(), range, rate, totalCount);
         return PlanDetailResponse.toDto(planResponse, achievedCount, totalCount, rate, message);
     }
 
