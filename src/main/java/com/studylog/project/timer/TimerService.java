@@ -10,9 +10,10 @@ import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.exception.NotFoundException;
+import com.studylog.project.notification.NotificationEntity;
+import com.studylog.project.notification.NotificationRepository;
 import com.studylog.project.plan.PlanEntity;
 import com.studylog.project.plan.PlanRepository;
-import com.studylog.project.sse.EventPayload;
 import com.studylog.project.sse.SseEmitterService;
 import com.studylog.project.user.UserEntity;
 import jakarta.transaction.Transactional;
@@ -26,7 +27,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
 
 @Service
 @Slf4j
@@ -40,6 +40,7 @@ public class TimerService {
     private final JPAQueryFactory queryFactory;
     private final LapRepository lapRepository;
     private final LapService lapService;
+    private final NotificationRepository notificationRepository;
 
     private record PlanAndCategory(PlanEntity plan, CategoryEntity category) {} //이 클래스에서만 쓸 거라 static 안 붙임
 
@@ -179,9 +180,16 @@ public class TimerService {
         return TimerDetailResponse.toDto(timer);
     }
 
-    //타이머 삭제
+    //타이머 삭제 + 알림 경로 삭제/isDeleted 처리
     public void deleteTimer(Long id, UserEntity user) {
         TimerEntity timer= getTimerByUserAndId(user, id);
+
+        //삭제한 타이머의 알림 받기 (영속 상태)
+        List<NotificationEntity> notifications= notificationRepository.findAllByUserAndTimer(user, timer);
+        for(NotificationEntity noti : notifications){ //해당 타이머를 가진 알림 없으면 패스
+            noti.deletedTimer();
+        }
+
         timerRepository.delete(timer);
     }
 
@@ -199,7 +207,7 @@ public class TimerService {
                         });
         timer.updateElapsed(getTotalElapsed(timer)); //누적 경과+startAt+동기화 시간
         timer.updateSyncedAt(); //동기화
-        syncedCheckCompleted(timer);
+        checkCompletion(timer, user, true);
         return TimerDetailResponse.toDto(timer);
     }
 
@@ -221,7 +229,7 @@ public class TimerService {
         }
 
         timer.updateElapsed(getTotalElapsed(timer)); //누적 시간 갱신
-        if(timer.getPlan() != null) checkCompleted(timer);
+        if(timer.getPlan() != null) checkCompletion(timer, user, false);
         return TimerDetailResponse.toDto(timer);
     }
 
@@ -251,7 +259,7 @@ public class TimerService {
                 case READY -> lap.updateEndLap(null);
             }
         }
-        if(timer.getPlan() != null) checkCompleted(timer);
+        if(timer.getPlan() != null) checkCompletion(timer, user, false);
         return TimerDetailResponse.toDto(timer);
     }
 
@@ -315,54 +323,31 @@ public class TimerService {
         }
     }
 
-    //동기화 시 활용 (syncedAt 항상 있음), end 필요 X
-    private void syncedCheckCompleted(TimerEntity timer){
-        LocalDate timerStartDate= timer.getSyncedAt().toLocalDate();
-        LocalDate planStart= timer.getPlan().getStartDate();
-        LocalDate planEnd= timer.getPlan().getEndDate();
-
-        //미완료 & 계획 일자 이후에 수행되었으면
-        if (!timer.getPlan().isStatus()) { //planStart <= timerStart <= planEnd
-            if((timerStartDate.isEqual(planStart) || timerStartDate.isAfter(planStart))
-            && (timerStartDate.isEqual(planEnd) || timerStartDate.isBefore(planEnd))){
-                if(timer.getElapsed() >= timer.getPlan().getMinutes() * 60){
-                    timer.getPlan().updateStatus(true);
-                    alert(timer);
-                }
-            }
-        }
-    }
-
-    //정지/종료 후 활용
-    private void checkCompleted(TimerEntity timer){
+    private void checkCompletion(TimerEntity timer, UserEntity user, boolean isSyncCheck){
         LocalDate timerStartDate= timer.getSyncedAt() == null? timer.getStartAt().toLocalDate():timer.getSyncedAt().toLocalDate();
-        LocalDate timerEndDate= timer.getEndAt() == null? timer.getPauseAt().toLocalDate():timer.getEndAt().toLocalDate();
         LocalDate planStart= timer.getPlan().getStartDate();
         LocalDate planEnd= timer.getPlan().getEndDate();
 
+        if(timer.getPlan().isStatus()) return; //이미 완료된 계획이면 함수 종료
         //미완료 & 계획 일자 이후에 수행되었으면
-        if (!timer.getPlan().isStatus()) { //timerStart >= planStart && timerEnd <= planEnd
-            if((timerStartDate.isEqual(planStart) || timerStartDate.isAfter(planStart))
-                    && (timerEndDate.isEqual(planEnd) || timerEndDate.isBefore(planEnd))){
-                if(timer.getElapsed() >= timer.getPlan().getMinutes() * 60){
-                    timer.getPlan().updateStatus(true);
-                    alert(timer);
-                }
-            }
-        }
-    }
 
-    private void alert(TimerEntity timer){
-        EventPayload payload = new EventPayload();
-        payload.setType("plan-completed");
-        payload.setId(timer.getUser().getUser_id());
-        payload.setMessage(String.format("🎉계획 목표 달성 시간을 채웠습니다! [%s] 계획이 완료 처리되었습니다.", timer.getPlan().getPlan_name()));
-        sseEmitterService.broadcast(timer.getUser(), payload);
+        boolean inRange= false; //체킹 값 저장
+        if(!isSyncCheck){ //정지, 종료에 의한 검사
+            LocalDate timerEndDate= timer.getEndAt() == null? timer.getPauseAt().toLocalDate():timer.getEndAt().toLocalDate();
+            inRange= (timerStartDate.isEqual(planStart) || timerStartDate.isAfter(planStart))
+                    && (timerEndDate.isEqual(planEnd) || timerEndDate.isBefore(planEnd));
+        } else { //동기화 후 검사
+            inRange= (timerStartDate.isEqual(planStart) || timerStartDate.isAfter(planStart))
+                    && (timerStartDate.isEqual(planEnd) || timerStartDate.isBefore(planEnd));
+        }
+        if(inRange && timer.getElapsed() >= timer.getPlan().getMinutes() * 60){
+            timer.getPlan().updateStatus(true);
+            sseEmitterService.alert(timer, user, isSyncCheck);
+        }
     }
 
     @Scheduled(cron= "0 0/5 * * * *") //5분 간격 스케쥴링
     public void updateElapsedSecond() {
-        LocalDateTime now = LocalDateTime.now();
         List<TimerEntity> runningTimerList= timerRepository.findAllByStatus(TimerStatus.RUNNING);
         //timer 영속상태
         for (TimerEntity timer : runningTimerList) {
@@ -370,7 +355,7 @@ public class TimerService {
                 timer.updateElapsed(getTotalElapsed(timer)); //누적 경과+startAt+동기화 시간
                 timer.updateSyncedAt(); //자동 동기화
                 if(timer.getPlan() != null){ //타이머에 계획이 있다면
-                    syncedCheckCompleted(timer);
+                   checkCompletion(timer, timer.getUser(), true);
                 }
                 lapRepository.findByTimerAndStatus(timer, TimerStatus.RUNNING)
                         .ifPresent(lap -> {
