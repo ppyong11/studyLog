@@ -2,11 +2,13 @@ package com.studylog.project.plan;
 
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.global.exception.BadRequestException;
+import com.studylog.project.timer.TimerEntity;
 import com.studylog.project.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
+import java.sql.Time;
 import java.time.LocalDate;
 
 @NoArgsConstructor
@@ -44,6 +46,9 @@ public class PlanEntity {
 
     @Column(name = "plan_status",nullable = false)
     private boolean status; //계획 생성 시 0으로 설정
+
+    @OneToOne(mappedBy = "plan", cascade = CascadeType.REMOVE)
+    private TimerEntity timer;
 
     @Builder
     public PlanEntity (UserEntity user, CategoryEntity category, String plan_name, String memo,

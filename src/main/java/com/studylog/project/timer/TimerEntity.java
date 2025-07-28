@@ -29,8 +29,8 @@ public class TimerEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
-    @ManyToOne
-    @JoinColumn(name = "plan_id")
+    @OneToOne //plan이 있다면 플랜 1당 타이머 1개
+    @JoinColumn(name = "plan_id", unique = true)
     private PlanEntity plan; //플랜명 널 허용 (단순 기록)
 
     @ManyToOne
@@ -59,7 +59,7 @@ public class TimerEntity {
     @Enumerated(EnumType.STRING)
     private TimerStatus status;
 
-    @OneToMany(mappedBy = "timer", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "timer", cascade = CascadeType.REMOVE)
     private List<LapEntity> laps= new ArrayList<>(); //초기화는 생성할 때만 쓰는 거라 repo로 불러올 땐 잘 채워짐
 
     @Builder

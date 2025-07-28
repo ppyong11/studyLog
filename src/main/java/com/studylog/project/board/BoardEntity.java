@@ -21,7 +21,7 @@ public class BoardEntity {
     @Column(name="board_id")
     private Long id;
 
-    @ManyToOne
+    @ManyToOne()
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
@@ -38,7 +38,7 @@ public class BoardEntity {
     private LocalDateTime update_at;
 
     //FileEntity의 board_id를 참조해서 BoardEntity의 files 리스트에 들어가는 구조
-    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "board", cascade = CascadeType.REMOVE) //board 삭제 시 file 삭제
     private List<FileEntity> files= new ArrayList<>();
 
     @Builder

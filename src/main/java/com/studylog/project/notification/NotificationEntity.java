@@ -20,11 +20,11 @@ public class NotificationEntity {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
     @ManyToOne
-    @JoinColumn(name="timer_id")
+    @JoinColumn(name="timer_id") //타이머 있어도 되고 없어도 됨
     private TimerEntity timer;
 
     private String title;
