@@ -98,7 +98,7 @@ public class JwtTokenProvider {
                     .parseClaimsJws(token); //실제 토큰 파싱 및 서명 검증 수행
             if (Boolean.TRUE.equals(redisTemplate.hasKey("AT:"+token))) {
                 //유효 토큰 + 블랙리스트 저장= 로그아웃 토큰
-                log.info("로그아웃 처리된 회원의 요청입니다.");
+                log.info("유효하지 않은 회원의 요청입니다.");
                 return false;
             }
             return true;

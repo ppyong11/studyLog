@@ -64,22 +64,19 @@ public class JwtService {
                     //키값- RT: 토큰, 값- userId
                     redisTemplate.opsForValue().set(key, userId, TTL, TimeUnit.MILLISECONDS);
                 } else {
+                    //키값- RT: id, 값- 토큰
                     redisTemplate.opsForValue().set(key, token, TTL, TimeUnit.MILLISECONDS);
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e.getMessage()); //잡아서 에러 던짐
             }
             log.info("rt 저장 완료: "+redisTemplate.opsForValue().get(key));
-        } else{
-            //액세스 저장
+        } else{ //로그아웃한 AT 저장
             try {
                 redisTemplate.opsForValue().set(key, state, TTL, TimeUnit.MILLISECONDS);
             } catch (Exception e) {
                 throw new RuntimeException(e.getMessage()); //잡아서 에러 던짐
             }
-            Long ttl = redisTemplate.getExpire(key, TimeUnit.MILLISECONDS);
-            String value = redisTemplate.opsForValue().get(key);
-            log.info("value: {}, TTL: {}", value, ttl);
         }
     }
 
@@ -88,23 +85,27 @@ public class JwtService {
         if(timerRepository.existsByUserAndStatus(userDetail.getUser(), TimerStatus.RUNNING))
             throw new BadRequestException("실행 중인 타이머를 종료한 후 다시 시도해 주세요.");
         saveToken("AT:"+ token, token, null, "로그아웃"); //액세스 저장
-        String refreshToken= redisTemplate.opsForValue().get("RT:"+ userDetail.getUsername());
-        //accessToken 검증 후라서 보안 문제 약함 + 리프레시 바로 삭제
-        redisTemplate.delete("RT:"+ userDetail.getUsername()); //리프레시 토큰 삭제 (강제 무효화)
-        redisTemplate.delete("RT:" + refreshToken); //토큰에 저장된 id 삭제
-        log.info("로그아웃 확인 {}, {}", redisTemplate.opsForValue().get("RT: "+userDetail.getUsername()), redisTemplate.opsForValue().get("RT: "+refreshToken));
+        deleteRefreshToken(userDetail.getUsername());
     }
 
-    //토큰 재발급
+    //토큰 재발급 (access, refresh 둘 다)
     //redis에 토큰 회전 및 쿠키에 재발급한 토큰들 내려주기
-    public JwtToken createNewToken(String userId){
+    public JwtToken createNewToken(String userId, CustomUserDetail userDetail, String access){
         UserEntity userEntity= userRepository.findById(userId) //userId 유니크 필드라 조회 문제 X
                 .orElseThrow(() -> new NoSuchElementException("존재하지 않는 회원입니다."));
         //인증 객체 임의 생성
         List<GrantedAuthority> authorities= List.of(new SimpleGrantedAuthority(userEntity.getRole()? "ROLE_USER" : "ROLE_ADMIN"));
         Authentication authentication= new UsernamePasswordAuthenticationToken(userEntity.getId(), null, authorities);
-        JwtToken newToken= jwtTokenProvider.createToken(authentication);
-        return newToken;
+        JwtToken jwtToken= jwtTokenProvider.createToken(authentication);
+        //기존 AT 로그아웃 처리, 저장된 RT 삭제 후 새 RT 저장
+        String newRefresh= jwtToken.getRefreshToken();
+
+        saveToken("AT:"+ access, access, null, "로그아웃");
+        String id= userDetail.getUsername();
+        deleteRefreshToken(userDetail.getUsername()); //redis에 저장된 기존 리프레시 토큰 삭제
+        saveToken("RT:" + id, newRefresh, null, null); //리프레시 토큰 저장 (id -> 토큰)
+        saveToken("RT:" + newRefresh, newRefresh, id, null); //양방향 저장 (토큰 -> id)
+        return jwtToken;//JWT 토큰 타입
     }
 
     //쿠키 생성
@@ -113,6 +114,7 @@ public class JwtService {
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("Lax")
+                .path(path) //이 경로에서 클 -> 서버로 쿠키 보냄
                 .maxAge(expTime) //1시간 후 만료
                 .build().toString();
 
@@ -122,10 +124,17 @@ public class JwtService {
         return ResponseCookie.from(name, "")
                 .httpOnly(true)
                 .secure(true)
-                .path(path) //생성할 때 넣은 path로 설
+                .path(path) //생성할 때 넣은 path로 설정
                 .sameSite("None")
                 .maxAge(0) //바로 만료
                 .build().toString();
+    }
+
+    public void deleteRefreshToken(String id){
+        String refreshToken= redisTemplate.opsForValue().get("RT:"+ id);
+        //accessToken 검증 후라서 보안 문제 약함 + 리프레시 바로 삭제
+        redisTemplate.delete("RT:"+ id); //리프레시 토큰 삭제 (강제 무효화)
+        redisTemplate.delete("RT:" + refreshToken); //토큰에 저장된 id 삭제
     }
 
 }

@@ -34,10 +34,10 @@ public class AuthController {
         log.info("AccessToken: {}, RefreshToken: {}", jwtToken.getAccessToken(), jwtToken.getRefreshToken());
         String nickname = userService.getNickname(request);
         String accessCookie= jwtService.createCookie("access_token",jwtToken.getAccessToken(),
-                "/", 30*60); //60분
+                "/", 30*60); //30분 동안 쿠키 보냄 (TTL이랑 오차 거의 없음)
 
         String refreshCookie= jwtService.createCookie("refresh_token", jwtToken.getRefreshToken(),
-                "/study-log/refresh", 7*24*60*60); //7일
+                "/api/refresh", 7*24*60*60); //7일 동안 쿠키 보냄
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie);
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie);
@@ -54,7 +54,7 @@ public class AuthController {
         jwtService.saveBlacklistToken(user, accessToken); //액세스 토큰 저장
 
         String deleteAccessCookie= jwtService.deleteCookie("access_token", "/");
-        String deleteRefreshCookie= jwtService.deleteCookie("refresh_token", "/study-log/refresh");
+        String deleteRefreshCookie= jwtService.deleteCookie("refresh_token", "/api/refresh");
         response.addHeader(HttpHeaders.SET_COOKIE, deleteAccessCookie);
         response.addHeader(HttpHeaders.SET_COOKIE, deleteRefreshCookie);
 
@@ -69,7 +69,7 @@ public class AuthController {
         //자동 로그아웃 + user 속성 바꾸기
         jwtService.saveBlacklistToken(user, accessToken); //액세스 토큰 저장
         String deleteAccessCookie= jwtService.deleteCookie("access_token", "/");
-        String deleteRefreshCookie= jwtService.deleteCookie("refresh_token", "/study-log/refresh");
+        String deleteRefreshCookie= jwtService.deleteCookie("refresh_token", "/api/refresh");
         response.addHeader(HttpHeaders.SET_COOKIE, deleteAccessCookie);
         response.addHeader(HttpHeaders.SET_COOKIE, deleteRefreshCookie);
 
@@ -79,31 +79,30 @@ public class AuthController {
 
     @PostMapping("/refresh")
     @Operation(summary = "액세스 토큰 재발급")
-    public ResponseEntity<ApiResponse> refreshAccessToken(@CookieValue(name="refresh_token", required = false)String refreshToken,
+    public ResponseEntity<ApiResponse> refreshAccessToken(@CookieValue(name="access_token", required = false)String accessToken,
+                                                          @CookieValue(name="refresh_token", required = false)String refreshToken,
+                                                          @AuthenticationPrincipal CustomUserDetail user,
                                                           HttpServletResponse response) {
         //permitAll 경로라 필터에서 쿠키 있든 없든 컨트롤러 호출 O
         //컨트롤러에서 RT 써야 해서 파라미터로 꺼냄
-        log.info("refresh token: " + refreshToken);
         if(refreshToken == null) { //쿠키에 토큰 X
             throw new JwtException("재발급 검증에 필요한 토큰이 없습니다.");
         }
         if(!jwtTokenProvider.validateToken(refreshToken)) { //토큰 O, 검증 실패
             throw new JwtException("유효하지 않은 토큰입니다.");
         }
-        //토큰 O, 검증 완료
+        //토큰 O, 검증 완료 -> id 얻어옴
         String userId= redisTemplate.opsForValue().get("RT:" + refreshToken); //userId (long) 타입으로 안 넣음
         if (userId == null) { //서버에 등록 안 된 토큰
-            log.warn("로그아웃 및 탈퇴한 회원이거나 이전에 사용한 리프레시 토큰으로 access token 재발급 실패");
+            log.warn("로그아웃 및 탈퇴한 회원이거나 이전에 사용한 리프레시 토큰입니다.");
             throw new JwtException("유효하지 않은 토큰입니다.");
         }
-        log.info("재발급 전 refresh: {}", refreshToken);
-        JwtToken newToken= jwtService.createNewToken(userId);
+        JwtToken newToken= jwtService.createNewToken(userId, user, accessToken);
         String accessCookie= jwtService.createCookie("access_token", newToken.getAccessToken(),
-                "/", 60*60);
-        log.info("재발급 후 access: {}", newToken.getAccessToken());
+                "/", 30*60);
         String refreshCookie= jwtService.createCookie("refresh_token", newToken.getRefreshToken(),
-                "/study-log/refresh", 7*24*60*60);
-        log.info("재발급 후 refresh: {}", newToken.getRefreshToken());
+                "/api/refresh", 7*24*60*60);
+        log.info("토큰 재발급 완료");
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie);
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie);
         return ResponseEntity.ok(new ApiResponse( true, "로그인이 연장되었습니다."));
