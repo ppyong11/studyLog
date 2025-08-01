@@ -137,10 +137,20 @@ public class UserService {
     //회원탈퇴
     @Transactional
     public void withdraw(UserEntity user){
-        UserEntity userEntity= userRepository.findById(user.getUser_id())
-                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 회원입니다.")); //회원 객체 받기
+        UserEntity userEntity= getUser(user);
         userEntity.withdraw(LocalDateTime.now()); //기존 객체를 바꾸는 거니까 빌더 필요 X
         log.info("탈퇴 처리 완료: 여부 {}, 시간 {}, ", userEntity.isDelete(), userEntity.getDeleteAt());
+    }
+
+    public String updateResolution(String resolution, UserEntity user){
+        UserEntity userEntity= getUser(user); //영속 상태 만들기
+        userEntity.updateResolution(resolution);
+        return resolution;
+    }
+
+    public UserEntity getUser(UserEntity user){
+        return userRepository.findById(user.getUser_id())
+                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 회원입니다.")); //회원 객체 받기
     }
 
     @Scheduled(fixedRate = 30 * 60 * 1000) //서버 실행 시간부터 30분마다 실행
