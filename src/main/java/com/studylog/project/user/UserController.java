@@ -24,30 +24,6 @@ public class UserController {
     private final UserService userService;
     private final MailService mailService;
 
-    @GetMapping("")
-    public ResponseEntity<ApiResponse> mainPage(@AuthenticationPrincipal CustomUserDetail customUserDetail) {
-        //permitAll 경로
-        if (customUserDetail == null) {
-            //액세스 토큰 X 경우 (비회원)
-            return ResponseEntity.ok(new ApiResponse(true, "비회원 메인 페이지입니다."));
-        } else {
-            //나중에 DTO 보내기
-            return ResponseEntity.ok(new ApiResponse(true, "비회원 메인 페이지입니다."));
-        }
-    }
-
-    @GetMapping("/")
-    public ResponseEntity<ApiResponse> mainPage2(@AuthenticationPrincipal CustomUserDetail customUserDetail) {
-        //permitAll 경로
-        if (customUserDetail == null) {
-            //액세스 토큰 X 경우 (비회원)
-            return ResponseEntity.ok(new ApiResponse(true, "비회원 메인 페이지입니다."));
-        } else {
-            //나중에 DTO 보내기
-            return ResponseEntity.ok(new ApiResponse(true, "비회원 메인 페이지입니다."));
-        }
-    }
-
     @GetMapping("/sign-in/check-info")
     public ResponseEntity<ApiResponse> check(@RequestParam(required = false) String id,
                                              @RequestParam(required = false) String nickname) {
@@ -117,5 +93,12 @@ public class UserController {
         userService.changeNickname(user, request);
         log.info(user.getUsername());
         return ResponseEntity.ok(new ApiResponse(true, "닉네임이 변경되었습니다."));
+    }
+
+    @PatchMapping("/member/change-resolution")
+    public ResponseEntity<String> updateResolution(@Valid @RequestBody UpdateResolutionReqeust reqeust,
+                                                   @AuthenticationPrincipal CustomUserDetail user){
+        String updated= userService.updateResolution(reqeust.getResolution(), user.getUser());
+        return ResponseEntity.ok((updated));
     }
 }

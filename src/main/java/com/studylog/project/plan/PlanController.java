@@ -9,17 +9,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
-@Controller
+@RestController
 @Slf4j
 @RequiredArgsConstructor
 @RequestMapping("/api/plans")
@@ -94,6 +91,9 @@ public class PlanController {
         keyword = (keyword == null) ? null : keyword.trim(); //공백 제거
 
         //바디에 end 값 없으면 null 들어감 (start~전체 일정, end도 설정해야 당일/start~end 일정 나옴)
+        //start 값 없으면 당일로 설정
+        if(startDate == null) startDate= LocalDate.now();
+
         PlanDetailResponse response= planService.searchPlans(user.getUser(), startDate, endDate,
                 categoryList, keyword, status, sort, range);
         return ResponseEntity.ok(response); //빈 리스트도 보내짐
