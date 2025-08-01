@@ -15,7 +15,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjuster;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -100,14 +103,8 @@ public class PlanService {
                                             .map(plan -> PlanResponse.toDto(plan))
                                             .toList(); //통계 빼고 반환
 
-        long totalCount= queryFactory.select(planEntity.count())
-                .from(planEntity)
-                .where(builder)
-                .fetchOne();
-        long achievedCount= queryFactory.select(planEntity.count())
-                .from(planEntity)
-                .where(builder.and(planEntity.status.isTrue())) //조회 결과 중 달성한 계획 count
-                .fetchOne();
+        long totalCount= planCount(planEntity, builder, false);
+        long achievedCount= planCount(planEntity, builder, true);
 
         //일, 주, 월 범위일 때만 메시지 함께 반환
         double rate = totalCount == 0 ? 0.0 : (double) achievedCount / totalCount * 100;
@@ -117,6 +114,60 @@ public class PlanService {
         String message= returnMessage(user.getNickname(), range, rate, totalCount);
         return PlanDetailResponse.toDto(planResponse, achievedCount, totalCount, rate, message);
     }
+
+    public PlanDetailResponse returnMainPage(UserEntity user, LocalDate today, boolean weekly){
+        QPlanEntity planEntity= QPlanEntity.planEntity;
+        BooleanBuilder builder= new BooleanBuilder();
+        LocalDate weeklyMon;
+        LocalDate weeklySun;
+        String range;
+
+        builder.and(planEntity.user.eq(user)); //
+        if(weekly){ //startDate가 언제든 그 주의 월요일과 일요일까지 조회
+            weeklyMon= today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            weeklySun= today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
+            builder.and(planEntity.startDate.goe(weeklyMon));
+            builder.and(planEntity.startDate.loe(weeklySun));
+            range= "week";
+            log.info("startDate: {}, endDate: {}", weeklyMon, weeklySun);
+        } else{ //일간 조회
+            builder.and(planEntity.startDate.eq(today));
+            range= "day";
+        }
+
+        List<PlanEntity> plans= queryFactory.selectFrom(planEntity) //select * from planEntity
+                .where(builder)
+                .orderBy(planEntity.startDate.asc(), planEntity.category.name.asc())
+                .fetch(); //전체 결과 반환 (List<planEntity> 타입), 결과 없을 시 빈 리스트 (Null 반환 X)
+
+        List<PlanResponse> planResponse= plans.stream()
+                .map(plan -> PlanResponse.toDto(plan))
+                .toList();
+
+        long totalCount= planCount(planEntity, builder, false);
+        long achievedCount= planCount(planEntity, builder, true);
+
+        //일, 주, 월 범위일 때만 메시지 함께 반환
+        double rate = totalCount == 0 ? 0.0 : (double) achievedCount / totalCount * 100;
+
+        String message= returnMessage(user.getNickname(), range, rate, totalCount);
+        return PlanDetailResponse.toDto(planResponse, achievedCount, totalCount, rate, message);
+    }
+
+    private long planCount(QPlanEntity planEntity, BooleanBuilder builder, boolean achieved){
+        if(!achieved){ //전체 계획
+            return queryFactory.select(planEntity.count())
+                    .from(planEntity)
+                    .where(builder)
+                    .fetchOne();
+        } else{ //달성한 계획
+            return queryFactory.select(planEntity.count())
+                    .from(planEntity)
+                    .where(builder.and(planEntity.status.isTrue())) //조회 결과 중 달성한 계획 count
+                    .fetchOne();
+        }
+    }
+
 
     private String returnMessage(String nickname, String range, double rate, long total){
         //range는 day, week, month만 받음 (컨트롤러에서 분기 처리)
