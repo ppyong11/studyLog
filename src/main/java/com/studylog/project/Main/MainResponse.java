@@ -1,12 +1,9 @@
 package com.studylog.project.Main;
 
 import com.studylog.project.plan.PlanDetailResponse;
-import com.studylog.project.plan.PlanResponse;
 import com.studylog.project.user.UserEntity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
-import java.util.List;
 
 @AllArgsConstructor
 @Getter
