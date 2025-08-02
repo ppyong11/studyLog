@@ -26,7 +26,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final RedisTemplate<String, String> redisTemplate;
     //토큰 관련 처리 담당
-    @PostMapping("/log-in")
+    @PostMapping("/login")
     public ResponseEntity<ApiResponse> logIn(@RequestBody @Valid LogInRequest request, HttpServletResponse response) {
         userService.validateAndRestoreUser(request); //회원 검증 및 탈퇴 복구 처리
         JwtToken jwtToken = jwtService.logIn(request.getId(), request.getPw()); //예외 발생 시 아래 로직 실행 X
@@ -44,7 +44,7 @@ public class AuthController {
         return ResponseEntity.ok(new ApiResponse( true, String.format("%s 님, 반갑습니다. ☺️", nickname)));
     }
 
-    @PostMapping("/log-out")
+    @PostMapping("/logout")
     @Operation(summary = "로그아웃", security = @SecurityRequirement(name = "bearerAuth"))
     public ResponseEntity<ApiResponse> logout(@CookieValue(name="access_token")String accessToken,
                                               HttpServletResponse response,

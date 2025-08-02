@@ -32,8 +32,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                     .requestMatchers(
                             //아래 API 요청 모두 허가
-                            "/api/sign-in/**",
-                            "/api/log-in",
+                            "/api/signin/**",
+                            "/api/login",
                             "/api/", //뒷 엔드포인트도 다 로긘 처리
                             "/api", //메인
                             "/swagger-ui/**",

@@ -24,7 +24,7 @@ public class UserController {
     private final UserService userService;
     private final MailService mailService;
 
-    @GetMapping("/sign-in/check-info")
+    @GetMapping("/signin/check-info")
     public ResponseEntity<ApiResponse> check(@RequestParam(required = false) String id,
                                              @RequestParam(required = false) String nickname) {
         if (id != null && nickname != null) {//두 필드 모두 들어올 경우
@@ -50,7 +50,7 @@ public class UserController {
     }
 
     //이메일 인증 코드 발송
-    @PostMapping("/sign-in/send-email-code")
+    @PostMapping("/signin/send-email-code")
     public ResponseEntity<ApiResponse> sendEmailCode(@RequestBody @Valid MailRequest reqeust) {
         String email = reqeust.getEmail(); //유효성 검사 후 받은 이메일 string형 변환
         if (userService.existsEmail(email)) {
@@ -61,7 +61,7 @@ public class UserController {
         return ResponseEntity.ok(new ApiResponse( true, "사용 가능한 이메일입니다. 이메일 발송 완료"));
     }
 
-    @PostMapping("/sign-in/verify-email-code")
+    @PostMapping("/signin/verify-email-code")
     public ResponseEntity<ApiResponse> verifyCode(@RequestBody @Valid MailRequest reqeust) {
         if (reqeust.getCode() == null || reqeust.getCode().isBlank()) { //code 입력 안 했을 때
             return ResponseEntity.badRequest().body(new ApiResponse( false, "인증 코드를 입력하세요."));
@@ -70,7 +70,7 @@ public class UserController {
         return ResponseEntity.ok(new ApiResponse(true, "이메일 인증 완료")); //mailService에서 문제 없으면 처리
     }
 
-    @PostMapping("/sign-in")
+    @PostMapping("/signin")
     public ResponseEntity<ApiResponse> signIn(@RequestBody @Valid SignInRequest signInRequest) {
         userService.register(signInRequest);
         return ResponseEntity.ok(new ApiResponse(true, "회원가입 되었습니다."));
