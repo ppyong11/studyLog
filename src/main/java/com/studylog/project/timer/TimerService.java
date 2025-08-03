@@ -350,21 +350,20 @@ public class TimerService {
 
     @Scheduled(cron= "0 0/5 * * * *") //5분 간격 스케쥴링
     public void updateElapsedSecond() {
+        //실행 중인 타이머만 조회
         List<TimerEntity> runningTimerList= timerRepository.findAllByStatus(TimerStatus.RUNNING);
         //timer 영속상태
         for (TimerEntity timer : runningTimerList) {
-            if(timer.getStatus().equals(TimerStatus.RUNNING)) { //실행 중 타이머라면
-                timer.updateElapsed(getTotalElapsed(timer)); //누적 경과+startAt+동기화 시간
-                timer.updateSyncedAt(); //자동 동기화
-                if(timer.getPlan() != null){ //타이머에 계획이 있다면
-                   checkCompletion(timer, timer.getUser(), true);
-                }
-                lapRepository.findByTimerAndStatus(timer, TimerStatus.RUNNING)
-                        .ifPresent(lap -> {
-                            lap.updateElapsed(lapService.getTotalElapsed(lap));
-                            lap.updateSyncedAt();
-                        });
+            timer.updateElapsed(getTotalElapsed(timer)); //누적 경과+startAt+동기화 시간
+            timer.updateSyncedAt(); //자동 동기화
+            if(timer.getPlan() != null){ //타이머에 계획이 있다면
+               checkCompletion(timer, timer.getUser(), true);
             }
+            lapRepository.findByTimerAndStatus(timer, TimerStatus.RUNNING)
+                    .ifPresent(lap -> {
+                        lap.updateElapsed(lapService.getTotalElapsed(lap));
+                        lap.updateSyncedAt();
+                    }); //타이머에 실행 중인 랩도 있다면 같이 동기화 처리
         }
     }
 }
