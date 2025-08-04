@@ -27,6 +27,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -348,6 +349,9 @@ public class TimerService {
         }
     }
 
+    public Optional<TimerEntity> getTimerByPlan(PlanEntity plan){
+        return timerRepository.findByPlan(plan);
+    }
     @Scheduled(cron= "0 0/5 * * * *") //5분 간격 스케쥴링
     public void updateElapsedSecond() {
         //실행 중인 타이머만 조회

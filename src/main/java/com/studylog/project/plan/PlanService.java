@@ -9,6 +9,7 @@ import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.exception.NotFoundException;
 import com.studylog.project.timer.TimerEntity;
 import com.studylog.project.timer.TimerRepository;
+import com.studylog.project.timer.TimerService;
 import com.studylog.project.user.UserEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -31,7 +33,7 @@ public class PlanService {
     private final PlanRepository planRepository;
     private final CategoryRepository categoryRepository;
     private final JPAQueryFactory queryFactory; //동적 쿼리용
-    private final TimerRepository timerRepository;
+    private final TimerService timerService;
 
     public PlanResponse getPlan(Long planId, UserEntity user) {
         PlanEntity plan= getPlanByUserAndId(planId, user);
@@ -78,10 +80,10 @@ public class PlanService {
         if(startDate != null) {
             if (endDate != null) {
                 //start~end
-                builder.and(planEntity.endDate.loe(endDate));
+                builder.and(planEntity.endDate.loe(endDate)); // <=
             }
             //start~전 일자
-            builder.and(planEntity.startDate.goe(startDate));
+            builder.and(planEntity.startDate.goe(startDate)); // >=
         }
         if(!categoryList.isEmpty()) {
             //빈 리스트가 아니라면, 빈 리스트인데 실행 시 모든 조건이 false처리됨 (and니께)
@@ -108,11 +110,12 @@ public class PlanService {
 
         //일, 주, 월 범위일 때만 메시지 함께 반환
         double rate = totalCount == 0 ? 0.0 : (double) achievedCount / totalCount * 100;
+        String totalStudyTime= totalStudyTime(plans);
 
-        if(range == null) return PlanDetailResponse.toDto(planResponse, achievedCount, totalCount, rate, null); //메시지는 null 처리
+        if(range == null) return PlanDetailResponse.toDto(planResponse, achievedCount, totalCount, rate, null, totalStudyTime); //메시지는 null 처리
 
         String message= returnMessage(user.getNickname(), range, rate, totalCount);
-        return PlanDetailResponse.toDto(planResponse, achievedCount, totalCount, rate, message);
+        return PlanDetailResponse.toDto(planResponse, achievedCount, totalCount, rate, message, totalStudyTime);
     }
 
     public PlanDetailResponse returnMainPage(UserEntity user, LocalDate today, boolean weekly){
@@ -126,12 +129,14 @@ public class PlanService {
         if(weekly){ //startDate가 언제든 그 주의 월요일과 일요일까지 조회
             weeklyMon= today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
             weeklySun= today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
-            builder.and(planEntity.startDate.goe(weeklyMon));
-            builder.and(planEntity.startDate.loe(weeklySun));
+            //저번 주~이번 주랑 겹치는 계획들 포함
+            builder.and(planEntity.endDate.goe(weeklyMon)); // >=
+            builder.and(planEntity.startDate.loe(weeklySun)); // <=
             range= "week";
             log.info("startDate: {}, endDate: {}", weeklyMon, weeklySun);
         } else{ //일간 조회
-            builder.and(planEntity.startDate.eq(today));
+            builder.and(planEntity.startDate.loe(today)); //<=
+            builder.and(planEntity.endDate.goe(today)); // >=
             range= "day";
         }
 
@@ -151,7 +156,29 @@ public class PlanService {
         double rate = totalCount == 0 ? 0.0 : (double) achievedCount / totalCount * 100;
 
         String message= returnMessage(user.getNickname(), range, rate, totalCount);
-        return PlanDetailResponse.toDto(planResponse, achievedCount, totalCount, rate, message);
+        String totalStudyTime= totalStudyTime(plans);
+        return PlanDetailResponse.toDto(planResponse, achievedCount, totalCount, rate, message, totalStudyTime);
+    }
+
+    private String totalStudyTime(List<PlanEntity> plans){
+        long totalSeconds= 0;
+        /*완료 안 된 계획은 제외,
+          완료된 계획은 계획 시간으로,
+          완료된 계획 + 타이머에 설정한 계획이면 타이머 시간 가져오기..*/
+        for(PlanEntity plan:plans){
+            if(plan.isStatus()){ //완료된 계획이면
+                Optional<TimerEntity> timer= timerService.getTimerByPlan(plan);
+                if(timer.isPresent()){
+                    totalSeconds += timer.get().getElapsed(); //초 단위
+                } else{
+                    totalSeconds += plan.getMinutes()*60; //분 단위
+                }
+            }
+        }
+        long hours= totalSeconds / 3600;
+        long minutes= (totalSeconds % 3600) /60;
+        long seconds= totalSeconds % 60;
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 
     private long planCount(QPlanEntity planEntity, BooleanBuilder builder, boolean achieved){
@@ -211,17 +238,14 @@ public class PlanService {
         CategoryEntity category= getCategory(request.getCategoryId(), user);
         //reqeust에 들어온 값 확인, 값이 있고 빈 문자열이 아닐 경우에만 처리 (시간은
 
-        TimerEntity timer= timerRepository.findByPlan(plan);
-        if(timer != null){
-            timer.updateCategory(category);
-        }
+        //타이머 있으면 처리, 없으면 패스
+        timerService.getTimerByPlan(plan)
+                        .ifPresent(timer -> {
+                            timer.updateCategory(category);
+                        });
 
         plan.updatePlan(request, category);
         //여기서 값 바뀐 거만 수정해 줌..
-        /*나중에 추가할 로직
-           일자, 공부시간이 달라졌다면 타이머랑 비교해서 미완료로 처리
-           타이머는 일자 수정 X
-         */
     }
 
     //상태 변경 로직
