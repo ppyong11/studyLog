@@ -2,6 +2,7 @@ package com.studylog.project.Lap;
 
 import com.studylog.project.jwt.CustomUserDetail;
 import com.studylog.project.timer.TimerDetailResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/timers")
 @Slf4j
 @RequiredArgsConstructor
+@Tag(name="Lap", description = "Lap API, 모든 요청 access token 필요")
 public class LapController {
     private final LapService lapService;
 

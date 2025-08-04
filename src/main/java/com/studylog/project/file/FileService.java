@@ -128,6 +128,14 @@ public class FileService {
                 .orElseThrow(() -> new NotFoundException("존재하지 않는 파일입니다."));
     }
 
+    public List<FileEntity> getFilesByUserAndDraftId(UserEntity user, String draftId){
+        return fileRepository.findAllByUserAndDraftId(user, draftId);
+    }
+
+    public List<FileEntity> getFilesByBoard(UserEntity user, BoardEntity board){
+        return fileRepository.findAllByUserAndBoard(user, board);
+    }
+
     @Scheduled(cron= "0 */30 * * * *") //30분마다 시행
     public void deleteDraftFiles(){
         LocalDateTime cutoff= LocalDateTime.now().minusHours(2);

@@ -1,9 +1,8 @@
 package com.studylog.project.global.exception;
 
-import com.studylog.project.global.response.ApiResponse;
+import com.studylog.project.global.response.CommonResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.http.fileupload.FileUploadException;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -19,88 +18,88 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ApiResponse> handleRuntime(RuntimeException e) {
+    public ResponseEntity<CommonResponse> handleRuntime(RuntimeException e) {
         return ResponseEntity.status(500)
-                .body(new ApiResponse(false, e.getMessage())); //오류 내용 축약해서 출력
+                .body(new CommonResponse(false, e.getMessage())); //오류 내용 축약해서 출력
     }
 
     @ExceptionHandler(DuplicateException.class)
-    public ResponseEntity<ApiResponse> handleDuplicate(DuplicateException e) {
-        return ResponseEntity.status(409)
-                .body(new ApiResponse(false, e.getMessage()));
+    public ResponseEntity<CommonResponse> handleDuplicate(DuplicateException e) {
+        return ResponseEntity.status(400)
+                .body(new CommonResponse(false, e.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
+    public ResponseEntity<CommonResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException e) {
         List<String> messages = e.getBindingResult().getFieldErrors()
                 .stream()
                 .map(DefaultMessageSourceResolvable::getDefaultMessage)
                 .collect(Collectors.toList());
         //축약 메시지 뽑음
-        return ResponseEntity.status(400).body(new ApiResponse(false, String.join(" / ", messages)));
+        return ResponseEntity.status(400).body(new CommonResponse(false, String.join(" / ", messages)));
     }
     @ExceptionHandler(MailException.class)
-    public ResponseEntity<ApiResponse> handleMail(MailException e) {
+    public ResponseEntity<CommonResponse> handleMail(MailException e) {
         return ResponseEntity.status(400)
-                .body(new ApiResponse( false, e.getMessage()));
+                .body(new CommonResponse( false, e.getMessage()));
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
-    public ResponseEntity<ApiResponse> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException e) {
+    public ResponseEntity<CommonResponse> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException e) {
         return ResponseEntity.status(400)
-                .body(new ApiResponse(false, "파일 용량 제한 20MB를 넘어 업로드할 수 없습니다."));
+                .body(new CommonResponse(false, "파일 용량 제한 20MB를 넘어 업로드할 수 없습니다."));
     }
 
     @ExceptionHandler(FileUploadException.class)
-    public ResponseEntity<ApiResponse> handleFileUpload(FileUploadException e) {
+    public ResponseEntity<CommonResponse> handleFileUpload(FileUploadException e) {
         return ResponseEntity.status(400)
-                .body(new ApiResponse(false, e.getMessage()));
+                .body(new CommonResponse(false, e.getMessage()));
     }
     @ExceptionHandler(LoginFaildException.class)
-    public ResponseEntity<ApiResponse> handleLogFaild(LoginFaildException e) {
+    public ResponseEntity<CommonResponse> handleLogFaild(LoginFaildException e) {
         return ResponseEntity.status(400)
-                .body(new ApiResponse(false, e.getMessage()));
+                .body(new CommonResponse(false, e.getMessage()));
     }
 
     @ExceptionHandler(LogoutFaildException.class)
-    public ResponseEntity<ApiResponse> handleLogoutFaild(LogoutFaildException e) {
+    public ResponseEntity<CommonResponse> handleLogoutFaild(LogoutFaildException e) {
         return ResponseEntity.status(400)
-                .body(new ApiResponse(false, e.getMessage()));
+                .body(new CommonResponse(false, e.getMessage()));
     }
 
     @ExceptionHandler(InvalidRequestException.class)
-    public ResponseEntity<ApiResponse> handleInvalidRequest(InvalidRequestException e) {
+    public ResponseEntity<CommonResponse> handleInvalidRequest(InvalidRequestException e) {
         return ResponseEntity.status(400)
-                .body(new ApiResponse(false, e.getMessage()));
+                .body(new CommonResponse(false, e.getMessage()));
     }
 
     @ExceptionHandler(JwtException.class) //jwt 관련 exception
-    public ResponseEntity<ApiResponse> handleJwtException(JwtException e) {
+    public ResponseEntity<CommonResponse> handleJwtException(JwtException e) {
         return ResponseEntity.status(401)
-                .body(new ApiResponse(false, e.getMessage()));
+                .body(new CommonResponse(false, e.getMessage()));
     }
 
     @ExceptionHandler(AlreadyDeleteUserException.class)
-    public ResponseEntity<ApiResponse> handleAlreadyDeleteUser(AlreadyDeleteUserException e) {
+    public ResponseEntity<CommonResponse> handleAlreadyDeleteUser(AlreadyDeleteUserException e) {
         return ResponseEntity.status(409)
-                .body(new ApiResponse(false, e.getMessage()));
+                .body(new CommonResponse(false, e.getMessage()));
     }
 
     @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ApiResponse> handleSignup(BadRequestException e) {
+    public ResponseEntity<CommonResponse> handleSignup(BadRequestException e) {
         return ResponseEntity.status(400)
-                .body(new ApiResponse(false, e.getMessage()));
+                .body(new CommonResponse(false, e.getMessage()));
     }
 
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ApiResponse> handleNotFound(NotFoundException e) {
+    public ResponseEntity<CommonResponse> handleNotFound(NotFoundException e) {
         return ResponseEntity.status(404)
-                .body(new ApiResponse(false, e.getMessage()));
+                .body(new CommonResponse(false, e.getMessage()));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiResponse> handleAccessDenied(AccessDeniedException e) {
+    public ResponseEntity<CommonResponse> handleAccessDenied(AccessDeniedException e) {
         return ResponseEntity.status(403)
-                .body(new ApiResponse(false, e.getMessage()));
+                .body(new CommonResponse(false, e.getMessage()));
     }
 }

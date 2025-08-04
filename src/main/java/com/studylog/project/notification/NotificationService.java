@@ -1,7 +1,7 @@
 package com.studylog.project.notification;
 
 import com.studylog.project.global.exception.NotFoundException;
-import com.studylog.project.global.response.ApiResponse;
+import com.studylog.project.global.response.CommonResponse;
 import com.studylog.project.timer.TimerEntity;
 import com.studylog.project.user.UserEntity;
 import jakarta.transaction.Transactional;
@@ -44,11 +44,11 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
-    public ApiResponse deleteAllNoti(UserEntity user){
+    public CommonResponse deleteAllNoti(UserEntity user){
         List<NotificationEntity> notifications= notificationRepository.findAllByUser(user);
-        if(notifications.isEmpty()) return new ApiResponse(true, "삭제할 알림이 없습니다.");
+        if(notifications.isEmpty()) return new CommonResponse(true, "삭제할 알림이 없습니다.");
         notificationRepository.deleteAll(notifications); //인자 없으면 모든 행 삭제
-        return new ApiResponse(true, "모든 알림이 삭제되었습니다.");
+        return new CommonResponse(true, "모든 알림이 삭제되었습니다.");
     }
     public void deleteNoti(Long id, UserEntity user){
         NotificationEntity notification= notificationRepository.findByUserAndId(user, id)
@@ -62,13 +62,13 @@ public class NotificationService {
         notification.updateIsRead();
     }
 
-    public ApiResponse readAllNoti(UserEntity user){
+    public CommonResponse readAllNoti(UserEntity user){
         List<NotificationEntity> notifications= notificationRepository.findAllByUserAndIsReadFalse(user);
-        if(notifications.isEmpty()) return new ApiResponse(true, "읽음 처리할 알림이 없습니다.");
+        if(notifications.isEmpty()) return new CommonResponse(true, "읽음 처리할 알림이 없습니다.");
         for(NotificationEntity noti:notifications) {
             noti.updateIsRead();
         }
-        return new ApiResponse(true, "모든 알림이 읽음 처리되었습니다.");
+        return new CommonResponse(true, "모든 알림이 읽음 처리되었습니다.");
     }
 
 }

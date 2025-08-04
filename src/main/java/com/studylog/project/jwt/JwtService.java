@@ -1,6 +1,7 @@
 package com.studylog.project.jwt;
 
 import com.studylog.project.global.exception.BadRequestException;
+import com.studylog.project.global.exception.NotFoundException;
 import com.studylog.project.timer.TimerRepository;
 import com.studylog.project.timer.TimerStatus;
 import com.studylog.project.user.UserEntity;
@@ -92,7 +93,7 @@ public class JwtService {
     //redis에 토큰 회전 및 쿠키에 재발급한 토큰들 내려주기
     public JwtToken createNewToken(String userId, CustomUserDetail userDetail, String access){
         UserEntity userEntity= userRepository.findById(userId) //userId 유니크 필드라 조회 문제 X
-                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 회원입니다."));
+                .orElseThrow(() -> new NotFoundException("존재하지 않는 회원입니다."));
         //인증 객체 임의 생성
         List<GrantedAuthority> authorities= List.of(new SimpleGrantedAuthority(userEntity.getRole()? "ROLE_USER" : "ROLE_ADMIN"));
         Authentication authentication= new UsernamePasswordAuthenticationToken(userEntity.getId(), null, authorities);

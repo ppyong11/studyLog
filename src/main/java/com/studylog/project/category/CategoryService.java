@@ -60,7 +60,7 @@ public class CategoryService {
                 .fetch();
 
         if (categories.isEmpty()) {
-            throw new NoSuchElementException("카테고리가 존재하지 않습니다."); //기타 카테고리는 필수라서 에러 나감
+            throw new NotFoundException("카테고리가 존재하지 않습니다."); //기타 카테고리는 필수라서 에러 나감
         }
         //빈 리스트여도 문제 없이 controller에 빈 리스트로 반환돼서 위에서 에러 터뜨림
         return categories.stream()

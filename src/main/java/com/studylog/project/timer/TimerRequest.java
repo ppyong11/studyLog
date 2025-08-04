@@ -3,6 +3,7 @@ package com.studylog.project.timer;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.plan.PlanEntity;
 import com.studylog.project.user.UserEntity;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -11,12 +12,15 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
 @Getter
+@Schema(description = "타이머 등록/수정 request")
 public class TimerRequest {
+    @Schema(description = "타이머명 (20자 이내)")
     @NotBlank(message = "타이머 제목을 입력해 주세요.")
     @Size(max= 20, message = "20자 이내로 입력해 주세요.")
     private String name; //null 가능
-
+    @Schema(description = "플랜 id *선택")
     private Long plan; //null 가능
+    @Schema(description = "카테고리 id *필수, 플랜 선택 시 플랜의 카테고리와 일치해야 함.")
     @NotNull(message = "카테고리를 선택해 주세요.")
     private Long category; //필수
 

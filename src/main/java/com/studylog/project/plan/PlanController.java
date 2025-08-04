@@ -2,8 +2,10 @@ package com.studylog.project.plan;
 
 import com.studylog.project.global.CommonUtil;
 import com.studylog.project.global.exception.BadRequestException;
-import com.studylog.project.global.response.ApiResponse;
+import com.studylog.project.global.response.CommonResponse;
 import com.studylog.project.jwt.CustomUserDetail;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,7 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 @RequestMapping("/api/plans")
+@Tag(name="Plan", description = "Plan API, 모든 요청 access token 필요")
 public class PlanController {
     private final PlanService planService;
 
@@ -30,6 +33,7 @@ public class PlanController {
      3. 상태별 조회
      4. 키워드별 조회
      다 섞어서도 가능..*/
+    @Operation(summary = "계획 목록 조회 (파일 목록 포함)", description = "정렬(sort) 기본 값: 시작일자/카테고리명 오름차순")
     @GetMapping("/search")
     public ResponseEntity<PlanDetailResponse> searchPlans( @RequestParam(required = false) String range,
                                           @RequestParam(required = false) LocalDate startDate,
@@ -109,38 +113,38 @@ public class PlanController {
 
     //계획 등록
     @PostMapping("")
-    public ResponseEntity<ApiResponse> setPlan(@Valid @RequestBody PlanRequest request,
-                                               @AuthenticationPrincipal CustomUserDetail user) {
+    public ResponseEntity<CommonResponse> setPlan(@Valid @RequestBody PlanRequest request,
+                                                  @AuthenticationPrincipal CustomUserDetail user) {
         planService.addPlan(request, user.getUser());
-        return ResponseEntity.ok(new ApiResponse( true, "계획이 저장되었습니다."));
+        return ResponseEntity.ok(new CommonResponse( true, "계획이 저장되었습니다."));
     }
 
     //계획 상태 수정
     @PatchMapping("{planId}/status")
-    public ResponseEntity<ApiResponse> setPlanStatus(@PathVariable Long planId,
-                                                     @RequestParam("status") String statusStr,
-                                                     @AuthenticationPrincipal CustomUserDetail user) {
+    public ResponseEntity<CommonResponse> setPlanStatus(@PathVariable Long planId,
+                                                        @RequestParam("status") String statusStr,
+                                                        @AuthenticationPrincipal CustomUserDetail user) {
         log.info(statusStr); //" fAlse "
         boolean status= parseStatus(statusStr);
         planService.updateStatus(planId, status, user.getUser());
-        return ResponseEntity.ok(new ApiResponse( true, "계획 상태가 변경되었습니다."));
+        return ResponseEntity.ok(new CommonResponse( true, "계획 상태가 변경되었습니다."));
     }
 
     //계획 수정
     @PatchMapping("{planId}")
-    public ResponseEntity<ApiResponse> updatePlan(@PathVariable Long planId,
-                                                  @Valid @RequestBody PlanRequest request,
-                                                  @AuthenticationPrincipal CustomUserDetail user) {
+    public ResponseEntity<CommonResponse> updatePlan(@PathVariable Long planId,
+                                                     @Valid @RequestBody PlanRequest request,
+                                                     @AuthenticationPrincipal CustomUserDetail user) {
         planService.updatePlan(planId, request, user.getUser());
-        return ResponseEntity.ok(new ApiResponse( true, "계획이 수정되었습니다."));
+        return ResponseEntity.ok(new CommonResponse( true, "계획이 수정되었습니다."));
     }
 
     //계획 삭제
     @DeleteMapping("{planId}")
-    public ResponseEntity<ApiResponse> deletePlan(@PathVariable Long planId,
-                                                  @AuthenticationPrincipal CustomUserDetail user) {
+    public ResponseEntity<CommonResponse> deletePlan(@PathVariable Long planId,
+                                                     @AuthenticationPrincipal CustomUserDetail user) {
         planService.deletePlan(planId, user.getUser());
-        return ResponseEntity.ok(new ApiResponse(true, "계획이 삭제되었습니다."));
+        return ResponseEntity.ok(new CommonResponse(true, "계획이 삭제되었습니다."));
     }
 
     //status 파싱

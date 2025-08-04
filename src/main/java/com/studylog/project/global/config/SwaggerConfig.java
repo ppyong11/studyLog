@@ -1,5 +1,6 @@
 package com.studylog.project.global.config;
 
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;

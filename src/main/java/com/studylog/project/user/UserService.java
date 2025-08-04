@@ -78,7 +78,7 @@ public class UserService {
             if(userEntity.isDelete()){//회원탈퇴한 회원이라면
                 //7일 지났는데 스케쥴러 안 돌아서 삭제 안 된 경우
                 if(userEntity.getDeleteAt().isBefore(LocalDateTime.now().minusDays(7))){
-                    throw new AlreadyDeleteUserException("회원 탈퇴 철회 기간이 지나 복구가 불가합니다.");
+                    throw new AlreadyDeleteUserException("회원탈퇴 철회 기간이 지나 복구가 불가합니다.");
                 }
                 restore(userEntity); //복구 처리
             }
@@ -98,7 +98,7 @@ public class UserService {
             }
             String encryptedPw= passwordEncoder.encode(pwRequest.getNewPw()); //새 비번 암호화
             UserEntity userEntity= userRepository.findById(customUserDTO.getUser().getUser_id())
-                    .orElseThrow(() -> new NoSuchElementException("존재하지 않는 회원입니다.")); //principal의 user 객체를 entity에 넣음
+                    .orElseThrow(() -> new NotFoundException("존재하지 않는 회원입니다.")); //principal의 user 객체를 entity에 넣음
             userEntity.changePw(encryptedPw);
             log.info("changePw: 비밀번호 변경 완료");
         }
@@ -122,7 +122,7 @@ public class UserService {
         }
         //위 경우가 아니라면
         UserEntity userEntity= userRepository.findById(customUserDTO.getUser().getUser_id())
-                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 회원입니다.")); //요청 날린 토큰의 인증 객체로 영속성 컨텍스트 저장
+                .orElseThrow(() -> new NotFoundException("존재하지 않는 회원입니다.")); //요청 날린 토큰의 인증 객체로 영속성 컨텍스트 저장
         userEntity.changeNickname(nicknameRequest.getNickname()); //닉네임 바꿈
         //변경 값 감지 후 update
     }
@@ -150,7 +150,7 @@ public class UserService {
 
     public UserEntity getUser(UserEntity user){
         return userRepository.findById(user.getUser_id())
-                .orElseThrow(() -> new NoSuchElementException("존재하지 않는 회원입니다.")); //회원 객체 받기
+                .orElseThrow(() -> new NotFoundException("존재하지 않는 회원입니다.")); //회원 객체 받기
     }
 
     @Scheduled(fixedRate = 30 * 60 * 1000) //서버 실행 시간부터 30분마다 실행

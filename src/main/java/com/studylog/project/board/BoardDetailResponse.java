@@ -2,6 +2,7 @@ package com.studylog.project.board;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.studylog.project.file.FileResponse;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -12,14 +13,21 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Getter
 public class BoardDetailResponse {
+    @Schema(description = "게시글 id", example = "1")
     private Long id;
+    @Schema(description = "카테고리명", example = "기타")
     private String categoryName;
+    @Schema(description = "게시글명", example = "swagger 공부")
     private String title;
+    @Schema(description = "게시글 내용", example = "swagger는 API 설계와 문서화에 좋은 도구입니다.")
     private String content;
-    @JsonFormat(shape= JsonFormat.Shape.STRING, pattern = "yy-MM-dd HH:mm:ss")
+    @Schema(description = "게시글 작성일", example = "2025-07-18 15:37:07", type = "string")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime uploadAt;
-    @JsonFormat(shape= JsonFormat.Shape.STRING, pattern = "yy-MM-dd HH:mm:ss")
+    @Schema(description = "게시글 수정일", example = "2025-07-18 15:47:00", type = "string")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateAt;
+    @Schema(description = "게시글 파일 목록")
     private List<FileResponse> files;
 
     public static BoardDetailResponse toDto(BoardEntity board) {

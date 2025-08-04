@@ -1,7 +1,7 @@
 package com.studylog.project.global.filterExceptionHandler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.studylog.project.global.response.ApiResponse;
+import com.studylog.project.global.response.CommonResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -24,12 +24,12 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
                          AuthenticationException authException) throws IOException{
         log.info("entry 호출 완");
         HttpStatus status = HttpStatus.UNAUTHORIZED;
-        ApiResponse apiResponse= new ApiResponse(false, "로그인이 필요한 요청입니다.");
+        CommonResponse commonResponse = new CommonResponse(false, "로그인이 필요한 요청입니다.");
 
         response.setStatus(status.value());
         response.setContentType("application/json; charset=UTF-8");
 
-        String responseBody= objectMapper.writeValueAsString(apiResponse);
+        String responseBody= objectMapper.writeValueAsString(commonResponse);
         response.getWriter().write(responseBody);
     }
 }

@@ -1,7 +1,8 @@
 package com.studylog.project.notification;
 
-import com.studylog.project.global.response.ApiResponse;
+import com.studylog.project.global.response.CommonResponse;
 import com.studylog.project.jwt.CustomUserDetail;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -12,6 +13,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
+@Tag(name="Notification", description = "알림 관련 API, 모든 요청 access token 필요")
 public class NotificationController {
     private final NotificationService notificationService;
 
@@ -26,7 +28,7 @@ public class NotificationController {
     }
 
     @DeleteMapping("/")
-    public ResponseEntity<ApiResponse> deleteAllNoti(@AuthenticationPrincipal CustomUserDetail user){
+    public ResponseEntity<CommonResponse> deleteAllNoti(@AuthenticationPrincipal CustomUserDetail user){
         return ResponseEntity.ok(notificationService.deleteAllNoti(user.getUser()));
     }
     @DeleteMapping("/{id}")
@@ -38,7 +40,7 @@ public class NotificationController {
 
     //알림 모두 읽음 처리
     @PatchMapping("/read-all")
-    public ResponseEntity<ApiResponse> readAllNoti(@AuthenticationPrincipal CustomUserDetail user){
+    public ResponseEntity<CommonResponse> readAllNoti(@AuthenticationPrincipal CustomUserDetail user){
         return ResponseEntity.ok(notificationService.readAllNoti(user.getUser()));
     }
 

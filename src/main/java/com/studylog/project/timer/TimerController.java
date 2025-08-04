@@ -2,9 +2,11 @@ package com.studylog.project.timer;
 
 import com.studylog.project.global.CommonUtil;
 import com.studylog.project.global.exception.BadRequestException;
-import com.studylog.project.global.response.ApiResponse;
+import com.studylog.project.global.response.CommonResponse;
 import com.studylog.project.jwt.CustomUserDetail;
 import com.studylog.project.user.UserEntity;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +23,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 @Slf4j
 @RequestMapping("/api/timers")
+@Tag(name="Timer", description = "Timer API, 모든 요청 access token 필요")
 public class TimerController {
     private final TimerService timerService;
     private static final Set<String> VALID_STATUS= Set.of(
@@ -35,6 +38,7 @@ public class TimerController {
        4. 계획으로 검색
        5. 상태로 검색
     */
+    @Operation(summary = "타이머 목록 조회", description = "정렬(sort) 기본 값: 생성일 내림차순 + 카테고리명/타이머명 오름차순")
     @GetMapping("/search")
     public ResponseEntity<List<TimerResponse>> searchTimer(@RequestParam(required = false) LocalDate startDate,
                                                      @RequestParam(required = false) LocalDate endDate,
@@ -67,6 +71,7 @@ public class TimerController {
     }
 
     //단일 조회
+    @Operation(summary = "타이머 단일 조회")
     @GetMapping("{timerId}")
     public ResponseEntity<TimerDetailResponse> getTimer(@PathVariable("timerId") Long id,
                                                         @AuthenticationPrincipal UserEntity user) {
@@ -74,6 +79,7 @@ public class TimerController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "타이머 등록")
     @PostMapping("")
     public ResponseEntity<TimerDetailResponse> createTimer(@Valid @RequestBody TimerRequest request,
                                                            @AuthenticationPrincipal CustomUserDetail user) {
@@ -81,6 +87,7 @@ public class TimerController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "타이머 시작")
     @PatchMapping("/{timerId}/start")
     public ResponseEntity<TimerDetailResponse> startTimer(@PathVariable("timerId") Long id,
                                                           @AuthenticationPrincipal CustomUserDetail user) {
@@ -88,6 +95,7 @@ public class TimerController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "타이머 정지")
     @PatchMapping("/{timerId}/pause")
     public ResponseEntity<TimerDetailResponse> pauseTimer(@PathVariable("timerId") Long id,
                                                           @AuthenticationPrincipal CustomUserDetail user) {
@@ -95,6 +103,7 @@ public class TimerController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "타이머 종료")
     @PatchMapping("/{timerId}/end")
     public ResponseEntity<TimerDetailResponse> endTimer(@PathVariable("timerId") Long id,
                                                         @AuthenticationPrincipal CustomUserDetail user) {
@@ -102,6 +111,7 @@ public class TimerController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "타이머 수정", description = "설정된 계획이 완료 상태라면, 타이머 계획 수정 불가")
     @PatchMapping("/{timerId}")
     public ResponseEntity<TimerDetailResponse> updateTimer(@PathVariable("timerId") Long id,
                                                            @Valid @RequestBody TimerRequest request,
@@ -111,6 +121,7 @@ public class TimerController {
     }
 
     //경과 시간 리셋
+    @Operation(summary = "타이머 초기화", description = "이미 종료된 타이머거나 계획이 완료된 경우 초기화 불가")
     @PatchMapping("{timerId}/reset")
     public ResponseEntity<TimerDetailResponse> resetTimer(@PathVariable("timerId") Long id,
                                                           @AuthenticationPrincipal CustomUserDetail user) {
@@ -119,14 +130,16 @@ public class TimerController {
     }
 
     //타이머 계획 or 카테고리 업데이트 시, 계획/카테고리 대조 잘하기 계획 잇는데 카테고리 다른 거로 바꿀 수 X
+    @Operation(summary = "타이머 삭제 (타이머 랩 함께 삭제)")
     @DeleteMapping("/{timerId}")
-    public ResponseEntity<ApiResponse> deleteTimer(@PathVariable("timerId") Long id,
-                                                   @AuthenticationPrincipal CustomUserDetail user) {
+    public ResponseEntity<CommonResponse> deleteTimer(@PathVariable("timerId") Long id,
+                                                      @AuthenticationPrincipal CustomUserDetail user) {
         timerService.deleteTimer(id, user.getUser());
-        return ResponseEntity.ok(new ApiResponse( true, "타이머가 삭제되었습니다."));
+        return ResponseEntity.ok(new CommonResponse( true, "타이머가 삭제되었습니다."));
     }
 
     //동기화 컨트롤러
+    @Operation(summary = "타이머 수동 동기화", description = "타이머 경과 시간 갱신, 계획 자동 완료 처리 (sse 알림)")
     @PatchMapping("{timerId}/sync")
     public ResponseEntity<TimerDetailResponse> syncedTimer(@PathVariable("timerId") Long id,
                                                    @AuthenticationPrincipal CustomUserDetail user) {

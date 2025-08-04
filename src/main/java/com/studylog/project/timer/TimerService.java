@@ -123,12 +123,12 @@ public class TimerService {
         TimerEntity timer;
         if(request.getPlan() != null){
             plan= planRepository.findByUserAndId(user, request.getPlan())
-                    .orElseThrow(() -> new BadRequestException("존재하지 않는 계획입니다."));
+                    .orElseThrow(() -> new NotFoundException("존재하지 않는 계획입니다."));
             checkPlan(plan, null, request);
             category= plan.getCategory();
         } else{ //request에 플랜 X
             category= categoryRepository.findByUserAndId(user, request.getCategory())
-                    .orElseThrow(() -> new BadRequestException("존재하지 않는 카테고리입니다."));
+                    .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다."));
         }
 
         timer= request.toEntity(user, plan, category);
@@ -148,14 +148,14 @@ public class TimerService {
 
         if(request.getPlan() != null){
             plan= planRepository.findByUserAndId(user, request.getPlan())
-                    .orElseThrow(() -> new BadRequestException("존재하지 않는 계획입니다."));
+                    .orElseThrow(() -> new NotFoundException("존재하지 않는 계획입니다."));
             checkPlan(plan, timer, request);
             category= plan.getCategory();
         } else{ //request에 플랜 X
             if(timer.getPlan() != null && timer.getPlan().isStatus())
                 throw new BadRequestException("완료 처리된 계획은 수정할 수 없습니다.");
             category= categoryRepository.findByUserAndId(user, request.getCategory())
-                    .orElseThrow(() -> new BadRequestException("존재하지 않는 카테고리입니다."));
+                    .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다."));
         }
 
         timer.updateTimerName(request.getName());
@@ -269,6 +269,7 @@ public class TimerService {
     //완료 체킹은 그대로
     public TimerDetailResponse resetTimer(Long id, UserEntity user) {
         TimerEntity timer= getTimerByUserAndId(user, id);
+        if(timer.getPlan().isStatus()) throw new BadRequestException("타이머의 계획이 완료 상태일 경우 초기화가 불가합니다.");
         switch (timer.getStatus()) {
             case ENDED -> throw new BadRequestException("종료된 타이머는 초기화가 불가합니다.");
             case READY -> throw new BadRequestException("초기화 상태입니다.");

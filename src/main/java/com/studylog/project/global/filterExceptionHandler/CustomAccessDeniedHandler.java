@@ -1,7 +1,7 @@
 package com.studylog.project.global.filterExceptionHandler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.studylog.project.global.response.ApiResponse;
+import com.studylog.project.global.response.CommonResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -23,11 +23,11 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
         log.info("denied Handler 호출 완");
         HttpStatus status = HttpStatus.FORBIDDEN;
 
-        ApiResponse apiResponse= new ApiResponse(false, "접근 권한이 없습니다.");
+        CommonResponse commonResponse = new CommonResponse(false, "접근 권한이 없습니다.");
         response.setStatus(status.value());
         response.setContentType("application/json; charset=UTF-8");
 
-        String responseBody=objectMapper.writeValueAsString(apiResponse);
+        String responseBody=objectMapper.writeValueAsString(commonResponse);
         response.getWriter().write(responseBody);
     }
 }
