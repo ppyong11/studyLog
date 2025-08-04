@@ -17,6 +17,6 @@ public class PlanDetailResponse {
 
     public static PlanDetailResponse toDto(List<PlanResponse> response, long achieved, long total,
                                            double rate, String message, String totalStudyTime){
-        return new PlanDetailResponse(response, achieved, total, String.format("%.1f", rate), message, totalStudyTime);
+        return new PlanDetailResponse(response, achieved, total, String.format("%.1f%%", rate), message, totalStudyTime);
     }
 }
