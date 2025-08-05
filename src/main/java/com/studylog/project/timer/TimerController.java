@@ -1,11 +1,18 @@
 package com.studylog.project.timer;
 
+import com.studylog.project.Lap.LapResponse;
+import com.studylog.project.board.BoardDetailResponse;
 import com.studylog.project.global.CommonUtil;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.response.CommonResponse;
 import com.studylog.project.jwt.CustomUserDetail;
 import com.studylog.project.user.UserEntity;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +45,12 @@ public class TimerController {
        4. 계획으로 검색
        5. 상태로 검색
     */
-    @Operation(summary = "타이머 목록 조회", description = "정렬(sort) 기본 값: 생성일 내림차순 + 카테고리명/타이머명 오름차순")
+    @Operation(summary = "타이머 목록 조회 (리스트)", description = "정렬(sort) 기본 값: 생성일 내림차순 + 카테고리명/타이머명 오름차순")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "조회 성공",
+            content= @Content(mediaType = "application/json",
+            array = @ArraySchema(schema = @Schema(implementation = TimerResponse.class))))
+    })
     @GetMapping("/search")
     public ResponseEntity<List<TimerResponse>> searchTimer(@RequestParam(required = false) LocalDate startDate,
                                                      @RequestParam(required = false) LocalDate endDate,
@@ -71,15 +83,24 @@ public class TimerController {
     }
 
     //단일 조회
-    @Operation(summary = "타이머 단일 조회")
-    @GetMapping("{timerId}")
+    @Operation(summary = "타이머 단일 조회 (상세 조회)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "조회 성공",
+            content= @Content(mediaType = "application/json",
+            schema = @Schema(implementation = TimerDetailResponse.class))),
+        @ApiResponse(responseCode = "404", description = "조회 실패",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(
+                    example = "{\n  \"success\": false,\n  \"message\": \"존재하지 않는 타이머입니다.\"\n}")))
+    })
+    @GetMapping("/{timerId}")
     public ResponseEntity<TimerDetailResponse> getTimer(@PathVariable("timerId") Long id,
-                                                        @AuthenticationPrincipal UserEntity user) {
-        TimerDetailResponse response = timerService.getTimer(id, user);
+                                                        @AuthenticationPrincipal CustomUserDetail user) {
+        TimerDetailResponse response = timerService.getTimer(id, user.getUser());
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "타이머 등록")
+    @Operation(summary = "타이머 등록", description = "카테고리 필수, 계획 선택 / 계획 입력 시 계획의 카테고리와 동일해야 함")
     @PostMapping("")
     public ResponseEntity<TimerDetailResponse> createTimer(@Valid @RequestBody TimerRequest request,
                                                            @AuthenticationPrincipal CustomUserDetail user) {
@@ -95,7 +116,7 @@ public class TimerController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "타이머 정지")
+    @Operation(summary = "타이머 정지 (실행 중인 랩 함께 정지)")
     @PatchMapping("/{timerId}/pause")
     public ResponseEntity<TimerDetailResponse> pauseTimer(@PathVariable("timerId") Long id,
                                                           @AuthenticationPrincipal CustomUserDetail user) {
@@ -103,7 +124,7 @@ public class TimerController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "타이머 종료")
+    @Operation(summary = "타이머 종료 (타이머에 포함된 모든 랩 함께 종료)")
     @PatchMapping("/{timerId}/end")
     public ResponseEntity<TimerDetailResponse> endTimer(@PathVariable("timerId") Long id,
                                                         @AuthenticationPrincipal CustomUserDetail user) {

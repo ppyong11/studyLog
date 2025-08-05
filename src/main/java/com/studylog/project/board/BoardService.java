@@ -31,7 +31,7 @@ public class BoardService {
 
     public BoardDetailResponse getBoard(Long id, UserEntity user) {
         BoardEntity board = getBoardByUserAndId(user, id);
-        return BoardDetailResponse.toDto(board);
+        return BoardDetailResponse.toDto(BoardResponse.toDto(board), board);
     }
 
     public List<BoardResponse> searchBoards(List<Long> categoryList, String keyword, List<String> sort,
@@ -97,7 +97,8 @@ public class BoardService {
             file.resetDraftIdAndDraftFalse(); //임시파일 게시글 연결됐으니까 초기화
             board.getFiles().add(file); //파일 반영 안 돼서 직접 추가
         }
-        return BoardDetailResponse.toDto(board);
+
+        return BoardDetailResponse.toDto(BoardResponse.toDto(board), board);
     }
 
     public BoardDetailResponse updateBoard(Long id, BoardUpdateRequest request, UserEntity user) {
@@ -110,7 +111,7 @@ public class BoardService {
         for(FileEntity file : files) {
             file.resetDraftIdAndDraftFalse();
         }
-        return BoardDetailResponse.toDto(board);
+        return BoardDetailResponse.toDto(BoardResponse.toDto(board), board);
     }
 
     public void deleteBoard(Long id, UserEntity user) {

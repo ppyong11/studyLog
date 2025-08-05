@@ -1,10 +1,17 @@
 package com.studylog.project.plan;
 
+import com.studylog.project.board.BoardDetailResponse;
+import com.studylog.project.board.BoardResponse;
 import com.studylog.project.global.CommonUtil;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.response.CommonResponse;
 import com.studylog.project.jwt.CustomUserDetail;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +40,10 @@ public class PlanController {
      3. 상태별 조회
      4. 키워드별 조회
      다 섞어서도 가능..*/
-    @Operation(summary = "계획 목록 조회 (파일 목록 포함)", description = "정렬(sort) 기본 값: 시작일자/카테고리명 오름차순")
+    @Operation(summary = "계획 목록 조회 (범위 조회 시, 메시지 포함)", description = "정렬(sort) 기본 값: 시작일자/카테고리명 오름차순")
+    @ApiResponse(responseCode = "200", description = "조회 성공",
+            content= @Content(mediaType = "application/json",
+                    array = @ArraySchema(schema= @Schema(implementation = PlanDetailResponse.class))))
     @GetMapping("/search")
     public ResponseEntity<PlanDetailResponse> searchPlans( @RequestParam(required = false) String range,
                                           @RequestParam(required = false) LocalDate startDate,
@@ -104,7 +114,17 @@ public class PlanController {
         }
 
     //계획 하나 조회
-    @GetMapping("{planId}")
+    @Operation(summary = "계획 단일 조회")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "조회 성공",
+            content= @Content(mediaType = "application/json",
+            schema = @Schema(implementation = PlanResponse.class))),
+        @ApiResponse(responseCode = "404", description = "조회 실패",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(
+                    example = "{\n  \"success\": false,\n  \"message\": \"존재하지 않는 계획입니다.\"\n}")))
+    })
+    @GetMapping("/{planId}")
     public ResponseEntity<PlanResponse> getPlan(@PathVariable Long planId,
                                                 @AuthenticationPrincipal CustomUserDetail user) {
         PlanResponse plan= planService.getPlan(planId, user.getUser());
@@ -112,6 +132,17 @@ public class PlanController {
     }
 
     //계획 등록
+    @Operation(summary = "계획 등록")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "계획 등록 성공",
+            content= @Content(mediaType = "application/json",
+            schema = @Schema(
+                    example = "{\n  \"success\": true,\n  \"message\": \"계획이 저장되었습니다.\"\n}"))),
+        @ApiResponse(responseCode = "404", description = "계획 등록 실패",
+            content = @Content(mediaType = "application/json",
+            schema = @Schema(
+                    example = "{\n  \"success\": false,\n  \"message\": \"없는 카테고리 지정- 존재하지 않는 카테고리입니다.\"\n}")))
+    })
     @PostMapping("")
     public ResponseEntity<CommonResponse> setPlan(@Valid @RequestBody PlanRequest request,
                                                   @AuthenticationPrincipal CustomUserDetail user) {
@@ -120,6 +151,7 @@ public class PlanController {
     }
 
     //계획 상태 수정
+    @Operation(summary = "계획 상태 수정")
     @PatchMapping("{planId}/status")
     public ResponseEntity<CommonResponse> setPlanStatus(@PathVariable Long planId,
                                                         @RequestParam("status") String statusStr,
@@ -131,6 +163,7 @@ public class PlanController {
     }
 
     //계획 수정
+    @Operation(summary = "계획 수정")
     @PatchMapping("{planId}")
     public ResponseEntity<CommonResponse> updatePlan(@PathVariable Long planId,
                                                      @Valid @RequestBody PlanRequest request,
@@ -140,6 +173,7 @@ public class PlanController {
     }
 
     //계획 삭제
+    @Operation(summary = "계획 삭제")
     @DeleteMapping("{planId}")
     public ResponseEntity<CommonResponse> deletePlan(@PathVariable Long planId,
                                                      @AuthenticationPrincipal CustomUserDetail user) {

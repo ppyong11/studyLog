@@ -2,6 +2,7 @@ package com.studylog.project.Main;
 
 import com.studylog.project.plan.PlanDetailResponse;
 import com.studylog.project.user.UserEntity;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

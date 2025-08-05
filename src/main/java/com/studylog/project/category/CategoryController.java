@@ -91,7 +91,7 @@ public class CategoryController {
         @ApiResponse(responseCode = "200", description = "삭제 성공",
             content= @Content(mediaType = "application/json",
             schema = @Schema(
-                    example = "{\n  \"success\": false,\n  \"message\": \"카테고리가 삭제되었습니다.\"\n}"))),
+                    example = "{\n  \"success\": true,\n  \"message\": \"카테고리가 삭제되었습니다.\"\n}"))),
         @ApiResponse(responseCode = "400", description = "[기타] 카테고리 삭제 시도로 인한 삭제 실패",
             content= @Content(mediaType = "application/json",
             schema = @Schema(

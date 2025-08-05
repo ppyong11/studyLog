@@ -72,10 +72,6 @@ public class FileController {
                 example = "{\n  \"success\": false,\n  \"message\": \"게시글 id 미입력- 삭제할 파일의 게시글을 입력해 주세요. / " +
                         "파일이 등록된 게시글과 일치하지 않습니다. / draftId 미입력 (임시 파일 상태)- 파일 삭제에 필요한 값이 없습니다." +
                         " / draftId 일치 X- 파일 삭제에 필요한 값이 일치하지 않습니다.\"\n}"))),
-            /*
-            *                 example = "{\n  \"success\": false,\n  \"message\": \"게시글 id 미입력- 삭제할 파일의 게시글을 입력해 주세요. / " +
-                        "파일이 등록된 게시글과 일치하지 않습니다. / draftId 미입력 (임시 파일 상태)- 파일 삭제에 필요한 값이 없습니다." +
-                        " / draftId 일치 X- 파일 삭제에 필요한 값이 일치하지 않습니다.\"\n}"))),*/
     @ApiResponse(responseCode = "404", description = "게시글 수정 중 파일 등록 실패",
         content = @Content(mediaType = "application/json",
         schema = @Schema(

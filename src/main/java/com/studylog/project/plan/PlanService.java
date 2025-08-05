@@ -162,15 +162,15 @@ public class PlanService {
 
     private String totalStudyTime(List<PlanEntity> plans){
         long totalSeconds= 0;
-        /*완료 안 된 계획은 제외,
+        /*완료 안 된 계획은 제외 (타이머 설정 X),
           완료된 계획은 계획 시간으로,
-          완료된 계획 + 타이머에 설정한 계획이면 타이머 시간 가져오기..*/
+          타이머에 설정한 계획이면 타이머 시간 가져오기..*/
         for(PlanEntity plan:plans){
-            if(plan.isStatus()){ //완료된 계획이면
-                Optional<TimerEntity> timer= timerService.getTimerByPlan(plan);
-                if(timer.isPresent()){
-                    totalSeconds += timer.get().getElapsed(); //초 단위
-                } else{
+            Optional<TimerEntity> timer= timerService.getTimerByPlan(plan);
+            if(timer.isPresent()){
+                totalSeconds += timer.get().getElapsed(); //초 단위
+            } else{ //타이머에 설정된 계획이 아닐 경우, 완료된 계획의 시간만 가져옴
+                if(plan.isStatus()) {
                     totalSeconds += plan.getMinutes()*60; //분 단위
                 }
             }
@@ -210,7 +210,7 @@ public class PlanService {
                     nickname);
             return "천천히 쌓아가는 중이에요. 남은 기간 동안 더 쌓아봐요! 🏃";
         } else if (rate < 70) {
-            if(range.equals("day")) return "오늘 계획의 반을 완료했어요! 잘하고 있어요 👏";
+            if(range.equals("day")) return "계획의 반을 완료했어요! 잘하고 있어요 👏";
             return String.format("한 %s 목표의 절반 이상을 완료했어요! 조금만 더 힘내 볼까요? 🔥",
                     unit);
         } else if (rate < 100) {
@@ -229,7 +229,6 @@ public class PlanService {
         CategoryEntity category= getCategory(request.getCategoryId(), user);
         PlanEntity plan= request.toEntity(user, category);
         planRepository.save(plan);
-        log.info("계획 저장 완료");
     }
 
     public void updatePlan(Long id, PlanRequest request, UserEntity user) {
