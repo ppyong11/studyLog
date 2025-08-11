@@ -23,15 +23,15 @@ https://ppyong11.github.io/studyLog_swagger_pages/ </br></br>
 ## 📌 주요 기능 흐름 소개
 - **주요 기능**
     - **로그인 및 JWT**
-      <img width="761" height="992" alt="studyLog_Sequence" src="https://github.com/user-attachments/assets/798209d1-2118-48f1-856b-4c7dc5a701d2" /></br>
-      dd
+      <img width="1000" height="992" alt="studyLog_Sequence" src="https://github.com/user-attachments/assets/798209d1-2118-48f1-856b-4c7dc5a701d2" /></br>
+      로
 
     - **계획 및 타이머 등록**
-        <img width="761" height="956" alt="계획타이머등록_차트" src="https://github.com/user-attachments/assets/31974f6d-3a53-4858-98c5-f8223775cff7" /></br>
+        <img width="1000" height="956" alt="계획타이머등록_차트" src="https://github.com/user-attachments/assets/31974f6d-3a53-4858-98c5-f8223775cff7" /></br>
         dd
 
     - **계획 자동 완료 기능 및 SSE 알림 기능**  
-      <img width="761" height="904" alt="타이머스케쥴러_차트" src="https://github.com/user-attachments/assets/4ee8e4cb-da02-4af3-81d3-dfd6b27e782f" /></br>
+      <img width="1000" height="904" alt="타이머스케쥴러_차트" src="https://github.com/user-attachments/assets/4ee8e4cb-da02-4af3-81d3-dfd6b27e782f" /></br>
       dd
     - **파일 등록**  
         <img width="1098" height="1079" alt="파일등록차트" src="https://github.com/user-attachments/assets/8ff490a9-69f8-41a1-b44c-2448591532cc" /></br>
