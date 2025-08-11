@@ -22,10 +22,19 @@ https://ppyong11.github.io/studyLog_swagger_pages/ </br></br>
 
 ## 📌 주요 기능 흐름 소개
 - **주요 기능**
-    - **로그인 및 JWT**
+    - **JWT 토큰 유무에 따른 메인화면 처리와 로그인, 토큰 재발급 Sequence Diagram**
       <img width="1000" height="992" alt="studyLog_Sequence" src="https://github.com/user-attachments/assets/798209d1-2118-48f1-856b-4c7dc5a701d2" /></br>
-      로
-
+      - 메인화면 진입 시<br>
+        a. 로그인 상태일 땐 사용자의 하루 계획과 주간 리포트 반환  
+        b. 로그아웃 상태일 땐 정적 메인페이지 반환 (홍보 페이지)<br><br>
+      - 로그인 로직<br>
+        a. id, pw에 해당하는 유저가 있을 시, jwt 생성 & redis에 refresh token 저장 & 쿠키에 담아 반환
+        b. 없는 유저일 시 400 에러 코드 반환<br><br>
+      - 토큰 재발급<br>
+        사용자가 로그인 연장을 직접 요청할 수 있어, 토큰 재발급 시 access token을 받도록 설정했습니다.
+        a. access token, refresh 토큰 검증 (로그아웃한 유저거나 만료된 토큰, 재발급에 이미 사용된 토큰인지 확인하는 과정)<br>
+        b. 재발급에 사용된 access token은 블랙리스트에 저장되고 redis에 저장한 refresh token 삭제 후 새 refresh token 저장<br>
+        c. 새로 발급된 토큰들을 쿠키에 담아 반환<br><br>
     - **계획 및 타이머 등록**
         <img width="1000" height="956" alt="계획타이머등록_차트" src="https://github.com/user-attachments/assets/31974f6d-3a53-4858-98c5-f8223775cff7" /></br>
         dd
