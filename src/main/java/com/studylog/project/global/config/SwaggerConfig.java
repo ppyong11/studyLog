@@ -1,6 +1,6 @@
 package com.studylog.project.global.config;
 
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -12,6 +12,9 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI customOpenAPI(){
         return new OpenAPI()
+                .info(new Info()
+                        .title("Study Log API Document")
+                        .description("This is Study Log API Document"))
                 .components(
                         new Components()
                         //스키마 만들기
