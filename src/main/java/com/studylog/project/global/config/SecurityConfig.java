@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -43,7 +42,11 @@ public class SecurityConfig {
                             "/api/signin/**",
                             "/api/login",
                             "/api/", //뒷 엔드포인트도 다 로긘 처리
-                            "/api"//메인
+                            "/api", //메인
+                            "/swagger-ui/**",
+                            "/v3/api-docs/**",
+                            "/swagger-resources/**",
+                            "/webjars/**"
                 ).permitAll()
                 //그 외 모든 요청은 인증 필요
                 .anyRequest().authenticated()
@@ -51,18 +54,6 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer(){
-        return web -> web.ignoring().requestMatchers(
-                "/swagger-ui/**",
-                "/swagger-ui.html",
-                "/v3/api-docs",
-                "/v3/api-docs/**",
-                "/v3/api-docs/swagger-config",
-                "/swagger-resources/**",
-                "/webjars/**"
-        );
-    }
     @Bean //or 클래스에 @Component 붙이기
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider) {
         return new JwtAuthenticationFilter(jwtTokenProvider);
