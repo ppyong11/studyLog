@@ -14,15 +14,7 @@ public class SwaggerConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("Study Log API Document")
-                        .description("This is Study Log API Document"))
-                .components(
-                        new Components()
-                        //스키마 만들기
-                                .addSecuritySchemes("bearerAuth", new SecurityScheme()
-                                        .type(SecurityScheme.Type.HTTP)
-                                        .scheme("bearer")
-                                        .bearerFormat("JWT")
-                                )
+                        .description("This is Study Log API Document")
                 );
     }
 }
