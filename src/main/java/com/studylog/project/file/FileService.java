@@ -31,7 +31,7 @@ import java.util.UUID;
 @Transactional
 @Slf4j
 public class FileService {
-    private final String fileDir= "/tmp/uploads/";
+    private final String fileDir= "/home/ubuntu/app-data/uploads/";
     private final FileRepository fileRepository;
     private final BoardRepository boardRepository;
     private final Set<String> blackExts= Set.of(
