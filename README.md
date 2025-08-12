@@ -7,7 +7,9 @@
     - 백엔드: Java 17, Spring Boot 3.2.5, Spring Security, JWT, JPA, QueryDSL, SSE (타이머 완료 이벤트 전송)
     - 프론트: React (개발 중)
     - DB: MariaDB(AWS RDS), Redis
-    - Infra/DevOps: EC2, RDS, Nginx, Github Actions, Certbot
+    - Infra/DevOps: EC2, RDS, Nginx, Github Actions, Certbot<br>
+    
+현재 백엔드 API만 개발해 자체 도메인에서 테스트 운영 중이며, 추후 보안 강화와 프론트엔드를 구현해 서비스 고도화를 계획하고 있습니다.
 ## 📌 API 명세서 및 프로젝트 구조
 - **Swagger API 문서 (테스트 가능)**</br>
 https://ppyong11.github.io/studyLog_swagger_pages/ </br></br>
