@@ -4,7 +4,7 @@
 3. **프로젝트 기간**: 2025.06~
 4. **프로젝트 목적**: 흩어진 공부 환경을 하나로 통합해, 사용자의 학습 피로도를 줄이고 계획-실천-기록-성취 사이클을 통해 루틴을 만들어주는 학습 관리 도구입니다. 
 5. **사용 기술**
-    - 백엔드: Java, Spring Boot, Spring Security, JWT, JPA, QueryDSL, SSE (타이머 완료 이벤트 전송)
+    - 백엔드: Java 17, Spring Boot 3.2.5, Spring Security, JWT, JPA, QueryDSL, SSE (타이머 완료 이벤트 전송)
     - 프론트: React (개발 중)
     - DB: MariaDB(AWS RDS), Redis
     - Infra/DevOps: EC2, RDS, Nginx, Github Actions, Certbot
@@ -35,19 +35,14 @@ https://ppyong11.github.io/studyLog_swagger_pages/ </br></br>
         a. access token, refresh 토큰 검증 (로그아웃한 유저거나 만료된 토큰, 재발급에 이미 사용된 토큰인지 확인하는 과정)<br>
         b. 재발급에 사용된 access token은 블랙리스트에 저장되고 redis에 저장한 refresh token 삭제 후 새 refresh token 저장<br>
         c. 새로 발급된 토큰들을 쿠키에 담아 반환<br><br>
-    - **계획 및 타이머 등록**
-        <img width="1000" height="956" alt="계획타이머등록_차트" src="https://github.com/user-attachments/assets/31974f6d-3a53-4858-98c5-f8223775cff7" /></br>
-        dd
-
-    - **계획 자동 완료 기능 및 SSE 알림 기능**  
+    - **계획 및 타이머 등록 / 자동 완료 처리와 SSE 알림**
+        <img width="1000" height="956" alt="계획타이머등록_차트" src="https://github.com/user-attachments/assets/31974f6d-3a53-4858-98c5-f8223775cff7" /></br><br>
       <img width="1000" height="904" alt="타이머스케쥴러_차트" src="https://github.com/user-attachments/assets/4ee8e4cb-da02-4af3-81d3-dfd6b27e782f" /></br>
-      dd
-    - **파일 등록**  
-        <img width="1098" height="1079" alt="파일등록차트" src="https://github.com/user-attachments/assets/8ff490a9-69f8-41a1-b44c-2448591532cc" /></br>
-        dd
+        등록한 계획은 타이머에 설정할 수 있으며, 계획의 목표 시간만큼 타이머가 작동되면 자동 계획 달성 처리와 알림이 발송됩니다.<br> 타이머에 랩을 추가해 하나의 타이머에 여러 구간별 시간을 기록할 수 있습니다.
 
-    - **공부 내용 기록**</br>
-        <img width="310" alt="image" src="https://github.com/user-attachments/assets/44a32082-348b-4cc6-a04a-bc512d88f75d" /></br>
+    - **공부 내용 기록 게시글 / 파일 등록**  
+        <img width="1098" height="1079" alt="파일등록차트" src="https://github.com/user-attachments/assets/8ff490a9-69f8-41a1-b44c-2448591532cc" /></br>
+        학습 내용을 자료와 함께 남겨 복습을 용이하게 합니다.
 ## 📝 프로젝트 상세 내용 및 기여 
 - **노션 링크**  
   https://cooing-caraway-2f1.notion.site/23b516e994b380efb57ce2d2123866c2?source=copy_link
