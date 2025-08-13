@@ -32,7 +32,7 @@ Nginx의 리버스 프록시를 이용해 엔드포인트에 따라 프론트와
 
 
 ## 📌 주요 기능 흐름 소개
-- **JWT 토큰 유무에 따른 메인화면 처리와 로그인, 토큰 재발급 Sequence Diagram**
+- **메인 화면 진입 시 토큰 유무에 따른 처리, 로그인 시도, 토큰 재발급 Sequence Diagram**
       <img width="1000" height="992" alt="studyLog_Sequence" src="https://github.com/user-attachments/assets/798209d1-2118-48f1-856b-4c7dc5a701d2" /></br>
       - 메인화면 진입 시<br>
         a. 로그인 상태일 땐 사용자의 하루 계획과 주간 리포트 반환  
