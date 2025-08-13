@@ -15,14 +15,21 @@
     https://ppyong11.github.io/studyLog_swagger_pages/ </br></br>
 - **DB ERD**
     <img width="1595" height="903" alt="스터디로그 테이블" src="https://github.com/user-attachments/assets/2164c985-aa54-4e00-a799-e003d16cc6d7" /><br>
-    User 테이블: 사용자의 정보를 담는 테이블. Lap 테이블을 제외한 모든 테이블과 1:N 관계 (Lap 테이블은 Timer와 1:N 관계이며, Timer로 User 조회 가능)<br><br>
-    Category 테이블: 사용자의 카테고리를 담는 테이블로, <기타> 카테고리는 필수 카테고리이기에 회원가입 시 자동 생성되며 삭제가 불가합니다. Board, Plan, Timer 테이블과 1:N 관계<br><br>
-    Board 테이블: 사용자의 게시글을 담는 테이블로, 파일 등록이 가능합니다. File 테이블과 1:N 관계<br><br>
-    File 테이블: 게시글에 업로드한 파일을 담는 테이블로, 파일 업로드 시(게시글 등록/수정 API 사용 전) 바로 데이터가 저장됩니다.<br><br> 
-    Plan 테이블: 사용자의 계획을 담는 테이블로, 시작/종료 일자, 목표 시간 필드 등을 받습니다. Timer 테이블과 0:1 관계 (양방향 모두 선택적 관계로 서로가 없어도 존재할 수 있음)<br><br>
-    Timer 테이블: 사용자의 타이머 사용 기록을 담는 테이블로, 타이머 생성일/시작일/정지일/종료일, 동기화(스케쥴링 or 수동) 등의 필드를 받습니다. 카테고리 필드는 필수, 계획 필드는 옵션이지만 계획 설정 시 계획의 카테고리와 타이머에 등록하려는 카테고리가 일치해야 합니다. Lap, Notification 테이블과 1:N 관계 <br><br>
-    Lap 테이블: 사용자가 타이머에 설정한 랩을 담는 테이블로, 타이머 테이블과 비슷합니다.<br><br>
-  Notification 테이블: 사용자가 계획 완료 처리로 수신한 알림을 담는 테이블로, 타이머 동기화로 인한 알림일 경우 알림 클릭 시 타이머 페이지 진입 관리를 위해 Timer의 외래키를 가지며 타이머 삭제 시 외래키와 url 필드는 null 처리가 됩니다. (타이머 삭제 전 url 값: /timers/{timerId}) *타이머를 직접 정지 및 종료하여 계획이 완료 처리된 경우, timerId 필드는 null이며, url은 /plans가 됩니다.
+    User 테이블: 회원 정보 테이블. Lap 테이블을 제외한 모든 테이블과 1:N 관계 <br>
+
+    Category 테이블: 카테고리 저장 테이블. 회원가입 시 <기타> 카테고리가 자동 생성되며 삭제가 불가합니다. Board, Plan, Timer 테이블과 1:N 관계<br>
+
+    Board 테이블: 게시글 저장 테이블. 파일 등록 기능을 제공해 File 테이블과 1:N 관계<br>
+
+    File 테이블: 게시글에 업로드한 파일 저장 테이블. <br>
+
+    Plan 테이블: 계획 저장 테이블. Timer 테이블과 0:1 관계 (양방향 모두 선택적 관계로 서로가 없어도 존재할 수 있음)<br>
+
+    Timer 테이블: 타이머 사용 기록 저장 테이블. 계획 설정 시 계획의 카테고리와 타이머에 등록하려는 카테고리가 일치해야 함. Lap,     Notification 테이블과 1:N 관계<br>
+
+    Lap 테이블: 타이머 랩 기록 저장 테이블 <br>
+
+    Notification 테이블: 계획 완료 처리로 수신한 알림을 담는 테이블. 알림을 수신한 조건에 따라 timer 값이 null이 될 수 있음. <br>
 ## 📌 시스템 구조
 <img width="761" height="912" alt="studyLog_구조" src="https://github.com/user-attachments/assets/ab9b948e-12ed-4908-a1ca-c249fb440f4f" /> </br>
 서버 배포와 HTTPS 적용을 위해 EC2와 도메인을 사용했으며, 코드가 바뀔 때마다 배포하는 번거로움을 줄이기 위해 GitHub Actions 활용한 CI/CD를 도입했습니다.</br>
