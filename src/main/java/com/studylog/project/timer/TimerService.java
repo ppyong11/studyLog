@@ -181,7 +181,7 @@ public class TimerService {
         return TimerDetailResponse.toDto(timer);
     }
 
-    //타이머 삭제 + 알림 경로 삭제/isDeleted 처리
+    //타이머 삭제 + 알림 경로 삭제
     public void deleteTimer(Long id, UserEntity user) {
         TimerEntity timer= getTimerByUserAndId(user, id);
 

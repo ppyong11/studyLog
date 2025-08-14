@@ -138,6 +138,7 @@ public class UserController {
         return ResponseEntity.ok(new CommonResponse(true, "닉네임이 변경되었습니다."));
     }
 
+    @Operation(summary = "다짐 변경", security = @SecurityRequirement(name= "bearerAuth"))
     @PatchMapping("/member/change-resolution")
     public ResponseEntity<String> updateResolution(@Valid @RequestBody UpdateResolutionReqeust reqeust,
                                                    @AuthenticationPrincipal CustomUserDetail user){

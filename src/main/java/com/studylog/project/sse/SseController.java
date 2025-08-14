@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +27,7 @@ public class SseController {
     private final SseEmitterService sseEmitterService;
 
     //구독 상태 체크
-    @Operation(summary = "로그인한 유저가 SSE 구독 중인지 조회")
+    @Operation(summary = "로그인한 유저가 SSE 구독 중인지 조회", security = @SecurityRequirement(name= "bearerAuth"))
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "조회 성공",
             content= @Content(mediaType = "application/json",
@@ -45,7 +46,7 @@ public class SseController {
     }
 
     //구독
-    @Operation(summary = "SSE 구독")
+    @Operation(summary = "SSE 구독", security = @SecurityRequirement(name= "bearerAuth"))
     @GetMapping(value= "/subscribe", produces = "text/event-stream")
     public SseEmitter subscribe(@AuthenticationPrincipal CustomUserDetail user) {
         //로그인 후에 구독 요청해서 인증 객체 있음
