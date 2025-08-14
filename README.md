@@ -16,7 +16,8 @@
 - **Swagger API 문서 (테스트 가능)**</br>
     https://ppyong11.github.io/studyLog_swagger_pages/ </br></br>
 - **DB ERD**
-    <img width="1595" height="903" alt="스터디로그 테이블" src="https://github.com/user-attachments/assets/2164c985-aa54-4e00-a799-e003d16cc6d7" /><br>
+    <img width="1600" height="907" alt="스터디로그 ERD" src="https://github.com/user-attachments/assets/76da10aa-5c12-4046-8ac3-a3ba1dd92a25" />
+
     User 테이블: 회원 정보 테이블. Lap 테이블을 제외한 모든 테이블과 1:N 관계 <br>
 
     Category 테이블: 카테고리 저장 테이블. 회원가입 시 <기타> 카테고리가 자동 생성되며 삭제가 불가합니다. Board, Plan, Timer 테이블과 1:N 관계<br>
