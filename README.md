@@ -13,8 +13,8 @@
     
 현재 백엔드 API만 개발해 자체 도메인에서 테스트 운영 중이며, 추후 보안 강화와 프론트엔드를 구현해 서비스 고도화를 계획하고 있습니다.
 ## 📌 API 명세서 및 ERD
-- **Swagger API 문서 (테스트 가능)**</br>
-    https://ppyong11.github.io/studyLog_swagger_pages/ </br></br>
+- **Swagger API 문서 **</br>
+    https://studylog-swagger.hyeoncode.dev/</br></br>
 - **DB ERD**
     <img width="1600" height="907" alt="스터디로그 ERD" src="https://github.com/user-attachments/assets/76da10aa-5c12-4046-8ac3-a3ba1dd92a25" />
 
