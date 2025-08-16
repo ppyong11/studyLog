@@ -1,7 +1,5 @@
 package com.studylog.project.notification;
 
-import com.studylog.project.Main.MainResponse;
-import com.studylog.project.board.BoardDetailResponse;
 import com.studylog.project.global.response.CommonResponse;
 import com.studylog.project.jwt.CustomUserDetail;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,7 +8,6 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +22,7 @@ import java.util.List;
 @Tag(name="Notification", description = "알림 관련 API, 모든 요청 access token 필요")
 public class NotificationController {
     private final NotificationService notificationService;
-    @Operation(summary = "전체 알림 조회", description = "SSE를 통해 받은 알림 조회", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "전체 알림 조회", description = "SSE를 통해 받은 알림 조회")
     @ApiResponses(value = {@ApiResponse(responseCode = "200", description = "알림 조회 성공",
             content = @Content(
                     mediaType = "application/json",
@@ -64,19 +61,19 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.getAllNoti(user.getUser()));
     }
 
-    @Operation(summary = "미확인 알림 개수 조회", description = "미확인 알림 개수 띄우는 API", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "미확인 알림 개수 조회", description = "미확인 알림 개수 띄우는 API")
     @GetMapping("/unread-count")
     public ResponseEntity<Long> getUnreadCount(@AuthenticationPrincipal CustomUserDetail user){
         return ResponseEntity.ok(notificationService.getUnreadCount(user.getUser()));
     }
 
-    @Operation(summary = "알림 전체 삭제", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "알림 전체 삭제")
     @DeleteMapping("/")
     public ResponseEntity<CommonResponse> deleteAllNoti(@AuthenticationPrincipal CustomUserDetail user){
         return ResponseEntity.ok(notificationService.deleteAllNoti(user.getUser()));
     }
 
-    @Operation(summary = "특정 알림 삭제", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "특정 알림 삭제")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteNoti(@PathVariable Long id,
                                            @AuthenticationPrincipal CustomUserDetail user){
@@ -85,14 +82,14 @@ public class NotificationController {
     }
 
     //알림 모두 읽음 처리
-    @Operation(summary = "모든 알림 읽음 처리", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "모든 알림 읽음 처리")
     @PatchMapping("/read-all")
     public ResponseEntity<CommonResponse> readAllNoti(@AuthenticationPrincipal CustomUserDetail user){
         return ResponseEntity.ok(notificationService.readAllNoti(user.getUser()));
     }
 
     //알림 개별 읽음 처리
-    @Operation(summary = "특정 알림 읽음 처리", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "특정 알림 읽음 처리")
     @PatchMapping("/{id}/read")
     public ResponseEntity<Void> readNoti(@PathVariable Long id,
                                          @AuthenticationPrincipal CustomUserDetail user){

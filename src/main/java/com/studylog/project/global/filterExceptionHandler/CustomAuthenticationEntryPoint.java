@@ -22,7 +22,7 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException authException) throws IOException{
-        log.info("entry 호출 완");
+        log.info("entry 호출: 401 에러 발생");
         HttpStatus status = HttpStatus.UNAUTHORIZED;
         CommonResponse commonResponse = new CommonResponse(false, "로그인이 필요한 요청입니다.");
 

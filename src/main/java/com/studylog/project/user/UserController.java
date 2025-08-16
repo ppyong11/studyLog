@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -120,7 +119,7 @@ public class UserController {
     }
 
     @PatchMapping("/member/change-pw")
-    @Operation(summary = "비밀번호 변경", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "비밀번호 변경")
     public ResponseEntity<CommonResponse> updatePW(@AuthenticationPrincipal CustomUserDetail user,
                                                    @RequestBody @Valid UpdatePwRequest request) {
         //유효 토큰 및 로그인 상태 확인(redis) 필터에서 검증됨
@@ -129,7 +128,7 @@ public class UserController {
     }
 
     @PatchMapping("/member/change-nickname")
-    @Operation(summary = "닉네임 변경", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "닉네임 변경")
     public ResponseEntity<CommonResponse> updateNickname(@AuthenticationPrincipal CustomUserDetail user,
                                                          @RequestBody @Valid UpdateNicknameRequest request) {
         //유효 토큰 및 로그인 상태 확인(redis) 필터에서 검증됨
@@ -138,7 +137,7 @@ public class UserController {
         return ResponseEntity.ok(new CommonResponse(true, "닉네임이 변경되었습니다."));
     }
 
-    @Operation(summary = "다짐 변경", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "다짐 변경")
     @PatchMapping("/member/change-resolution")
     public ResponseEntity<String> updateResolution(@Valid @RequestBody UpdateResolutionReqeust reqeust,
                                                    @AuthenticationPrincipal CustomUserDetail user){

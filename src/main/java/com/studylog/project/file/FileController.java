@@ -1,6 +1,5 @@
 package com.studylog.project.file;
 
-import com.studylog.project.category.CategoryResponse;
 import com.studylog.project.global.response.CommonResponse;
 import com.studylog.project.jwt.CustomUserDetail;
 import io.swagger.v3.oas.annotations.Operation;
@@ -8,7 +7,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -26,8 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileController {
     private final FileService fileService;
 
-    @Operation(summary = "게시글에 파일 등록 (1건씩 등록)", description = "게시글을 생성하면서 파일을 등록할 시, draftId 필수. 게시글 등록 단계 때 draft Id와 매핑되어 file이 boardId를 갖게 된다.",
-            security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "게시글에 파일 등록 (1건씩 등록)", description = "게시글을 생성하면서 파일을 등록할 시, draftId 필수. 게시글 등록 단계 때 draft Id와 매핑되어 file이 boardId를 갖게 된다.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "파일 등록 성공",
             content= @Content(mediaType = "application/json",
@@ -55,15 +52,14 @@ public class FileController {
         return ResponseEntity.ok(fileService.saveMeta(file, boardId, draftId == null? null:draftId.trim(), user.getUser()));
     }
 
-    @Operation(summary = "front에 파일 띄우기", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "front에 파일 띄우기")
     @GetMapping("/{fileId}")
     public ResponseEntity<Resource> viewFile(@PathVariable Long fileId,
                                              @AuthenticationPrincipal CustomUserDetail user) {
         return fileService.getFileResponse(fileId, user.getUser());
     }
 
-    @Operation(summary = "파일 삭제", description = "삭제할 파일 id와 파일이 있는 게시글 id가 일치해야 하며, 임시 파일이라면 파일의 draft id와 일치해야 한다.",
-            security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "파일 삭제", description = "삭제할 파일 id와 파일이 있는 게시글 id가 일치해야 하며, 임시 파일이라면 파일의 draft id와 일치해야 한다.")
     @ApiResponses(value = {
     @ApiResponse(responseCode = "200", description = "파일 삭제 성공",
         content= @Content(mediaType = "application/json",

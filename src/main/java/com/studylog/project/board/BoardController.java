@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +28,7 @@ import java.util.List;
 public class BoardController {
     private final BoardService boardService;
 
-    @Operation(summary = "게시글 단일 조회 (파일 목록 포함)", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "게시글 단일 조회 (파일 목록 포함)")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "조회 성공",
             content= @Content(mediaType = "application/json",
@@ -46,7 +45,7 @@ public class BoardController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "게시글 목록 조회 (리스트 형태)", description = "정렬(sort) 기본 값: 게시글명/카테고리명 오름차순", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "게시글 목록 조회 (리스트 형태)", description = "정렬(sort) 기본 값: 게시글명/카테고리명 오름차순")
     @ApiResponse(responseCode = "200", description = "조회 성공",
         content= @Content(mediaType = "application/json",
         array = @ArraySchema(schema= @Schema(implementation = BoardResponse.class))))
@@ -70,7 +69,7 @@ public class BoardController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "게시글 등록", description = "임시 파일 매핑을 위한 draftId 필수", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "게시글 등록", description = "임시 파일 매핑을 위한 draftId 필수")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "게시글 등록 성공",
             content= @Content(mediaType = "application/json",
@@ -92,7 +91,7 @@ public class BoardController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "게시글 수정", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "게시글 수정")
     @PatchMapping("{boardId}")
     public ResponseEntity<BoardDetailResponse> updateBoard(@PathVariable("boardId") Long id,
                                                      @Valid @RequestBody BoardUpdateRequest request,
@@ -100,7 +99,7 @@ public class BoardController {
         return ResponseEntity.ok(boardService.updateBoard(id, request, user.getUser()));
     }
 
-    @Operation(summary = "게시글 삭제 (해당 게시글의 파일 함께 삭제)", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "게시글 삭제 (해당 게시글의 파일 함께 삭제)")
     @DeleteMapping("{boardId}")
     public ResponseEntity<CommonResponse> deleteBoard(@PathVariable("boardId") Long boardId,
                                                       @AuthenticationPrincipal CustomUserDetail user) {

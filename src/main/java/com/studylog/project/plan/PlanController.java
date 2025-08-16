@@ -1,7 +1,5 @@
 package com.studylog.project.plan;
 
-import com.studylog.project.board.BoardDetailResponse;
-import com.studylog.project.board.BoardResponse;
 import com.studylog.project.global.CommonUtil;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.response.CommonResponse;
@@ -12,7 +10,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -41,8 +38,7 @@ public class PlanController {
      3. 상태별 조회
      4. 키워드별 조회
      다 섞어서도 가능..*/
-    @Operation(summary = "계획 목록 조회 (범위 조회 시, 메시지 포함)", description = "정렬(sort) 기본 값: 시작일자/카테고리명 오름차순",
-            security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "계획 목록 조회 (범위 조회 시, 메시지 포함)", description = "정렬(sort) 기본 값: 시작일자/카테고리명 오름차순")
     @ApiResponse(responseCode = "200", description = "조회 성공",
             content= @Content(mediaType = "application/json",
                     array = @ArraySchema(schema= @Schema(implementation = PlanDetailResponse.class))))
@@ -116,7 +112,7 @@ public class PlanController {
         }
 
     //계획 하나 조회
-    @Operation(summary = "계획 단일 조회", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "계획 단일 조회")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "조회 성공",
             content= @Content(mediaType = "application/json",
@@ -134,7 +130,7 @@ public class PlanController {
     }
 
     //계획 등록
-    @Operation(summary = "계획 등록", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "계획 등록")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "계획 등록 성공",
             content= @Content(mediaType = "application/json",
@@ -153,7 +149,7 @@ public class PlanController {
     }
 
     //계획 상태 수정
-    @Operation(summary = "계획 상태 수정", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "계획 상태 수정")
     @PatchMapping("{planId}/status")
     public ResponseEntity<CommonResponse> setPlanStatus(@PathVariable Long planId,
                                                         @RequestParam("status") String statusStr,
@@ -165,7 +161,7 @@ public class PlanController {
     }
 
     //계획 수정
-    @Operation(summary = "계획 수정", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "계획 수정")
     @PatchMapping("{planId}")
     public ResponseEntity<CommonResponse> updatePlan(@PathVariable Long planId,
                                                      @Valid @RequestBody PlanRequest request,
@@ -175,7 +171,7 @@ public class PlanController {
     }
 
     //계획 삭제
-    @Operation(summary = "계획 삭제", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "계획 삭제")
     @DeleteMapping("{planId}")
     public ResponseEntity<CommonResponse> deletePlan(@PathVariable Long planId,
                                                      @AuthenticationPrincipal CustomUserDetail user) {

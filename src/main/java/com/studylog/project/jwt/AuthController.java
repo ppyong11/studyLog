@@ -5,11 +5,11 @@ import com.studylog.project.global.response.CommonResponse;
 import com.studylog.project.user.LogInRequest;
 import com.studylog.project.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -64,9 +64,10 @@ public class AuthController {
     }
 
 
+    //hidden: Swagger에서 안 보임
     @PostMapping("/logout")
-    @Operation(summary = "로그아웃", security = @SecurityRequirement(name = "bearerAuth"))
-    public ResponseEntity<CommonResponse> logout(@CookieValue(name="access_token")String accessToken,
+    @Operation(summary = "로그아웃")
+    public ResponseEntity<CommonResponse> logout(@Parameter(hidden=true) @CookieValue(name="access_token")String accessToken,
                                                  HttpServletResponse response,
                                                  @AuthenticationPrincipal CustomUserDetail user) {
         //토큰 없는 경우엔 필터에서 다 걸러서 여기까지 안 옴 -> 토큰은 항상 있음! 인증된 객체라는 뜻 (authenticated)
@@ -82,7 +83,7 @@ public class AuthController {
     }
 
     @PostMapping("/member/withdraw")
-    @Operation(summary = "회원탈퇴 (softDelete - 7일간 회원 정보 보관)", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "회원탈퇴 (softDelete - 7일간 회원 정보 보관)")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "회원탈퇴 성공",
             content= @Content(mediaType = "application/json",
@@ -99,7 +100,7 @@ public class AuthController {
                     example = "{\n  \"success\": false,\n  \"message\": \"로그인이 필요한 요청입니다.\"\n}"
             )))
     })
-    public ResponseEntity<CommonResponse> withdraw(@CookieValue(name="access_token")String accessToken,
+    public ResponseEntity<CommonResponse> withdraw(@Parameter(hidden=true) @CookieValue(name="access_token")String accessToken,
                                                    HttpServletResponse response,
                                                    @AuthenticationPrincipal CustomUserDetail user) {
         //자동 로그아웃 + user 속성 바꾸기
@@ -114,7 +115,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    @Operation(summary = "액세스 토큰 재발급", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "액세스 토큰 재발급")
     @ApiResponses(value = {
     @ApiResponse(responseCode = "200", description = "토큰 재발급 성공",
         content= @Content(mediaType = "application/json",
@@ -127,8 +128,8 @@ public class AuthController {
                         " / 블랙리스트 처리된 리프레시 토큰- 유효하지 않은 토큰입니다.\"\n}"
         )))
     })
-    public ResponseEntity<CommonResponse> refreshAccessToken(@CookieValue(name="access_token", required = false)String accessToken,
-                                                             @CookieValue(name="refresh_token", required = false)String refreshToken,
+    public ResponseEntity<CommonResponse> refreshAccessToken(@Parameter(hidden=true) @CookieValue(name="access_token", required = false)String accessToken,
+                                                             @Parameter(hidden=true) @CookieValue(name="refresh_token", required = false)String refreshToken,
                                                              @AuthenticationPrincipal CustomUserDetail user,
                                                              HttpServletResponse response) {
         //permitAll 경로라 필터에서 쿠키 있든 없든 컨트롤러 호출 O

@@ -1,7 +1,5 @@
 package com.studylog.project.category;
 
-import com.studylog.project.board.BoardDetailResponse;
-import com.studylog.project.board.BoardResponse;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.response.CommonResponse;
 import com.studylog.project.jwt.CustomUserDetail;
@@ -11,7 +9,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,8 +28,7 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     //카테고리 전체&키워드 조회
-    @Operation(summary = "카테고리 목록 조회 (리스트)", description = "정렬 (sort) 기본값: 카테고리명 오름차순",
-            security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "카테고리 목록 조회 (리스트)", description = "정렬 (sort) 기본값: 카테고리명 오름차순")
     @ApiResponse(responseCode = "200", description = "조회 성공",
         content= @Content(mediaType = "application/json",
         array = @ArraySchema(schema= @Schema(implementation = CategoryResponse.class))))
@@ -51,7 +47,7 @@ public class CategoryController {
     }
 
     //카테고리 단일 조회
-    @Operation(summary = "카테고리 단일 조회", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "카테고리 단일 조회")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "조회 성공",
             content= @Content(mediaType = "application/json",
@@ -69,7 +65,7 @@ public class CategoryController {
     }
 
     //카테고리 추가
-    @Operation(summary = "카테고리 등록", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "카테고리 등록")
     @PostMapping("")
     public ResponseEntity<CommonResponse> newCategory(@Valid @RequestBody CategoryRequest request,
                                                       @AuthenticationPrincipal CustomUserDetail user) {
@@ -78,7 +74,7 @@ public class CategoryController {
     }
 
     //카테고리 수정
-    @Operation(summary = "카테고리 수정", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "카테고리 수정")
     @PatchMapping("/{categoryId}")
     public ResponseEntity<CommonResponse> updateCategory(@PathVariable Long categoryId,
                                                          @Valid @RequestBody CategoryRequest request,
@@ -88,7 +84,7 @@ public class CategoryController {
     }
 
     //카테고리 삭제
-    @Operation(summary = "카테고리 삭제", security = @SecurityRequirement(name= "bearerAuth"))
+    @Operation(summary = "카테고리 삭제")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "삭제 성공",
             content= @Content(mediaType = "application/json",
