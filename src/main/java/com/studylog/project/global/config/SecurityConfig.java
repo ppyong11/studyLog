@@ -73,7 +73,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource(){
         CorsConfiguration configuration= new CorsConfiguration();
         //허용할 클라이언트 도메인
-        configuration.setAllowedOrigins(List.of("https://studylog.hyeoncode.dev", "https://ppyong11.github.io")); // List.of 사용
+        configuration.setAllowedOrigins(List.of("https://studylog.hyeoncode.dev", "https://studylog-swagger.hyeoncode.dev")); // List.of 사용
 
         // 허용할 HTTP 메서드 (GET, POST, PUT, DELETE 등)
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
