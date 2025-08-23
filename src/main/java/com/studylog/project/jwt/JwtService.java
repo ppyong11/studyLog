@@ -115,11 +115,9 @@ public class JwtService {
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("None") //cross-site에서 쿠키 보내려면 None 처리
-                .domain(".hyeoncode.dev") //최상위 도메인 지정
                 .path(path) //이 경로에서 클 -> 서버로 쿠키 보냄
-                .maxAge(expTime) //1시간 후 만료
+                .maxAge(expTime) //30분 후 만료
                 .build().toString();
-
     }
     //쿠키 삭제
     public String deleteCookie(String name, String path){
@@ -128,7 +126,6 @@ public class JwtService {
                 .secure(true)
                 .path(path) //생성할 때 넣은 path로 설정
                 .sameSite("None")
-                .domain(".hyeoncode.dev")
                 .maxAge(0) //바로 만료
                 .build().toString();
     }

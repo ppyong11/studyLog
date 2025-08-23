@@ -154,7 +154,7 @@ public class PlanController {
     public ResponseEntity<CommonResponse> setPlanStatus(@PathVariable Long planId,
                                                         @RequestParam("status") String statusStr,
                                                         @AuthenticationPrincipal CustomUserDetail user) {
-        log.info(statusStr); //" fAlse "
+        log.info(statusStr); //" false "
         boolean status= parseStatus(statusStr);
         planService.updateStatus(planId, status, user.getUser());
         return ResponseEntity.ok(new CommonResponse( true, "계획 상태가 변경되었습니다."));

@@ -47,7 +47,8 @@ public class PlanEntity {
     @Column(name = "plan_status",nullable = false)
     private boolean status; //계획 생성 시 0으로 설정
 
-    @OneToOne(mappedBy = "plan", cascade = CascadeType.REMOVE)
+    @OneToOne(mappedBy = "plan", cascade = CascadeType.REMOVE, optional = true)
+    //타이머 삭제 로직은 따로 있어서 orphanRemoval 필요X
     private TimerEntity timer;
 
     @Builder

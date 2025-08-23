@@ -29,7 +29,7 @@ public class TimerEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
-    @OneToOne //plan이 있다면 플랜 1당 타이머 1개
+    @OneToOne(optional = true) //plan이 있다면 플랜 1당 타이머 1개지만, 옵셔널도 돼서
     @JoinColumn(name = "plan_id", unique = true)
     private PlanEntity plan; //플랜명 널 허용 (단순 기록)
 

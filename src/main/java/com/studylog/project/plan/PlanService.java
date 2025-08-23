@@ -1,14 +1,19 @@
 package com.studylog.project.plan;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.exception.NotFoundException;
-import com.studylog.project.timer.TimerEntity;
-import com.studylog.project.timer.TimerRepository;
+import com.studylog.project.timer.QTimerEntity;
 import com.studylog.project.timer.TimerService;
 import com.studylog.project.user.UserEntity;
 import lombok.RequiredArgsConstructor;
@@ -16,14 +21,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.temporal.TemporalAdjuster;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -96,21 +99,30 @@ public class PlanService {
             builder.and(planEntity.status.eq(status));
         }
 
-        List<PlanEntity> plans= queryFactory.selectFrom(planEntity) //select * from planEntity
+        List<PlanResponse> planResponse= queryFactory
+                .select(Projections.constructor(
+                        PlanResponse.class,
+                        planEntity.id,
+                        planEntity.plan_name,
+                        planEntity.plan_memo,
+                        planEntity.category.name,
+                        planEntity.startDate,
+                        planEntity.endDate,
+                        planEntity.minutes,
+                        planEntity.status
+                ))
+                .from(planEntity)
                 .where(builder)
                 .orderBy(orders.toArray(new OrderSpecifier[0]))
-                .fetch(); //전체 결과 반환 (List<planEntity> 타입), 결과 없을 시 빈 리스트 (Null 반환 X)
+                .fetch(); //전체 결과 반환 (List<planResponse> 타입), 결과 없을 시 빈 리스트 (Null 반환 X)
 
-        List<PlanResponse> planResponse= plans.stream()
-                                            .map(plan -> PlanResponse.toDto(plan))
-                                            .toList(); //통계 빼고 반환
-
-        long totalCount= planCount(planEntity, builder, false);
-        long achievedCount= planCount(planEntity, builder, true);
+        long[] planCount= getPlanCounts(builder);
+        long totalCount= planCount[0];
+        long achievedCount= planCount[1];
 
         //일, 주, 월 범위일 때만 메시지 함께 반환
         double rate = totalCount == 0 ? 0.0 : (double) achievedCount / totalCount * 100;
-        String totalStudyTime= totalStudyTime(plans);
+        String totalStudyTime= totalStudyTime(builder);
 
         if(range == null) return PlanDetailResponse.toDto(planResponse, achievedCount, totalCount, rate, null, totalStudyTime); //메시지는 null 처리
 
@@ -140,61 +152,85 @@ public class PlanService {
             range= "day";
         }
 
-        List<PlanEntity> plans= queryFactory.selectFrom(planEntity) //select * from planEntity
+        List<PlanResponse> planResponse= queryFactory
+                .select(Projections.constructor(
+                        PlanResponse.class,
+                        planEntity.id,
+                        planEntity.plan_name,
+                        planEntity.plan_memo,
+                        planEntity.category.name,
+                        planEntity.startDate,
+                        planEntity.endDate,
+                        planEntity.minutes,
+                        planEntity.status
+                ))
+                .from(planEntity) //select * from planEntity
                 .where(builder)
                 .orderBy(planEntity.startDate.asc(), planEntity.category.name.asc())
-                .fetch(); //전체 결과 반환 (List<planEntity> 타입), 결과 없을 시 빈 리스트 (Null 반환 X)
+                .fetch(); //전체 결과 반환 (List<planResponse> 타입), 결과 없을 시 빈 리스트 (Null 반환 X)
 
-        List<PlanResponse> planResponse= plans.stream()
-                .map(plan -> PlanResponse.toDto(plan))
-                .toList();
-
-        long totalCount= planCount(planEntity, builder, false);
-        long achievedCount= planCount(planEntity, builder, true);
+        long[] planCount= getPlanCounts(builder);
+        long totalCount= planCount[0];
+        long achievedCount= planCount[1];
 
         //일, 주, 월 범위일 때만 메시지 함께 반환
         double rate = totalCount == 0 ? 0.0 : (double) achievedCount / totalCount * 100;
 
         String message= returnMessage(user.getNickname(), range, rate, totalCount);
-        String totalStudyTime= totalStudyTime(plans);
+        String totalStudyTime= totalStudyTime(builder);
         return PlanDetailResponse.toDto(planResponse, achievedCount, totalCount, rate, message, totalStudyTime);
     }
 
-    private String totalStudyTime(List<PlanEntity> plans){
-        long totalSeconds= 0;
-        /*완료 안 된 계획은 제외 (타이머 설정 X),
-          완료된 계획은 계획 시간으로,
-          타이머에 설정한 계획이면 타이머 시간 가져오기..*/
-        for(PlanEntity plan:plans){
-            Optional<TimerEntity> timer= timerService.getTimerByPlan(plan);
-            if(timer.isPresent()){
-                totalSeconds += timer.get().getElapsed(); //초 단위
-            } else{ //타이머에 설정된 계획이 아닐 경우, 완료된 계획의 시간만 가져옴
-                if(plan.isStatus()) {
-                    totalSeconds += plan.getMinutes()*60; //분 단위
-                }
-            }
-        }
+    private long[] getPlanCounts(BooleanBuilder builder){
+        QPlanEntity planEntity= QPlanEntity.planEntity;
+
+        NumberExpression<Long> totalExpr= planEntity.count();
+        NumberExpression<Long> achievedExpr=                         new CaseBuilder()
+                .when(planEntity.status.isTrue())
+                .then(1L)
+                .otherwise(0L)
+                .sum(); // achievedCount
+
+        Tuple planCount= queryFactory
+                            .select(totalExpr, achievedExpr)
+                            .from(planEntity)
+                            .where(builder) //조회 결과 중 달성한 계획 count
+                            .fetchOne(); //계획 개수 받음
+
+        Long totalLong= planCount != null? planCount.get(totalExpr) : null;
+        long totalCount= totalLong != null? totalLong : 0L;
+
+        Long achievedLong= planCount != null? planCount.get(achievedExpr) : null;
+        long achievedCount= achievedLong != null? achievedLong : 0L;
+
+        return new long[]{totalCount, achievedCount};
+    }
+
+    private String totalStudyTime(BooleanBuilder builder){
+        QPlanEntity plan= QPlanEntity.planEntity;
+        QTimerEntity timer= QTimerEntity.timerEntity; //결합도 문제 X(성능 최적화 차원)
+
+        NumberExpression<Long> totalSencodsSelect= new CaseBuilder()
+                .when(timer.elapsed.isNotNull()) //계획이 설정된 타이머가 있으면
+                .then(timer.elapsed)
+                .when(timer.isNull().and(plan.status.isTrue())) //타이머가 없고 계획이 완료됐다면
+                .then(Expressions.numberTemplate(Long.class, "{0} * 60", plan.minutes)) //int * 60을 Long으로 변환
+                .otherwise(0L)
+                .sum(); //전체합계
+
+        Long totalSecondsDecimal= queryFactory
+                .select(totalSencodsSelect)
+                .from(plan)
+                .leftJoin(timer).on(timer.plan.id.eq(plan.id)) //Plan에 Timer 필드가 없어서 직접 조인
+                .where(builder)
+                .fetchOne();
+
+        long totalSeconds = totalSecondsDecimal == null ? 0L : totalSecondsDecimal.longValue();
         long hours= totalSeconds / 3600;
         long minutes= (totalSeconds % 3600) /60;
         long seconds= totalSeconds % 60;
         return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
-
-    private long planCount(QPlanEntity planEntity, BooleanBuilder builder, boolean achieved){
-        if(!achieved){ //전체 계획
-            return queryFactory.select(planEntity.count())
-                    .from(planEntity)
-                    .where(builder)
-                    .fetchOne();
-        } else{ //달성한 계획
-            return queryFactory.select(planEntity.count())
-                    .from(planEntity)
-                    .where(builder.and(planEntity.status.isTrue())) //조회 결과 중 달성한 계획 count
-                    .fetchOne();
-        }
-    }
-
 
     private String returnMessage(String nickname, String range, double rate, long total){
         //range는 day, week, month만 받음 (컨트롤러에서 분기 처리)
@@ -257,7 +293,7 @@ public class PlanService {
     public void deletePlan(Long id, UserEntity user) {
         PlanEntity plan= planRepository.findByUserAndId(user, id)
                 .orElseThrow(() -> new NotFoundException("존재하지 않는 계획입니다."));
-        TimerEntity timer= plan.getTimer(); //Lazy 로딩 강제 초기화
+
         planRepository.delete(plan); //cascade로 타이머도 삭제됨
     }
 
