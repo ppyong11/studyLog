@@ -6,6 +6,8 @@ import com.studylog.project.jwt.JwtAuthenticationFilter;
 import com.studylog.project.jwt.JwtTokenProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -24,11 +26,24 @@ import java.util.List;
 @Configuration //Config 파일로 설정,이거 있어야 @Bean 스캔 가능
 @EnableWebSecurity //WebSecurity 활성화
 public class SecurityConfig {
+
+    //Prometheus SecurityFilterChain (Basic Auth 적용)
+    @Bean
+    @Order(1) // 우선순위 높게
+    public SecurityFilterChain prometheusFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/actuator/prometheus") //이 엔드포인트만 적용
+                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+                .httpBasic(Customizer.withDefaults()) //Basic Auth 활성화
+                .csrf(AbstractHttpConfigurer::disable);
+        return http.build();
+    }
     @Bean //스프링 컨테이너에 bean 등록 & 주입된 것들을 싱글톤으로 관리하겠다
+    @Order(2)
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter, CustomAuthenticationEntryPoint customAuthenticationEntryPoint) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) //이 필터 실행 전에 JWT 필터 실행
                 .exceptionHandling(exceptionHandling ->
                         exceptionHandling.authenticationEntryPoint(customAuthenticationEntryPoint)
                 )
@@ -38,8 +53,6 @@ public class SecurityConfig {
                 //JWT 사용하니까 세션 사용 X
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/actuator/prometheus")
-                        .access(new WebExpressionAuthorizationManager("hasIpAddress('172.18.0.2')"))
                     .requestMatchers(
                             //아래 API 요청 모두 허가
                             "/api/signin/**",
