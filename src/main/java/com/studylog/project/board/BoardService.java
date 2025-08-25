@@ -1,18 +1,23 @@
 package com.studylog.project.board;
 
 import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
 import com.studylog.project.file.FileEntity;
 import com.studylog.project.file.FileRepository;
 import com.studylog.project.file.FileService;
+import com.studylog.project.global.PageResponse;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.exception.NotFoundException;
+import com.studylog.project.plan.PlanResponse;
 import com.studylog.project.user.UserEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,9 +39,8 @@ public class BoardService {
         return BoardDetailResponse.toDto(BoardResponse.toDto(board), board);
     }
 
-    public List<BoardResponse> searchBoards(List<Long> categoryList, String keyword, List<String> sort,
+    public PageResponse<BoardResponse> searchBoards(List<Long> categoryList, String keyword, List<String> sort, int page,
                                             UserEntity user) {
-        log.info("메서드 진입");
         QBoardEntity boardEntity = QBoardEntity.boardEntity;
         BooleanBuilder builder = new BooleanBuilder();
 
@@ -71,16 +75,38 @@ public class BoardService {
         if(keyword != null && !keyword.isEmpty())
             builder.and(boardEntity.title.like("%" + keyword + "%"));
 
-        List<BoardEntity> boards= queryFactory.selectFrom(boardEntity)
+        long pageSize= 30;
+        long offset= (long) (page - 1) * pageSize; //페이지당 30건 반환
+
+        List<BoardResponse> boardResponses = queryFactory
+                .select(
+                        Projections.constructor(
+                        BoardResponse.class,
+                        boardEntity.id,
+                        boardEntity.category.name,
+                        boardEntity.title,
+                        boardEntity.content,
+                        boardEntity.update_at,
+                        boardEntity.update_at
+                ))
+                .from(boardEntity)
                 .where(builder)
                 .orderBy(orders.toArray(new OrderSpecifier[0])) //orderBy 메서드는 OrderSpecifier "배열"만 받아서 리스트 to 배열하는 과정
                 //길이가 0인 배열을 만들어서 리스트 요소를 그 배열에 넣겠다! -> 타입 맞춰주는 역할로, orders 크기만큼 배열이 새로 생김 (배열은 크기 수정 X)
                 //위에서 list 말고 배열로 만들어도 되는데, 혹시 모를 에러에 방어하기 위해 동적 리스트 활용하나봄 (실무적임)
+                .offset(offset) //이 Index부터 데이터 조회
+                .limit(pageSize) //페이지 사이즈
                 .fetch();
 
-        return boards.stream()
-                .map(board -> BoardResponse.toDto(board)) //하나씩 들어가서 DTO로 변환됨
-                .toList();
+        Long totalItemsLong= queryFactory
+                .select(boardEntity.count())
+                .from(boardEntity)
+                .where(builder)
+                .fetchOne();
+        long totalItems= totalItemsLong == null? 0L : totalItemsLong;
+        int totalPages= (int) Math.ceil((double) totalItems/pageSize); //총 데이터 개수 / 페이지 사이즈
+
+        return new PageResponse<>(boardResponses, totalItems, totalPages, page);
     }
 
     public BoardDetailResponse createBoard(BoardCreateRequest request, UserEntity user) {

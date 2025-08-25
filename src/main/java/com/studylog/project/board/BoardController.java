@@ -1,6 +1,8 @@
 package com.studylog.project.board;
 
 import com.studylog.project.global.CommonUtil;
+import com.studylog.project.global.PageResponse;
+import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.response.CommonResponse;
 import com.studylog.project.jwt.CustomUserDetail;
 import io.swagger.v3.oas.annotations.Operation;
@@ -50,10 +52,13 @@ public class BoardController {
         content= @Content(mediaType = "application/json",
         array = @ArraySchema(schema= @Schema(implementation = BoardResponse.class))))
     @GetMapping("/search")
-    public ResponseEntity<List<BoardResponse>> searchBoards(@RequestParam(required = false) String category,
-                                                            @RequestParam(required = false) String keyword,
-                                                            @RequestParam(required = false) List<String> sort,
-                                                            @AuthenticationPrincipal CustomUserDetail user) {
+    public ResponseEntity<PageResponse<BoardResponse>> searchBoards(@RequestParam(required = false) String category,
+                                                     @RequestParam(required = false) String keyword,
+                                                     @RequestParam(required = false) List<String> sort,
+                                                     @RequestParam(required = false) Integer page,
+                                                     @AuthenticationPrincipal CustomUserDetail user) {
+        if (page == null || page < 1 )
+            throw new BadRequestException("잘못된 페이지 값입니다.");
         List<Long> categoryList = new ArrayList<>(); //빈 리스트
         //플랜도 바꾸기 (sort)
         if (sort == null || sort.isEmpty()) { //null or 빈 리스트
@@ -65,8 +70,7 @@ public class BoardController {
         }
         keyword = (keyword == null) ? null : keyword.trim();
 
-        List<BoardResponse> response = boardService.searchBoards(categoryList, keyword, sort, user.getUser());
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(boardService.searchBoards(categoryList, keyword, sort, page, user.getUser()));
     }
 
     @Operation(summary = "게시글 등록", description = "임시 파일 매핑을 위한 draftId 필수")
