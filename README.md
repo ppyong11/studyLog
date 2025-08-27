@@ -8,6 +8,7 @@
     - 프론트: React (개발 예정)
     - DB: MariaDB, Redis
     - Infra/DevOps: EC2, RDS, Nginx, Github Actions, Certbot
+    - 모니터링: Prometheus, Grafana
 6. **문서화, 설계 도구**
    - Swagger, Github Pages, Draw.io, Canva, VS code (ERD Editor)<br>
     
@@ -34,7 +35,7 @@
 
     Notification 테이블: 계획 완료 처리로 수신한 알림을 담는 테이블. 알림을 수신한 조건에 따라 timer 값이 null이 될 수 있음. <br>
 ## 📌 시스템 구조
-<img width="761" height="912" alt="studyLog_구조" src="https://github.com/user-attachments/assets/ab9b948e-12ed-4908-a1ca-c249fb440f4f" /> </br>
+<img width="761" height="912" alt="studyLog_구조" src="https://github.com/user-attachments/assets/f5b6b9ab-a9ac-4dfb-9071-3a7d19e60796" /> </br>
 서버 배포와 HTTPS 적용을 위해 EC2와 도메인을 사용했으며, 코드가 바뀔 때마다 배포하는 번거로움을 줄이기 위해 GitHub Actions 활용한 CI/CD를 도입했습니다.</br>
 Nginx의 리버스 프록시를 이용해 엔드포인트에 따라 프론트와 백엔드로 분기해 클라이언트의 요청에 응답합니다. </br></br>
 <img width="415" height="432" alt="studyLog_ec2_rds_구조" src="https://github.com/user-attachments/assets/c28871ff-3cfb-4bc0-861b-777a76b5416d" /> </br>
