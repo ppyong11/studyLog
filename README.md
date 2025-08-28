@@ -12,7 +12,7 @@
 6. **문서화, 설계 도구**
    - Swagger, Github Pages, Draw.io, Canva, VS code (ERD Editor)<br>
     
-현재 백엔드 API만 개발해 자체 도메인에서 테스트 운영 중이며, 추후 보안 강화와 프론트엔드를 구현해 서비스 고도화를 계획하고 있습니다.
+현재 MVC 패턴을 기반으로 백엔드 API를 개발하여 자체 도메인에서 부하 테스트를 진행하며 성능 개선과 코드 리팩터링을 하고 있습니다. 추후 프론트엔드를 구현하여 서비스를 운영할 계획입니다.
 ## 📌 API 명세서 및 ERD
 - **Swagger API 문서 **</br>
     https://studylog-swagger.hyeoncode.dev/</br></br>
