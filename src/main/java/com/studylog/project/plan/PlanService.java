@@ -258,6 +258,10 @@ public class PlanService {
         }
     }
 
+    public void updateCategory(CategoryEntity deleteCategory, CategoryEntity defaultCategory){
+        planRepository.updateCategory(deleteCategory, defaultCategory);
+    }
+
     public void addPlan(PlanRequest request, UserEntity user) {
         CategoryEntity category= getCategory(request.getCategoryId(), user);
         PlanEntity plan= request.toEntity(user, category);

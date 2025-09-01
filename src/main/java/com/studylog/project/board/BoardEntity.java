@@ -42,8 +42,7 @@ public class BoardEntity {
     private List<FileEntity> files= new ArrayList<>();
 
     @Builder
-    public BoardEntity(UserEntity user_id, CategoryEntity category_id, String title, String content
-    , LocalDateTime upload_at) {
+    public BoardEntity(UserEntity user_id, CategoryEntity category_id, String title, String content) {
         this.user = user_id;
         this.category = category_id;
         this.title = title.trim();

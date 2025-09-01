@@ -353,6 +353,11 @@ public class TimerService {
     public Optional<TimerEntity> getTimerByPlan(PlanEntity plan){
         return timerRepository.findByPlan(plan);
     }
+
+    public void updateCategory(CategoryEntity deleteCategory, CategoryEntity defaultCategory){
+        timerRepository.updateCategory(deleteCategory, defaultCategory);
+    }
+
     @Scheduled(cron= "0 0/5 * * * *") //5분 간격 스케쥴링
     public void updateElapsedSecond() {
         //실행 중인 타이머만 조회

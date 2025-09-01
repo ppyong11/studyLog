@@ -149,4 +149,8 @@ public class BoardService {
     private BoardEntity getBoardByUserAndId(UserEntity user, Long id) {
         return boardRepository.findByUserAndId(user, id).orElseThrow(() -> new NotFoundException("존재하지 않는 게시글입니다."));
     }
+
+    public void updateCategory(CategoryEntity deleteCategory, CategoryEntity defaultCategory){
+        boardRepository.updateCategory(deleteCategory, defaultCategory);
+    }
 }
