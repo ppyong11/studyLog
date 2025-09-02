@@ -218,7 +218,7 @@ public class PlanService {
         Long totalSecondsDecimal= queryFactory
                 .select(totalSencodsSelect)
                 .from(plan)
-                .leftJoin(timer).on(timer.plan.id.eq(plan.id)) //Plan에 Timer 필드가 없어서 직접 조인
+                .leftJoin(timer).on(timer.plan.id.eq(plan.id)) //Plan에 Timer 필드가 없어서 직접 조인 (fetchJoin 안됨 + 단순 조회)
                 .where(builder)
                 .fetchOne();
 

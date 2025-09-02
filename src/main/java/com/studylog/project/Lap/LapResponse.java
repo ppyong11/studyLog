@@ -35,7 +35,7 @@ public class LapResponse {
     private TimerStatus status;
 
     public static LapResponse toDto(LapEntity lap){
-        return new LapResponse(lap.getId(), lap.getTimer().getId(),lap.getLapName(),
+        return new LapResponse(lap.getId(), lap.getTimer().getId(),lap.getName(),
                 lap.getCreateDate(), lap.getStartAt(), lap.getPauseAt(),
                 lap.getEndAt(), lap.getElapsed(), lap.getStatus());
     }

@@ -49,11 +49,12 @@ public class TimerDetailResponse {
     private List<LapResponse> laps;
 
     public static TimerDetailResponse toDto(TimerEntity timer) {
+        //Lazy라 getLaps 때 쿼리 나감 (하나의 타이머에 해당하는 랩 조회 후 컬렉션을 DTO로 변환)
         List<LapResponse> laps = timer.getLaps().stream()
                 .map(LapResponse::toDto)
                 .collect(Collectors.toList());
 
-        return new TimerDetailResponse(timer.getId(), timer.getTimerName(),
+        return new TimerDetailResponse(timer.getId(), timer.getName(),
                 timer.getPlan() == null? null: timer.getPlan().getId(),
                 timer.getPlan() == null? null: timer.getPlan().getPlan_name(),
                 timer.getPlan() == null? null: timer.getPlan().getStartDate(),

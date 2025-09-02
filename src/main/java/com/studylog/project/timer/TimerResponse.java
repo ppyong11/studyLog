@@ -25,7 +25,7 @@ public class TimerResponse{
     private TimerStatus status;
 
     public static TimerResponse toDto(TimerEntity timer) {
-        return new TimerResponse(timer.getId(), timer.getTimerName(),
+        return new TimerResponse(timer.getId(), timer.getName(),
                 timer.getPlan() == null? null : timer.getPlan().getPlan_name(),
                 timer.getCategory().getName(), timer.getCreateDate(), timer.getElapsed(),
                 timer.getStatus());

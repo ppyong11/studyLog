@@ -2,6 +2,7 @@ package com.studylog.project.Lap;
 
 import com.studylog.project.jwt.CustomUserDetail;
 import com.studylog.project.timer.TimerDetailResponse;
+import com.studylog.project.timer.TimerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name="Lap", description = "Lap API, 모든 요청 access token 필요")
 public class LapController {
-    private final LapService lapService;
+    private final TimerService timerService;
 
     @Operation(summary = "랩 등록")
     @ApiResponses(value = {
@@ -41,7 +42,7 @@ public class LapController {
     public ResponseEntity<TimerDetailResponse> createLap(@PathVariable Long timerId,
                                                          @Valid @RequestBody LapRequest request,
                                                          @AuthenticationPrincipal CustomUserDetail user) {
-        TimerDetailResponse response= lapService.createLap(timerId, request, user.getUser());
+        TimerDetailResponse response= timerService.createLap(timerId, request, user.getUser());
         return ResponseEntity.ok(response);
     }
 
@@ -51,7 +52,7 @@ public class LapController {
     public ResponseEntity<TimerDetailResponse> startLap(@PathVariable Long timerId,
                                                         @PathVariable Long lapId,
                                                         @AuthenticationPrincipal CustomUserDetail user){
-        return ResponseEntity.ok(lapService.startLap(timerId, lapId, user.getUser()));
+        return ResponseEntity.ok(timerService.startLap(timerId, lapId, user.getUser()));
     }
 
     @Operation(summary = "랩 중지", description = "종료된 랩이거나 실행 중인 랩이 아니면 중지 불가")
@@ -59,7 +60,7 @@ public class LapController {
     public ResponseEntity<TimerDetailResponse> pauseLap(@PathVariable Long timerId,
                                                         @PathVariable Long lapId,
                                                         @AuthenticationPrincipal CustomUserDetail user){
-        return ResponseEntity.ok(lapService.pauseLap(timerId, lapId, user.getUser()));
+        return ResponseEntity.ok(timerService.pauseLap(timerId, lapId, user.getUser()));
     }
 
     @Operation(summary = "랩 종료", description = "이미 종료된 랩이거나 실행 중인 랩이 아니면 종료 불가")
@@ -67,7 +68,7 @@ public class LapController {
     public ResponseEntity<TimerDetailResponse> endLap(@PathVariable Long timerId,
                                                         @PathVariable Long lapId,
                                                         @AuthenticationPrincipal CustomUserDetail user){
-        return ResponseEntity.ok(lapService.endLap(timerId, lapId, user.getUser()));
+        return ResponseEntity.ok(timerService.endLap(timerId, lapId, user.getUser()));
     }
 
     @Operation(summary = "랩 수정", description = "랩명만 수정 가능")
@@ -76,7 +77,7 @@ public class LapController {
                                                          @PathVariable Long lapId,
                                                          @Valid @RequestBody LapRequest request,
                                                          @AuthenticationPrincipal CustomUserDetail user) {
-        TimerDetailResponse response= lapService.updateLap(timerId, lapId, request, user.getUser());
+        TimerDetailResponse response= timerService.updateLap(timerId, lapId, request, user.getUser());
         return ResponseEntity.ok(response);
     }
 
@@ -85,7 +86,7 @@ public class LapController {
     public ResponseEntity<TimerDetailResponse> deleteLap(@PathVariable Long timerId,
                                                          @PathVariable Long lapId,
                                                          @AuthenticationPrincipal CustomUserDetail user){
-        TimerDetailResponse response= lapService.deleteLap(timerId, lapId, user.getUser());
+        TimerDetailResponse response= timerService.deleteLap(timerId, lapId, user.getUser());
         return ResponseEntity.ok(response);
     }
 }
