@@ -2,7 +2,10 @@ package com.studylog.project.Lap;
 
 import com.studylog.project.timer.TimerEntity;
 import com.studylog.project.timer.TimerStatus;
+import com.studylog.project.user.UserEntity;
+import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -19,4 +22,11 @@ public interface LapRepository extends JpaRepository<LapEntity, Long> {
     Optional<LapEntity> findByIdAndTimer(Long lapId, TimerEntity timer);
 
     List<LapEntity> findAllByTimer(TimerEntity timer);
+
+    //LapEntity와 연관된 Timer를 fetch join으로 함께 조회하고,
+    //LapEntity.id와 LapEntity.user가 주어진 값과 일치하는 단일 LapEntity 반환
+    @Query("SELECT l from LapEntity l JOIN FETCH l.timer t WHERE l.id= :lapId AND  l.user= :user AND t.id= :timerId")
+    Optional<LapEntity> getLapWithTimer(@Param("lapId") Long lapId,
+                              @Param("user")UserEntity user,
+                              @Param("timerId") Long timerId);
 }
