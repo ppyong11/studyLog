@@ -32,7 +32,7 @@ public class NotificationService {
         //정지, 종료로 체크 시 - 타이머 없음
         String title = String.format("[%s] 계획이 목표 달성 시간을 채워 %s완료 처리되었어요. 🥳",
                 timer.getPlan().getPlan_name(), isSyncCheck ? "자동" : "");
-        String content = String.format("[%s]로 이동해서 타이머를 종료해 주세요.", timer.getTimerName());
+        String content = String.format("[%s]로 이동해서 타이머를 종료해 주세요.", timer.getName());
         String timerUrl = String.format("/timers/%d", timer.getId());
         NotificationEntity notification = NotificationEntity.builder()
                 .user(user)

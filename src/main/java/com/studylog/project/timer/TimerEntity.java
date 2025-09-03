@@ -23,7 +23,7 @@ public class TimerEntity extends TimerLapBaseEntity {
     @Column(name= "timer_id")
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
@@ -38,6 +38,7 @@ public class TimerEntity extends TimerLapBaseEntity {
     @OneToMany(mappedBy = "timer", cascade = CascadeType.REMOVE)
     private List<LapEntity> laps= new ArrayList<>(); //초기화는 생성할 때만 쓰는 거라 repo로 불러올 땐 잘 채워짐
 
+    //생성자 겸 빌더 패턴
     @Builder
     public TimerEntity(String timerName, UserEntity user_id, PlanEntity plan_id, CategoryEntity category_id) {
         //null인데 trim하면 NPE 뜸

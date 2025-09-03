@@ -13,9 +13,7 @@ import java.time.LocalDateTime;
 @Getter
 public class LapResponse {
     @Schema(description = "랩 id", example = "6")
-    private Long id;
-    @Schema(description = "타이머 id", example = "1")
-    private Long timerId;
+    private Long lapId;
     @Schema(description = "랩명", example = "랩 테스트")
     private String lapName;
     @Schema(description = "랩 생성일", example = "2025-07-12", type = "string")
@@ -35,7 +33,7 @@ public class LapResponse {
     private TimerStatus status;
 
     public static LapResponse toDto(LapEntity lap){
-        return new LapResponse(lap.getId(), lap.getTimer().getId(),lap.getName(),
+        return new LapResponse(lap.getId() ,lap.getName(),
                 lap.getCreateDate(), lap.getStartAt(), lap.getPauseAt(),
                 lap.getEndAt(), lap.getElapsed(), lap.getStatus());
     }

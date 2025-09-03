@@ -2,6 +2,7 @@ package com.studylog.project.timer;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.Lap.LapEntity;
 import com.studylog.project.Lap.LapRepository;
@@ -66,7 +67,7 @@ public class TimerService {
                 case "category" ->
                     categoryOrder= value.equals("desc")? timerEntity.category.name.desc():timerEntity.category.name.asc();
                 case "name" ->
-                    orders.add(value.equals("desc")? timerEntity.timerName.desc(): timerEntity.timerName.asc());
+                    orders.add(value.equals("desc")? timerEntity.name.desc(): timerEntity.name.asc());
                 default -> throw new BadRequestException("지원하지 않는 정렬입니다.");
             }
         }
@@ -93,20 +94,28 @@ public class TimerService {
             builder.and(timerEntity.category.id.in(categoryList));
         }
         if(keyword != null && !keyword.isEmpty()) {
-            builder.and(timerEntity.timerName.like("%"+keyword+"%"));
+            builder.and(timerEntity.name.like("%"+keyword+"%"));
         }
         if(status != null){
             TimerStatus timerStatus= TimerStatus.valueOf(status);
             builder.and(timerEntity.status.eq(timerStatus));
         }
 
-        List<TimerEntity> timers= queryFactory.selectFrom(timerEntity)
+        return queryFactory
+                .select(Projections.constructor(
+                        TimerResponse.class,
+                        timerEntity.id,
+                        timerEntity.name,
+                        timerEntity.plan.plan_name,
+                        timerEntity.category.name,
+                        timerEntity.createDate,
+                        timerEntity.elapsed,
+                        timerEntity.status
+                ))
+                .from(timerEntity)
                 .where(builder)
                 .orderBy(orders.toArray(new OrderSpecifier[0])) //OrderSpecifier<?> 타입의 배열 반환
                 .fetch();
-        return timers.stream()
-                .map(timer -> TimerResponse.toDto(timer))
-                .toList();
     }
 
     //단일 조회
@@ -344,7 +353,7 @@ public class TimerService {
         if(timer.getStatus().equals(TimerStatus.ENDED))
             throw new BadRequestException("종료된 타이머는 랩 생성이 불가합니다.");
         //타이머에 동일 랩 네임 X
-        if(lapRepository.existsByTimerIdAndLapName(timerId, request.getName().trim()))
+        if(lapRepository.existsByTimerIdAndName(timerId, request.getName().trim()))
             throw new BadRequestException("해당 랩명이 존재합니다.");
         //존재 X 랩명이면
         LapEntity lap= request.toEntity(request, timer);
@@ -354,7 +363,7 @@ public class TimerService {
 
     public TimerDetailResponse updateLap(Long timerId, Long lapId, LapRequest request, UserEntity user) {
         LapEntity lap= getLapAndValidate(lapId, user, timerId);
-        if(lapRepository.existsByTimerIdAndLapName(timerId, request.getName().trim())) {
+        if(lapRepository.existsByTimerIdAndName(timerId, request.getName().trim())) {
             if(!lap.getName().equals(request.getName().trim()))
                 throw new BadRequestException("해당 랩명이 존재합니다.");
         }
@@ -372,7 +381,7 @@ public class TimerService {
 
 
     public TimerEntity getTimerByUserAndId(UserEntity user, Long id) {
-        return timerRepository.findByUserAndId(user, id).orElseThrow(() -> new NotFoundException("존재하지 않는 타이머입니다."));
+        return timerRepository.getTimerWithLapPlanCategory(user, id).orElseThrow(() -> new NotFoundException("존재하지 않는 타이머입니다."));
     }
 
     private void checkPlan(PlanEntity plan, TimerEntity timer, TimerRequest request) {

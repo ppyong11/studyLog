@@ -4,17 +4,11 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.studylog.project.board.BoardEntity;
-import com.studylog.project.board.BoardRepository;
 import com.studylog.project.board.BoardService;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.exception.DuplicateException;
 import com.studylog.project.global.exception.NotFoundException;
-import com.studylog.project.plan.PlanEntity;
-import com.studylog.project.plan.PlanRepository;
 import com.studylog.project.plan.PlanService;
-import com.studylog.project.timer.TimerEntity;
-import com.studylog.project.timer.TimerRepository;
 import com.studylog.project.timer.TimerService;
 import com.studylog.project.user.UserEntity;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @Service
 @Slf4j

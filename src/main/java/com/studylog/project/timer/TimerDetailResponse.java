@@ -5,6 +5,7 @@ import com.studylog.project.Lap.LapResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,6 +14,7 @@ import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Getter
+@Slf4j
 public class TimerDetailResponse {
     @Schema(description = "타이머 id", example = "1")
     private Long timerId;
@@ -49,7 +51,6 @@ public class TimerDetailResponse {
     private List<LapResponse> laps;
 
     public static TimerDetailResponse toDto(TimerEntity timer) {
-        //Lazy라 getLaps 때 쿼리 나감 (하나의 타이머에 해당하는 랩 조회 후 컬렉션을 DTO로 변환)
         List<LapResponse> laps = timer.getLaps().stream()
                 .map(LapResponse::toDto)
                 .collect(Collectors.toList());

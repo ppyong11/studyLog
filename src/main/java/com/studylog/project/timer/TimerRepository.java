@@ -15,10 +15,16 @@ import java.util.Optional;
 @Repository
 public interface TimerRepository extends JpaRepository<TimerEntity, Long> {
     Optional<TimerEntity> findByUserAndId(UserEntity user, Long id);
+
+    //유저의 타이머가 맞으면 카테고리, 플랜, 랩 엔티티 반환
+    @Query("select t from TimerEntity t join fetch t.laps join fetch t.category join fetch t.plan " +
+            "where t.user= :userId and t.id= :timerId")
+    Optional<TimerEntity> getTimerWithLapPlanCategory(@Param("userId") UserEntity userId,
+                                                      @Param("timerId") Long timerId);
+
     void deleteAllByUser(UserEntity user);
 
     List<TimerEntity> findAllByStatus(TimerStatus status);
-    List<TimerEntity> findAllByCategory(CategoryEntity category);
     Optional<TimerEntity> findByPlan(PlanEntity plan);
 
     boolean existsByUserAndStatus(UserEntity user, TimerStatus status);
