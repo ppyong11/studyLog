@@ -14,7 +14,7 @@
     
 현재 MVC 패턴을 기반으로 백엔드 API를 개발하여 자체 도메인에서 부하 테스트를 진행하며 성능 개선과 코드 리팩터링을 하고 있습니다. 추후 프론트엔드를 구현하여 서비스를 운영할 계획입니다.
 ## 📌 API 명세서 및 ERD
-- **Swagger API 문서 **</br>
+- **Swagger API 문서**</br>
     https://studylog-swagger.hyeoncode.dev/</br></br>
 - **DB ERD**
     <img width="1600" height="907" alt="스터디로그 ERD" src="https://github.com/user-attachments/assets/76da10aa-5c12-4046-8ac3-a3ba1dd92a25" />
