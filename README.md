@@ -4,7 +4,7 @@
 3. **프로젝트 기간 (백엔드)**: 2025.06~2025.08 (10주)
 4. **프로젝트 목적**: 흩어진 공부 환경을 통합하여 계획-실천-기록-성취 사이클을 만들어 학습 효율을 높이는 학습 관리 서비스입니다.
 5. **사용 기술**
-    - 백엔드: Java 17, Spring Boot 3.2.5, Spring Security, JWT, JPA, QueryDSL, SSE (타이머 완료 이벤트 전송)
+    - 백엔드: Java, Spring Boot, Spring Security, JWT, JPA, QueryDSL, SSE (타이머 완료 이벤트 전송)
     - 프론트: React (개발 예정)
     - DB: MariaDB, Redis
     - Infra/DevOps: EC2, RDS, Nginx, Github Actions, Certbot
