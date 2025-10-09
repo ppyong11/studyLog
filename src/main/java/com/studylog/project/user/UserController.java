@@ -29,31 +29,33 @@ public class UserController {
     private final UserService userService;
     private final MailService mailService;
 
-    @Operation(summary= "아이디, 닉네임 중복 확인")
-    @GetMapping("/signin/check-info")
-    public ResponseEntity<CommonResponse> check(@RequestParam(required = false) String id,
-                                                @RequestParam(required = false) String nickname) {
-        if (id != null && nickname != null) {//두 필드 모두 들어올 경우
-            throw new BadRequestException("아이디와 닉네임 동시 검사가 불가합니다.");
-        } else if (id != null) {//id 중복 확인
-            if (!id.matches("^[a-zA-Z0-9]{4,12}$")) { //영어, 숫자, 6~20자 사이의 아이디만 가능
-               throw new BadRequestException("아이디는 4~12자 영문 또는 숫자여야 합니다.");
-            } else { //유효성 검사 통과
-                //id 중복 시 1 반환, available은 0이 됨
-                if(!userService.existsId(id)) return ResponseEntity.ok(new CommonResponse( true, "사용 가능한 아이디입니다."));
-                else throw new DuplicateException("이미 사용 중인 아이디입니다.");
-            }
-        } else if (nickname != null) {//닉네임 중복 확인
-            if (!nickname.matches("^[가-힣a-zA-Z0-9]{2,10}$")) { //한글, 영어, 숫자, 2~10자 사이의 닉네임만 가능
-                throw new BadRequestException("닉네임은 2~10자 한글, 영어, 숫자여야 합니다");
-            } else {
-                if(!userService.existsNickname(nickname)) return ResponseEntity.ok(new CommonResponse(true, "사용 가능한 닉네임입니다."));
-                else throw new DuplicateException("이미 사용 중인 닉네임입니다.");
-            }
-        }else { // 아무 값도 없는 경우, 상태코드 400
-            throw new BadRequestException("아이디나 닉네임이 입력되지 않았습니다.");
+    @Operation(summary= "아이디 중복 확인")
+    @GetMapping("/signup/check-id")
+    public ResponseEntity<CommonResponse> checkId(@RequestParam(required = false) String id) {
+        if (id == null) throw new BadRequestException("아이디를 입력해 주세요.");
+
+        if (!id.matches("^[a-zA-Z0-9]{4,12}$")) { //영어, 숫자, 6~20자 사이의 아이디만 가능
+            throw new BadRequestException("아이디는 4~12자 영문 또는 숫자여야 합니다.");
+        } else { //유효성 검사 통과
+            //id 중복 시 1 반환, available은 0이 됨
+            if (!userService.existsId(id))
+                return ResponseEntity.ok(new CommonResponse(true, "사용 가능한 아이디입니다."));
+            else throw new DuplicateException("이미 사용 중인 아이디입니다.");
         }
     }
+    @Operation(summary= "닉네임 중복 확인")
+    @GetMapping("/signup/check-nickname")
+    public ResponseEntity<CommonResponse> checkNickname(@RequestParam(required = false) String nickname) {
+        if(nickname == null) throw new BadRequestException("닉네임을 입력해 주세요.");
+        if (!nickname.matches("^[가-힣a-zA-Z0-9]{2,10}$")) { //한글, 영어, 숫자, 2~10자 사이의 닉네임만 가능
+            throw new BadRequestException("닉네임은 2~10자 한글, 영어, 숫자여야 합니다");
+        } else {
+            if(!userService.existsNickname(nickname))
+                return ResponseEntity.ok(new CommonResponse(true, "사용 가능한 닉네임입니다."));
+            else throw new DuplicateException("이미 사용 중인 닉네임입니다.");
+        }
+    }
+
 
     @Operation(summary= "이메일 인증 코드 발송")
     //이메일 인증 코드 발송
@@ -68,7 +70,7 @@ public class UserController {
                     example = "{\n  \"success\": false,\n  \"message\": \"이미 사용 중인 이메일입니다.\"\n}"
             )))
     })
-    @PostMapping("/signin/send-email-code")
+    @PostMapping("/signup/send-email-code")
     public ResponseEntity<CommonResponse> sendEmailCode(@RequestBody @Valid MailRequest reqeust) {
         String email = reqeust.getEmail(); //유효성 검사 후 받은 이메일 string형 변환
         if (userService.existsEmail(email)) {
@@ -91,7 +93,7 @@ public class UserController {
             example = "{\n  \"success\": false,\n  \"message\": \"인증 코드를 입력하세요. / 인증 코드가 만료되었습니다. / 인증 코드가 일치하지 않습니다.\"\n}"
             )))
     })
-    @PostMapping("/signin/verify-email-code")
+    @PostMapping("/signup/verify-email-code")
     public ResponseEntity<CommonResponse> verifyCode(@RequestBody @Valid MailRequest reqeust) {
         if (reqeust.getCode() == null || reqeust.getCode().isBlank()) { //code 입력 안 했을 때
             return ResponseEntity.badRequest().body(new CommonResponse( false, "인증 코드를 입력하세요."));
@@ -112,8 +114,8 @@ public class UserController {
                                 example = "{\n  \"success\": false,\n  \"message\": \"이미 가입된 회원입니다. / 인증 세션이 만료됐거나 인증된 메일이 아닙니다.\"\n}"
                         )))
     })
-    @PostMapping("/signin")
-    public ResponseEntity<CommonResponse> signIn(@RequestBody @Valid SignInRequest signInRequest) {
+    @PostMapping("/signup")
+    public ResponseEntity<CommonResponse> signUp(@RequestBody @Valid SignInRequest signInRequest) {
         userService.register(signInRequest);
         return ResponseEntity.ok(new CommonResponse(true, "회원가입 되었습니다."));
     }
