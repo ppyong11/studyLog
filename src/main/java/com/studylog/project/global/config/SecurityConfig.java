@@ -39,7 +39,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                     .requestMatchers(
                             //아래 API 요청 모두 허가
-                            "/api/signin/**",
+                            "/api/signup/**",
                             "/api/login",
                             "/api/", //뒷 엔드포인트도 다 로긘 처리
                             "/api", //메인
@@ -74,7 +74,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource(){
         CorsConfiguration configuration= new CorsConfiguration();
         //허용할 클라이언트 도메인
-        configuration.setAllowedOrigins(List.of("https://studylog.hyeoncode.dev", "https://studylog-swagger.hyeoncode.dev")); // List.of 사용
+        configuration.setAllowedOrigins(List.of("https://studylog.hyeoncode.dev", "https://studylog-swagger.hyeoncode.dev",
+                "http://localhost:3000")); // List.of 사용
 
         // 허용할 HTTP 메서드 (GET, POST, PUT, DELETE 등)
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));

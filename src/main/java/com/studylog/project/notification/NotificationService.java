@@ -30,15 +30,15 @@ public class NotificationService {
         //DB에 알림 저장
         //동기화로 완료 체크 시 - 타이머 있음
         //정지, 종료로 체크 시 - 타이머 없음
-        String title = String.format("[%s] 계획이 목표 달성 시간을 채워 %s완료 처리되었어요. 🥳",
+        String title = String.format("[%s] 계획이 %s완료 처리되었어요. 🥳",
                 timer.getPlan().getPlan_name(), isSyncCheck ? "자동" : "");
-        String content = String.format("[%s]로 이동해서 타이머를 종료해 주세요.", timer.getName());
+        String content = "해당 타이머로 이동해서 타이머를 종료해 주세요.";
         String timerUrl = String.format("/timers/%d", timer.getId());
         NotificationEntity notification = NotificationEntity.builder()
                 .user(user)
                 .timer(timer) //null이면 알아서 들어감
                 .title(title)
-                .content(isSyncCheck ? content : "알림을 클릭하면 계획 페이지로 이동돼요.")
+                .content(isSyncCheck ? content : "다른 목표도 달성하러 가볼까요?")
                 .url(isSyncCheck ? timerUrl : "/plans")
                 .build();
         notificationRepository.save(notification);

@@ -81,7 +81,7 @@ public class SseEmitterService {
         EventPayload payload = new EventPayload();
         payload.setType("plan-completed");
         payload.setId(timer.getUser().getUser_id());
-        payload.setTitle(String.format("[%s] 계획이 목표 달성 시간을 채워 %s완료 처리되었어요. 🥳",
+        payload.setTitle(String.format("[%s] 계획이 %s완료 처리되었어요. 🥳",
                 timer.getPlan().getPlan_name(), isSyncCheck? "자동":""));
 
         broadcast(timer.getUser(), payload);
