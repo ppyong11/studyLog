@@ -5,14 +5,12 @@
 4. **프로젝트 목적**: 흩어진 공부 환경을 통합하여 계획-실천-기록-성취 사이클을 만들어 학습 효율을 높이는 학습 관리 서비스입니다.
 5. **사용 기술**
     - 백엔드: Java, Spring Boot, Spring Security, JWT, JPA, QueryDSL, SSE (타이머 완료 이벤트 전송)
-    - 프론트: React (개발 예정)
+    - 프론트: React + Next.js (개발 중)
     - DB: MariaDB, Redis
     - Infra/DevOps: EC2, RDS, Nginx, Github Actions, Certbot
     - 모니터링: Prometheus, Grafana
 6. **문서화, 설계 도구**
    - Swagger, Github Pages, Draw.io, Canva, VS code (ERD Editor)<br>
-    
-현재 MVC 패턴을 기반으로 백엔드 API를 개발하여 자체 도메인에서 부하 테스트를 진행하며 성능 개선과 코드 리팩터링을 하고 있습니다. 추후 프론트엔드를 구현하여 서비스를 운영할 계획입니다.
 ## 📌 API 명세서 및 ERD
 - **Swagger API 문서**</br>
     https://studylog-swagger.hyeoncode.dev/</br></br>
@@ -43,8 +41,8 @@ Nginx의 리버스 프록시를 이용해 엔드포인트에 따라 프론트와
 
 
 ## 📌 주요 기능 흐름 소개
-- **메인 화면 진입 시 토큰 유무에 따른 처리, 로그인 시도, 토큰 재발급 Sequence Diagram**
-      <img width="1000" height="992" alt="studyLog_Sequence" src="https://github.com/user-attachments/assets/798209d1-2118-48f1-856b-4c7dc5a701d2" /></br>
+- **메인 화면 진입 시 로그인 유무에 따른 처리, 로그인, 토큰 재발급 Sequence Diagram**
+      <img width="1000" height="992" alt="studyLog_Sequence" src="https://github.com/user-attachments/assets/cdf1d180-d456-4a8d-9f6c-740823ffe66c" /></br>
       - 메인화면 진입 시<br>
         a. 로그인 상태일 땐 사용자의 하루 계획과 주간 리포트 반환  
         b. 로그아웃 상태일 땐 정적 메인페이지 반환 (홍보 페이지)<br><br>
@@ -61,7 +59,7 @@ Nginx의 리버스 프록시를 이용해 엔드포인트에 따라 프론트와
   계획을 등록하면 타이머에 설정해 계획별 시간 관리가 수월해지고, 일간/주간/월간 리포트와 날짜별 달성률을 확인할 수 있습니다. <br>
   타이머 실행 중 여러 구간별(랩) 기록이 가능하며, 랩이 삭제돼도 타이머의 총 경과 시간엔 영향이 없습니다. 5분마다 스케쥴러를 통한 동기화 및 수동 동기화와 리셋 처리가 가능하고 동기화 시 경과 시간 갱신과 계획 완료 여부 처리를 진행합니다. 
 
-- **타이머 작동 및 계획 자동 완료 처리와 SSE 알림 관련 기능**
+- **타이머 작동 및 계획 자동 완료 처리와 SSE 알림 기능**
     <img width="1000" height="956" alt="계획타이머등록_차트" src="https://github.com/user-attachments/assets/e5944a21-d7b7-4cf7-9618-b419247ad1e3" /></br>
   종료된 타이머는 재실행이 불가하며, 실행 중인 상태에만 정지 및 종료가 가능합니다. 계획이 설정된 테이블은 정지 및 종료, 동기화 시 계획의 목표 시간과 타이머 경과 시간을 비교해 자동 계획 달성 처리와 알림이 발송됩니다. 발송된 알림은 DB에 저장되어 누적 알림 확인 및 관리가 가능합니다.<br><br>
   - **누적 알림 기능** <br>
@@ -83,4 +81,4 @@ Nginx의 리버스 프록시를 이용해 엔드포인트에 따라 프론트와
       
 ## 📝 프로젝트 상세 내용 
 - **노션 링크**  
-  https://cooing-caraway-2f1.notion.site/23b516e994b380efb57ce2d2123866c2?source=copy_link
+  https://www.notion.so/26a516e994b380389999cc3bf3cd4088?source=copy_link#28a516e994b380b88c21d4c13634d928
