@@ -39,17 +39,14 @@ public class CategoryService {
     }
 
     //카테고리 전체&키워드 조회
-    public List<CategoryResponse> searchCategories(String keyword, String sort,UserEntity user) {
+    public List<CategoryResponse> searchCategories(String keyword, UserEntity user) {
         QCategoryEntity categoryEntity = QCategoryEntity.categoryEntity;
-
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(categoryEntity.user.eq(user)); //이거만 해도 전체 카테고리 나옴
 
         if (keyword != null && !keyword.isEmpty()) {
             builder.and(categoryEntity.name.like('%' + keyword + '%'));
         }
-
-        OrderSpecifier<?> order= sort.equals("desc")? categoryEntity.name.desc():categoryEntity.name.asc();
 
         List<CategoryResponse> responses = queryFactory
                 .select(Projections.constructor(
@@ -59,7 +56,7 @@ public class CategoryService {
                 ))
                 .from(categoryEntity)
                 .where(builder)
-                .orderBy(order)
+                .orderBy(categoryEntity.name.asc())
                 .fetch();
 
         if (responses.isEmpty()) {

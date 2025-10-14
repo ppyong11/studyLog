@@ -33,7 +33,7 @@ public class MailService {
         아래 인증 코드를 입력해 주세요.
         
         ✅ 인증 코드: %s
-        인증 코드는 2분간 유효합니다.
+        인증 코드는 3분간 유효합니다.
         
         ⚠️ 요청하지 않은 경우, 이 메일은 무시하셔도 됩니다.
         """, code);
@@ -69,7 +69,7 @@ public class MailService {
 
     //인증 코드 저장
     public void saveCode(String email, String code) {
-        redisTemplate.opsForValue().set("send:"+email, code, Duration.ofMinutes(2));
+        redisTemplate.opsForValue().set("send:"+email, code, Duration.ofMinutes(3));
         log.info("redis 인증 코드 저장 완료: "+redisTemplate.opsForValue().get("send:"+email));
     }
 
@@ -80,7 +80,7 @@ public class MailService {
         if(storedCode == null) throw new MailException("인증 코드가 만료되었습니다."); //TTL 만료 or 이메일 저장 X
         if(!storedCode.equals(code)) throw new MailException("인증 코드가 일치하지 않습니다."); //코드 일치 X
 
-        redisTemplate.opsForValue().set("verified:" + email, "true", Duration.ofMinutes(5)); //검증 완료한 메일 담는 redis
+        redisTemplate.opsForValue().set("verified:" + email, "true", Duration.ofMinutes(10)); //검증 완료한 메일 담는 redis
         log.info("인증 및 검증 메일 redis 저장 완료: {}", email);
     }
 }

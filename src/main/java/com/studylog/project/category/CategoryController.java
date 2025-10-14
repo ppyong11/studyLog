@@ -34,15 +34,9 @@ public class CategoryController {
         array = @ArraySchema(schema= @Schema(implementation = CategoryResponse.class))))
     @GetMapping("search")
     public ResponseEntity<List<CategoryResponse>> searchCategories(@RequestParam(required = false) String keyword,
-                                                                   @RequestParam(required = false, defaultValue = "asc") String sort,
                                                                    @AuthenticationPrincipal CustomUserDetail user) {
-        keyword = keyword == null ? null : keyword.trim();
-        sort= sort.trim().toLowerCase(); //공백 제거 & 소문자 (null이 될 리 X)
-        log.info("sort {}", sort);
-        if (!sort.equals("asc") && !sort.equals("desc")) {
-            throw new BadRequestException("지원하지 않는 정렬입니다.");
-        }
-        List<CategoryResponse> categoryList= categoryService.searchCategories(keyword, sort, user.getUser());
+
+        List<CategoryResponse> categoryList= categoryService.searchCategories(keyword == null ? null : keyword.trim(), user.getUser());
         return ResponseEntity.ok(categoryList);
     }
 
