@@ -1,23 +1,19 @@
 package com.studylog.project.board;
 
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
 import com.studylog.project.file.FileEntity;
-import com.studylog.project.file.FileRepository;
 import com.studylog.project.file.FileService;
 import com.studylog.project.global.PageResponse;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.exception.NotFoundException;
-import com.studylog.project.plan.PlanResponse;
 import com.studylog.project.user.UserEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -76,7 +72,7 @@ public class BoardService {
             builder.and(boardEntity.title.like("%" + keyword + "%"));
 
         long pageSize= 30;
-        long offset= (long) (page - 1) * pageSize; //페이지당 30건 반환
+        long offset= (page - 1) * pageSize; //페이지당 30건 반환
 
         List<BoardResponse> boardResponses = queryFactory
                 .select(
@@ -98,15 +94,15 @@ public class BoardService {
                 .limit(pageSize) //페이지 사이즈
                 .fetch();
 
-        Long totalItemsLong= queryFactory
+        Long totalItems= queryFactory
                 .select(boardEntity.count())
                 .from(boardEntity)
                 .where(builder)
-                .fetchOne();
-        long totalItems= totalItemsLong == null? 0L : totalItemsLong;
-        int totalPages= (int) Math.ceil((double) totalItems/pageSize); //총 데이터 개수 / 페이지 사이즈
+                .fetchOne(); //count()는 항상 row가 하나씩 있어서 0 이상 반환
 
-        return new PageResponse<>(boardResponses, totalItems, totalPages, page);
+        boolean hasNext= page * pageSize < totalItems; //마지막 페이지인지 (경고 무시)
+
+        return new PageResponse<>(boardResponses, totalItems ,page, hasNext);
     }
 
     public BoardDetailResponse createBoard(BoardCreateRequest request, UserEntity user) {
