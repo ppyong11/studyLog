@@ -5,15 +5,11 @@ import lombok.Getter;
 
 import java.util.List;
 
-@AllArgsConstructor
+@AllArgsConstructor //toDto없어도 됨
 @Getter
 public class PageResponse<T> {
     private List<T> content; //카테고리, 게시글 목록 등
     private long totalItems;
-    private int totalPages; //전체 페이지
     private int currentPage; //현재 페이지 번호
-
-    public static <T> PageResponse<T> toDto(List<T> content, long totalItems, int totalPages, int currentPage){
-        return new PageResponse<>(content, totalItems, totalPages, currentPage);
-    }
+    boolean hasNext; //마지막 페이지인지
 }

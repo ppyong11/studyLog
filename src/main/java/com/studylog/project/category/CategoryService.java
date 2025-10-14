@@ -5,6 +5,7 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.board.BoardService;
+import com.studylog.project.global.PageResponse;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.exception.DuplicateException;
 import com.studylog.project.global.exception.NotFoundException;
@@ -39,7 +40,7 @@ public class CategoryService {
     }
 
     //카테고리 전체&키워드 조회
-    public List<CategoryResponse> searchCategories(String keyword, UserEntity user) {
+    public PageResponse<CategoryResponse> searchCategories(String keyword, int page, UserEntity user) {
         QCategoryEntity categoryEntity = QCategoryEntity.categoryEntity;
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(categoryEntity.user.eq(user)); //이거만 해도 전체 카테고리 나옴
@@ -48,6 +49,8 @@ public class CategoryService {
             builder.and(categoryEntity.name.like('%' + keyword + '%'));
         }
 
+        long pageSize= 10;
+        long offset= (page-1) * pageSize; //페이지당 10건씩 반환 (0~9, 10~19)
         List<CategoryResponse> responses = queryFactory
                 .select(Projections.constructor(
                         CategoryResponse.class,
@@ -57,13 +60,20 @@ public class CategoryService {
                 .from(categoryEntity)
                 .where(builder)
                 .orderBy(categoryEntity.name.asc())
+                .offset(offset)
+                .limit(pageSize)
                 .fetch();
 
-        if (responses.isEmpty()) {
-            throw new NotFoundException("카테고리가 존재하지 않습니다."); //기타 카테고리는 필수라서 에러 나감
-        }
+        Long totalItems= queryFactory
+                .select(categoryEntity.count())
+                .from(categoryEntity)
+                .where(builder)
+                .fetchOne();
+
+        boolean hasNext= page * pageSize < totalItems;
+
         //빈 리스트여도 문제 없이 controller에 빈 리스트로 반환돼서 위에서 에러 터뜨림
-        return responses;
+        return new PageResponse<>(responses, totalItems, page, hasNext);
     }
 
     //카테고리 단일 조회

@@ -41,44 +41,27 @@ public class PlanController {
     @Operation(summary = "계획 목록 조회 (범위 조회 시, 메시지 포함)", description = "정렬(sort) 기본 값: 시작일자/카테고리명 오름차순")
     @ApiResponse(responseCode = "200", description = "조회 성공",
             content= @Content(mediaType = "application/json",
-                    array = @ArraySchema(schema= @Schema(implementation = PlanDetailResponse.class))))
+                    array = @ArraySchema(schema= @Schema(implementation = PagePlanResponse.class))))
     @GetMapping("/search")
-    public ResponseEntity<PlanDetailResponse> searchPlans( @RequestParam(required = false) String range,
-                                          @RequestParam(required = false) LocalDate startDate,
-                                          @RequestParam(required = false) LocalDate endDate,
-                                          @RequestParam(required = false) String category,
-                                          @RequestParam(required = false) String keyword,
-                                          @RequestParam(name="status", required = false) String statusStr,
-                                          @RequestParam(required = false) List<String> sort,
-                                          @AuthenticationPrincipal CustomUserDetail user) {
-        //range 있으면 달성률+메시지 함께 반환
-        //없으면 Plans만 반환
-        range= range == null? null:range.trim().toLowerCase();
-        if(range != null) {
-            //공통
-            if(startDate == null || endDate == null)
-                throw new BadRequestException("조회 범위를 지정한 경우, 시작일과 종료일은 필수입니다.");
+    public ResponseEntity<PagePlanResponse> searchTablePlans(@RequestParam(required = false) LocalDate startDate,
+                                                        @RequestParam(required = false) LocalDate endDate,
+                                                        @RequestParam(required = false) String category,
+                                                        @RequestParam(required = false) String keyword,
+                                                        @RequestParam(name="status", required = false) String statusStr,
+                                                        @RequestParam(required = false) List<String> sort,
+                                                        @RequestParam(required = false) Integer page,
+                                                        @AuthenticationPrincipal CustomUserDetail user) {
 
-            switch (range){
-                case "day" -> {
-                    if(!startDate.equals(endDate)) throw new BadRequestException("일간 조회는 시작, 종료 일자가 같아야 합니다.");
-                }
-                case "week" -> {
-                    if(startDate.getDayOfWeek() != DayOfWeek.MONDAY) throw new BadRequestException("주간 조회는 시작 요일이 월요일이어야 합니다");
-                    if(!endDate.equals(startDate.plusDays(6))) throw new BadRequestException("주간 조회는 월~일(7일) 범위여야 합니다.");
-                }
-                case "month" -> {
-                    if(startDate.getDayOfMonth() != 1) throw new BadRequestException("월간 조회는 시작일이 1일이어야 합니다.");
-                    LocalDate monthEndDate= startDate.withDayOfMonth(startDate.lengthOfMonth());
-                    if(!endDate.equals(monthEndDate)) throw new BadRequestException("월간 조회는 해당 월의 마지막 날까지 조회해야 합니다.");
-                }
-                default -> throw new BadRequestException("조회 범위는 day, week, month 중 하나여야 합니다."); //"" 포함 이상한 값 다 걸림
-            }
+        if(page == null || page < 1) throw new BadRequestException("잘못된 페이지 값입니다.");
+
+        if(sort != null){
+            if(sort.size() != 2) throw new BadRequestException("잘못된 정렬 값입니다.");
         }
 
         List<Long> categoryList = new ArrayList<>();
         Boolean status = null; //null값 필요해서 객체 타입으로
-        if (sort == null || sort.isEmpty()) { //null or 빈 리스트
+
+        if (sort == null) { //null or 빈 리스트
             sort = List.of("date,asc", "category,asc"); //기본값 설정
         }
         if (endDate != null && startDate == null) {
@@ -106,8 +89,8 @@ public class PlanController {
         //start 값 없으면 당일로 설정
         if(startDate == null) startDate= LocalDate.now();
 
-        PlanDetailResponse response= planService.searchPlans(user.getUser(), startDate, endDate,
-                categoryList, keyword, status, sort, range);
+        PagePlanResponse response= planService.searchTablePlans(user.getUser(), startDate, endDate,
+                categoryList, keyword, status, sort, page);
         return ResponseEntity.ok(response); //빈 리스트도 보내짐
         }
 

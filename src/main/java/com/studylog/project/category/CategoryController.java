@@ -1,5 +1,6 @@
 package com.studylog.project.category;
 
+import com.studylog.project.global.PageResponse;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.response.CommonResponse;
 import com.studylog.project.jwt.CustomUserDetail;
@@ -33,11 +34,13 @@ public class CategoryController {
         content= @Content(mediaType = "application/json",
         array = @ArraySchema(schema= @Schema(implementation = CategoryResponse.class))))
     @GetMapping("search")
-    public ResponseEntity<List<CategoryResponse>> searchCategories(@RequestParam(required = false) String keyword,
-                                                                   @AuthenticationPrincipal CustomUserDetail user) {
+    public ResponseEntity<PageResponse<CategoryResponse>> searchCategories(@RequestParam(required = false) String keyword,
+                                                                           @RequestParam(required = false) Integer page,
+                                                                           @AuthenticationPrincipal CustomUserDetail user) {
 
-        List<CategoryResponse> categoryList= categoryService.searchCategories(keyword == null ? null : keyword.trim(), user.getUser());
-        return ResponseEntity.ok(categoryList);
+        if(page == null || page < 1) throw new BadRequestException("잘못된 페이지 값입니다.");
+        return ResponseEntity.ok(
+                categoryService.searchCategories(keyword == null ? null : keyword.trim(), page, user.getUser()));
     }
 
     //카테고리 단일 조회

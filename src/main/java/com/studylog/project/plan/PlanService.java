@@ -10,6 +10,7 @@ import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
+import com.studylog.project.global.PageResponse;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.exception.NotFoundException;
 import com.studylog.project.timer.QTimerEntity;
@@ -41,15 +42,14 @@ public class PlanService {
                 plan.getStartDate(), plan.getEndDate(), plan.getMinutes(), plan.isStatus());
     }
 
-    public PlanDetailResponse searchPlans(UserEntity user, LocalDate startDate, LocalDate endDate,
-                               List<Long> categoryList, String keyword, Boolean status, List<String> sort, String range) {
+    public PagePlanResponse searchTablePlans(UserEntity user, LocalDate startDate, LocalDate endDate,
+                                                      List<Long> categoryList, String keyword, Boolean status, List<String> sort,
+                                                      int page) {
         QPlanEntity planEntity = QPlanEntity.planEntity;
-
         //where 조립 빌더
         BooleanBuilder builder = new BooleanBuilder();
 
-        List<OrderSpecifier<?>> orders = new ArrayList<>();
-        OrderSpecifier<?> dateOrder = null;
+        OrderSpecifier<?>[] orders= new OrderSpecifier[2];
 
         for(String s : sort){
             String[] arr= s.split(",");
@@ -64,17 +64,13 @@ public class PlanService {
 
             switch (field){
                 case "date" ->
-                    dateOrder= value.equals("desc")? planEntity.startDate.desc() : planEntity.startDate.asc();
+                    orders[0]= value.equals("desc")? planEntity.startDate.desc() : planEntity.startDate.asc();
                 case "category" ->
-                    orders.add(value.equals("desc")? planEntity.category.name.desc() : planEntity.category.name.asc());
+                    orders[1]= value.equals("desc")? planEntity.category.name.desc() : planEntity.category.name.asc();
                 default -> throw new BadRequestException("지원하지 않는 정렬입니다.");
             }
         }
-
-        //date 정렬 맨 앞으로 (우선)
-        if(dateOrder != null){
-            orders.add(0, dateOrder); //카테고리가 index 0에 있다면 뒤로 가짐
-        }
+        if(orders[0] == null || orders[1] == null) throw new BadRequestException("지원하지 않는 정렬입니다.");
 
         builder.and(planEntity.user.eq(user)); //유저 것만 조회 결과로
         if(startDate != null) {
@@ -96,45 +92,34 @@ public class PlanService {
             builder.and(planEntity.status.eq(status));
         }
 
-        List<PlanResponse> planResponse= queryFactory
-                .select(Projections.constructor(
-                        PlanResponse.class,
-                        planEntity.id,
-                        planEntity.plan_name,
-                        planEntity.plan_memo,
-                        planEntity.category.name,
-                        planEntity.startDate,
-                        planEntity.endDate,
-                        planEntity.minutes,
-                        planEntity.status
-                ))
-                .from(planEntity)
-                .where(builder)
-                .orderBy(orders.toArray(new OrderSpecifier[0]))
-                .fetch(); //전체 결과 반환 (List<planResponse> 타입), 결과 없을 시 빈 리스트 (Null 반환 X)
-
-        long[] planCount= getPlanCounts(builder);
-        long totalCount= planCount[0];
-        long achievedCount= planCount[1];
-
-        //일, 주, 월 범위일 때만 메시지 함께 반환
-        double rate = totalCount == 0 ? 0.0 : (double) achievedCount / totalCount * 100;
-        String totalStudyTime= totalStudyTime(builder);
-
-        if(range == null) return PlanDetailResponse.toDto(planResponse, achievedCount, totalCount, rate, null, totalStudyTime); //메시지는 null 처리
-
-        String message= returnMessage(user.getNickname(), range, rate, totalCount);
-        return PlanDetailResponse.toDto(planResponse, achievedCount, totalCount, rate, message, totalStudyTime);
+        return getPagePlanResponse(planEntity, builder, orders, page, user, null); //range: 일, 주, 월
     }
 
-    public PlanDetailResponse returnMainPage(UserEntity user, LocalDate today, boolean weekly){
+    public PagePlanResponse MainDailyPlans(UserEntity user, LocalDate today, int page){
+        QPlanEntity planEntity= QPlanEntity.planEntity;
+
+        OrderSpecifier<?>[] orders= {
+                planEntity.startDate.asc(),
+                planEntity.category.name.asc()
+        };
+
+        BooleanBuilder builder= new BooleanBuilder();
+
+        builder.and(planEntity.startDate.loe(today)); //<=
+        builder.and(planEntity.endDate.goe(today)); // >=
+
+
+        return getPagePlanResponse(planEntity, builder, orders, page, user, "일");
+    }
+
+    /*
+    public PagePlanResponse MainPage(UserEntity user, LocalDate today, int page){
         QPlanEntity planEntity= QPlanEntity.planEntity;
         BooleanBuilder builder= new BooleanBuilder();
         LocalDate weeklyMon;
         LocalDate weeklySun;
-        String range;
 
-        builder.and(planEntity.user.eq(user)); //
+        builder.and(planEntity.user.eq(user));
         if(weekly){ //startDate가 언제든 그 주의 월요일과 일요일까지 조회
             weeklyMon= today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
             weeklySun= today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
@@ -149,6 +134,16 @@ public class PlanService {
             range= "day";
         }
 
+
+        return getPagePlanResponse(planEntity, builder, order, page, user)
+    }*/
+
+    private PagePlanResponse getPagePlanResponse (QPlanEntity planEntity, BooleanBuilder builder, OrderSpecifier<?>[] orders,
+                                                  int page, UserEntity user,String range){
+
+        long pageSize= 10;
+        long offset= (page-1) * pageSize; //0~9, 10~19
+
         List<PlanResponse> planResponse= queryFactory
                 .select(Projections.constructor(
                         PlanResponse.class,
@@ -161,28 +156,31 @@ public class PlanService {
                         planEntity.minutes,
                         planEntity.status
                 ))
-                .from(planEntity) //select * from planEntity
+                .from(planEntity)
                 .where(builder)
-                .orderBy(planEntity.startDate.asc(), planEntity.category.name.asc())
+                .orderBy(orders)
+                .offset(offset)
+                .limit(pageSize)
                 .fetch(); //전체 결과 반환 (List<planResponse> 타입), 결과 없을 시 빈 리스트 (Null 반환 X)
 
         long[] planCount= getPlanCounts(builder);
-        long totalCount= planCount[0];
-        long achievedCount= planCount[1];
+        long total= planCount[0];
+        long achieved= planCount[1];
 
         //일, 주, 월 범위일 때만 메시지 함께 반환
-        double rate = totalCount == 0 ? 0.0 : (double) achievedCount / totalCount * 100;
-
-        String message= returnMessage(user.getNickname(), range, rate, totalCount);
+        double rate = total == 0 ? 0.0 : (double) achieved / total * 100;
         String totalStudyTime= totalStudyTime(builder);
-        return PlanDetailResponse.toDto(planResponse, achievedCount, totalCount, rate, message, totalStudyTime);
+        boolean hasNext= page * pageSize < total;
+
+        String message= returnMessage(user.getNickname(), rate, total, range);
+        return PagePlanResponse.toDto(planResponse, achieved, total, rate, message, totalStudyTime, page, hasNext);
     }
 
     private long[] getPlanCounts(BooleanBuilder builder){
         QPlanEntity planEntity= QPlanEntity.planEntity;
 
         NumberExpression<Long> totalExpr= planEntity.count();
-        NumberExpression<Long> achievedExpr=                         new CaseBuilder()
+        NumberExpression<Long> achievedExpr= new CaseBuilder()
                 .when(planEntity.status.isTrue())
                 .then(1L)
                 .otherwise(0L)
@@ -222,14 +220,16 @@ public class PlanService {
                 .where(builder)
                 .fetchOne();
 
-        long totalSeconds = totalSecondsDecimal == null ? 0L : totalSecondsDecimal.longValue();
+        long totalSeconds = totalSecondsDecimal == null ? 0L : totalSecondsDecimal;
         long hours= totalSeconds / 3600;
         long minutes= (totalSeconds % 3600) /60;
         long seconds= totalSeconds % 60;
         return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 
-    private String returnMessage(String nickname, String range, double rate, long total){
+    private String returnMessage(String nickname, double rate, long total, String range){
+        if(range == null) return null;
+
         //range는 day, week, month만 받음 (컨트롤러에서 분기 처리)
         String unit= range.equals("week")? "주":"달";
         if(total == 0) return "해당 일자에 등록된 계획이 없어요.";
