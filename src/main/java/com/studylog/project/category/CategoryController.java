@@ -1,6 +1,7 @@
 package com.studylog.project.category;
 
 import com.studylog.project.global.PageResponse;
+import com.studylog.project.global.ScrollResponse;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.response.CommonResponse;
 import com.studylog.project.jwt.CustomUserDetail;
@@ -34,9 +35,9 @@ public class CategoryController {
         content= @Content(mediaType = "application/json",
         array = @ArraySchema(schema= @Schema(implementation = CategoryResponse.class))))
     @GetMapping("search")
-    public ResponseEntity<PageResponse<CategoryResponse>> searchCategories(@RequestParam(required = false) String keyword,
-                                                                           @RequestParam(required = false) Integer page,
-                                                                           @AuthenticationPrincipal CustomUserDetail user) {
+    public ResponseEntity<ScrollResponse<CategoryResponse>> searchCategories(@RequestParam(required = false) String keyword,
+                                                                             @RequestParam(required = false) Integer page,
+                                                                             @AuthenticationPrincipal CustomUserDetail user) {
 
         if(page == null || page < 1) throw new BadRequestException("잘못된 페이지 값입니다.");
         return ResponseEntity.ok(

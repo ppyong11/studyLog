@@ -1,8 +1,7 @@
 package com.studylog.project.timer;
 
-import com.studylog.project.Lap.LapResponse;
-import com.studylog.project.board.BoardDetailResponse;
 import com.studylog.project.global.CommonUtil;
+import com.studylog.project.global.PageResponse;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.response.CommonResponse;
 import com.studylog.project.jwt.CustomUserDetail;
@@ -51,24 +50,33 @@ public class TimerController {
             array = @ArraySchema(schema = @Schema(implementation = TimerResponse.class))))
     })
     @GetMapping("/search")
-    public ResponseEntity<List<TimerResponse>> searchTimer(@RequestParam(required = false) LocalDate startDate,
-                                                     @RequestParam(required = false) LocalDate endDate,
-                                                     @RequestParam(required = false) String category,
-                                                     @RequestParam(required = false) Long plan,
-                                                     @RequestParam(required = false) String keyword,
-                                                     @RequestParam(required = false) String status,
-                                                     @RequestParam(required = false) List<String> sort,
-                                                     @AuthenticationPrincipal CustomUserDetail user) {
+    public ResponseEntity<PageResponse<TimerResponse>> searchTimer(@RequestParam(required = false) LocalDate startDate,
+                                                         @RequestParam(required = false) LocalDate endDate,
+                                                         @RequestParam(required = false) String category,
+                                                         @RequestParam(required = false) Long plan,
+                                                         @RequestParam(required = false) String keyword,
+                                                         @RequestParam(required = false) String status,
+                                                         @RequestParam(required = false) List<String> sort,
+                                                         @RequestParam(required = false) Integer page,
+                                                         @AuthenticationPrincipal CustomUserDetail user) {
+        if(page == null || page < 1)
+            throw new BadRequestException("잘못된 페이지 값입니다.");
         List<Long> categoryList= new ArrayList<>();
         status= status == null? null:status.trim().toUpperCase();
 
-        if (sort == null || sort.isEmpty()) sort= List.of("date,desc", "category,asc", "name,asc");
-        if (endDate != null && startDate == null) throw new BadRequestException("시작 일자는 필수 입력 값입니다.");
-        if (startDate != null && endDate != null) {
-            if (startDate.isAfter(endDate)) {
-                throw new BadRequestException("시작 날짜가 종료 날짜보다 뒤일 수 없습니다.");
-            }
+        if(sort != null && sort.size() != 3){
+            throw new BadRequestException("잘못된 정렬 값입니다.");
         }
+
+        if (sort == null) {
+            sort= List.of("date,desc", "category,asc", "name,asc");
+        }
+
+        if (startDate == null ^ endDate == null) //fasle, true / true, false일 때 들어감
+            throw new BadRequestException("범위 시작 날짜를 입력해 주세요.");
+        if(startDate != null && startDate.isAfter(endDate))
+            throw new BadRequestException("범위 종료 날짜를 입력해 주세요.");
+
         if (category != null && !category.trim().isEmpty()){
             categoryList= CommonUtil.parseAndValidateCategory(category);
         }
@@ -76,9 +84,9 @@ public class TimerController {
             throw new BadRequestException("입력한 상태값이 올바르지 않습니다.");
         }
         keyword= keyword == null ? null : keyword.trim();
-        List<TimerResponse> timerList= timerService.searchTimers(user.getUser(), startDate, endDate, categoryList,
-                plan, keyword, status, sort);
-        return ResponseEntity.ok(timerList);
+        PageResponse<TimerResponse> response= timerService.searchTimers(user.getUser(), startDate, endDate, categoryList,
+                plan, keyword, status, sort, page);
+        return ResponseEntity.ok(response);
     }
 
     //단일 조회
@@ -94,8 +102,11 @@ public class TimerController {
     })
     @GetMapping("/{timerId}")
     public ResponseEntity<TimerDetailResponse> getTimer(@PathVariable("timerId") Long id,
+                                                        @RequestParam(required = false) Integer page,
                                                         @AuthenticationPrincipal CustomUserDetail user) {
-        TimerDetailResponse response = timerService.getTimer(id, user.getUser());
+        if(page == null || page <1)
+            throw new BadRequestException("잘못된 페이지 값입니다."); //랩 페이지
+        TimerDetailResponse response = timerService.getTimer(id, user.getUser(), page);
         return ResponseEntity.ok(response);
     }
 

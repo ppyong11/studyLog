@@ -40,11 +40,9 @@ public class BoardService {
         QBoardEntity boardEntity = QBoardEntity.boardEntity;
         BooleanBuilder builder = new BooleanBuilder();
 
-        List<OrderSpecifier<?>> orders = new ArrayList<>();
-        //sort에 이상한 값 있으면 에러
-        for(String s : sort) {
-            //s가 "title,asc/desc" or "category,asc/desc" 아니면 에러
+        OrderSpecifier<?>[] orders = new OrderSpecifier[3];
 
+        for(String s : sort) {
             String[] arr= s.split(","); //arr[0]= title, arr[1]= asc
             if(arr.length != 2) {
                 throw new BadRequestException("지원하지 않는 정렬입니다.");
@@ -55,14 +53,17 @@ public class BoardService {
                 throw new BadRequestException("지원하지 않는 정렬입니다.");
 
             switch (field) { //->: 자동 break 처리
-                case "title" ->
-                    orders.add(value.equals("desc")? boardEntity.title.desc() : boardEntity.title.asc());
-
+                case "date" ->
+                        orders[0]= value.equals("desc")? boardEntity.upload_at.desc() : boardEntity.upload_at.asc();
                 case "category" ->
-                    orders.add(value.equals("desc")? boardEntity.category.name.desc() : boardEntity.category.name.asc());
+                        orders[1]= value.equals("desc")? boardEntity.category.name.desc() : boardEntity.category.name.asc();
+                case "title" ->
+                    orders[2]= value.equals("desc")? boardEntity.title.desc() : boardEntity.title.asc();
                 default -> throw new BadRequestException("지원하지 않는 정렬입니다."); //field 이상하면 여기서 걸림
             }
         }
+        if(orders[0] == null || orders[1] == null || orders[2] == null)
+            throw new BadRequestException("지원하지 않는 정렬입니다.");
 
         builder.and(boardEntity.user.eq(user));
         if(!categoryList.isEmpty()) {
@@ -87,9 +88,7 @@ public class BoardService {
                 ))
                 .from(boardEntity)
                 .where(builder)
-                .orderBy(orders.toArray(new OrderSpecifier[0])) //orderBy 메서드는 OrderSpecifier "배열"만 받아서 리스트 to 배열하는 과정
-                //길이가 0인 배열을 만들어서 리스트 요소를 그 배열에 넣겠다! -> 타입 맞춰주는 역할로, orders 크기만큼 배열이 새로 생김 (배열은 크기 수정 X)
-                //위에서 list 말고 배열로 만들어도 되는데, 혹시 모를 에러에 방어하기 위해 동적 리스트 활용하나봄 (실무적임)
+                .orderBy(orders)
                 .offset(offset) //이 Index부터 데이터 조회
                 .limit(pageSize) //페이지 사이즈
                 .fetch();
@@ -99,10 +98,11 @@ public class BoardService {
                 .from(boardEntity)
                 .where(builder)
                 .fetchOne(); //count()는 항상 row가 하나씩 있어서 0 이상 반환
+        log.info("{}", totalItems);
 
-        boolean hasNext= page * pageSize < totalItems; //마지막 페이지인지 (경고 무시)
+        long totalPages= (totalItems + pageSize - 1) / pageSize;
 
-        return new PageResponse<>(boardResponses, totalItems ,page, hasNext);
+        return new PageResponse<>(boardResponses, totalItems, totalPages, page, pageSize);
     }
 
     public BoardDetailResponse createBoard(BoardCreateRequest request, UserEntity user) {

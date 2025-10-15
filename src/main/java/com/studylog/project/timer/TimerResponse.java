@@ -1,10 +1,12 @@
 package com.studylog.project.timer;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @AllArgsConstructor
 @Getter
@@ -15,19 +17,24 @@ public class TimerResponse{
     private String timerName;
     @Schema(description = "플랜명", example = "공부 계획")
     private String planName;
+    @Schema(description = "플랜 URL", example = "plans/{plan_id}")
+    private String planUrl;
     @Schema(description = "카테고리명", example = "공부")
     private String categoryName;
-    @Schema(description = "타이머 생성일자", example = "2025-07-12")
-    private LocalDate createDate;
+    @Schema(description = "타이머 생성일자", example = "2025-07-12 20:30:00")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime createAt;
     @Schema(description = "타이머 경과시간", example = "1200")
     private Long elapsed;
     @Schema(description = "타이머 상태", example = "PAUSED")
     private TimerStatus status;
 
+    //plan, category 조인해서 N+1 안 됨
     public static TimerResponse toDto(TimerEntity timer) {
         return new TimerResponse(timer.getId(), timer.getName(),
                 timer.getPlan() == null? null : timer.getPlan().getPlan_name(),
-                timer.getCategory().getName(), timer.getCreateDate(), timer.getElapsed(),
+                timer.getPlan() == null? null : "plans/"+timer.getPlan().getId(),
+                timer.getCategory().getName(), timer.getCreateAt(), timer.getElapsed(),
                 timer.getStatus());
     }
 }

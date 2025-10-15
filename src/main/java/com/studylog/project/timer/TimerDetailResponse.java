@@ -1,7 +1,6 @@
 package com.studylog.project.timer;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.studylog.project.Lap.LapResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,8 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Getter
@@ -20,21 +17,15 @@ public class TimerDetailResponse {
     private Long timerId;
     @Schema(description = "타이머명", example = "테스트")
     private String timerName;
-    //수정창 들어가면 드롭다운 전체 조회됨
-    @Schema(description = "계획 id", example = "5")
-    private Long planId;
     @Schema(description = "계획명", example = "공부 계획")
     private String planName;
-    @Schema(description = "계획 시작일자", example = "2025-07-12")
-    private LocalDate planStartDate;
-    @Schema(description = "계획 종료일자", example = "2025-07-12")
-    private LocalDate planEndDate;
-    @Schema(description = "계획 완료여부", example = "true")
-    private Boolean planStatus;
+    @Schema(description = "계획 url", example = "plans/{id}")
+    private String planUrl;
     @Schema(description = "카테고리명", example = "공부")
     private String categoryName;
-    @Schema(description = "타이머 생성일자", example = "2025-07-12")
-    private LocalDate createDate;
+    @Schema(description = "타이머 생성일자", example = "2025-07-12 20:30:00")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime createAt;
     @Schema(description = "타이머 시작일자", example = "2025-07-12 21:00:00", type = "string")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime startAt;
@@ -48,21 +39,13 @@ public class TimerDetailResponse {
     private Long elapsed;
     @Schema(description = "타이머 상태", example = "PAUSED")
     private TimerStatus status;
-    private List<LapResponse> laps;
 
     public static TimerDetailResponse toDto(TimerEntity timer) {
-        List<LapResponse> laps = timer.getLaps().stream()
-                .map(LapResponse::toDto)
-                .collect(Collectors.toList());
-
         return new TimerDetailResponse(timer.getId(), timer.getName(),
-                timer.getPlan() == null? null: timer.getPlan().getId(),
                 timer.getPlan() == null? null: timer.getPlan().getPlan_name(),
-                timer.getPlan() == null? null: timer.getPlan().getStartDate(),
-                timer.getPlan() == null? null: timer.getPlan().getEndDate(),
-                timer.getPlan() == null? null: timer.getPlan().isStatus(),
-                timer.getCategory().getName(), timer.getCreateDate(),
+                timer.getPlan() == null? null: "plans/" + timer.getPlan().getId(),
+                timer.getCategory().getName(), timer.getCreateAt(),
                 timer.getStartAt() ,timer.getEndAt(), timer.getPauseAt(),
-                timer.getElapsed(), timer.getStatus(), laps);
+                timer.getElapsed(), timer.getStatus());
     }
 }

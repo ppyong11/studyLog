@@ -8,7 +8,7 @@ import java.util.List;
 
 @AllArgsConstructor
 @Getter
-public class PagePlanResponse {
+public class ScrollPlanResponse {
     private List<PlanResponse> planList;
     @Schema(description = "달성 계획 개수", example = "1")
     private long achieved;
@@ -23,10 +23,10 @@ public class PagePlanResponse {
     private int currentPage;
     boolean hasNext;
 
-    public static PagePlanResponse toDto(List<PlanResponse> response, long achieved, long total,
-                                         double rate, String message, String totalStudyTime,
-                                         int page, boolean hasNext){
-        return new PagePlanResponse(response, achieved, total, String.format("%.1f%%", rate), message, totalStudyTime,
+    public static ScrollPlanResponse toDto(List<PlanResponse> response, long achieved, long total,
+                                           double rate, String message, String totalStudyTime,
+                                           int page, boolean hasNext){
+        return new ScrollPlanResponse(response, achieved, total, String.format("%.1f%%", rate), message, totalStudyTime,
                 page, hasNext);
     }
 }

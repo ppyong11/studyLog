@@ -10,7 +10,6 @@ import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
-import com.studylog.project.global.PageResponse;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.exception.NotFoundException;
 import com.studylog.project.timer.QTimerEntity;
@@ -20,10 +19,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.time.DayOfWeek;
+
 import java.time.LocalDate;
-import java.time.temporal.TemporalAdjusters;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -42,9 +39,9 @@ public class PlanService {
                 plan.getStartDate(), plan.getEndDate(), plan.getMinutes(), plan.isStatus());
     }
 
-    public PagePlanResponse searchTablePlans(UserEntity user, LocalDate startDate, LocalDate endDate,
-                                                      List<Long> categoryList, String keyword, Boolean status, List<String> sort,
-                                                      int page) {
+    public ScrollPlanResponse searchTablePlans(UserEntity user, LocalDate startDate, LocalDate endDate,
+                                               List<Long> categoryList, String keyword, Boolean status, List<String> sort,
+                                               int page) {
         QPlanEntity planEntity = QPlanEntity.planEntity;
         //where 조립 빌더
         BooleanBuilder builder = new BooleanBuilder();
@@ -92,10 +89,10 @@ public class PlanService {
             builder.and(planEntity.status.eq(status));
         }
 
-        return getPagePlanResponse(planEntity, builder, orders, page, user, null); //range: 일, 주, 월
+        return getScrollPlanResponse(planEntity, builder, orders, page, user, null); //range: 일, 주, 월
     }
 
-    public PagePlanResponse MainDailyPlans(UserEntity user, LocalDate today, int page){
+    public ScrollPlanResponse MainDailyPlans(UserEntity user, LocalDate today, int page){
         QPlanEntity planEntity= QPlanEntity.planEntity;
 
         OrderSpecifier<?>[] orders= {
@@ -109,7 +106,7 @@ public class PlanService {
         builder.and(planEntity.endDate.goe(today)); // >=
 
 
-        return getPagePlanResponse(planEntity, builder, orders, page, user, "일");
+        return getScrollPlanResponse(planEntity, builder, orders, page, user, "일");
     }
 
     /*
@@ -138,8 +135,8 @@ public class PlanService {
         return getPagePlanResponse(planEntity, builder, order, page, user)
     }*/
 
-    private PagePlanResponse getPagePlanResponse (QPlanEntity planEntity, BooleanBuilder builder, OrderSpecifier<?>[] orders,
-                                                  int page, UserEntity user,String range){
+    private ScrollPlanResponse getScrollPlanResponse (QPlanEntity planEntity, BooleanBuilder builder, OrderSpecifier<?>[] orders,
+                                                    int page, UserEntity user, String range){
 
         long pageSize= 10;
         long offset= (page-1) * pageSize; //0~9, 10~19
@@ -173,7 +170,7 @@ public class PlanService {
         boolean hasNext= page * pageSize < total;
 
         String message= returnMessage(user.getNickname(), rate, total, range);
-        return PagePlanResponse.toDto(planResponse, achieved, total, rate, message, totalStudyTime, page, hasNext);
+        return ScrollPlanResponse.toDto(planResponse, achieved, total, rate, message, totalStudyTime, page, hasNext);
     }
 
     private long[] getPlanCounts(BooleanBuilder builder){

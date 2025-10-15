@@ -57,12 +57,16 @@ public class BoardController {
                                                      @RequestParam(required = false) List<String> sort,
                                                      @RequestParam(required = false) Integer page,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
-        if (page == null || page < 1 )
+        if (page == null || page < 1)
             throw new BadRequestException("잘못된 페이지 값입니다.");
         List<Long> categoryList = new ArrayList<>(); //빈 리스트
-        //플랜도 바꾸기 (sort)
-        if (sort == null || sort.isEmpty()) { //null or 빈 리스트
-            sort = List.of("title,asc", "category,asc"); //기본값 설정
+
+        if(sort != null && sort.size() != 3){
+            throw new BadRequestException("잘못된 정렬 값입니다.");
+        }
+
+        if (sort == null) { //null or 빈 리스트
+            sort = List.of("date,desc", "category,asc", "title,asc"); //기본값 설정
         }
         log.info("sort: {}", sort.size());
         if (category != null && !category.trim().isEmpty()) {

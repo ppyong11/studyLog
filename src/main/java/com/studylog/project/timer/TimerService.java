@@ -4,11 +4,9 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.studylog.project.Lap.LapEntity;
-import com.studylog.project.Lap.LapRepository;
-import com.studylog.project.Lap.LapRequest;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
+import com.studylog.project.global.PageResponse;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.exception.NotFoundException;
 import com.studylog.project.notification.NotificationEntity;
@@ -23,9 +21,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,24 +34,19 @@ import java.util.Optional;
 @Transactional
 public class TimerService {
     private final TimerRepository timerRepository;
-    private final LapRepository lapRepository;
     private final PlanRepository planRepository;
     private final CategoryRepository categoryRepository;
     private final SseEmitterService sseEmitterService;
     private final JPAQueryFactory queryFactory;
     private final NotificationRepository notificationRepository;
-
-    private record PlanAndCategory(PlanEntity plan, CategoryEntity category) {} //이 클래스에서만 쓸 거라 static 안 붙임
-
     //조건 조회
-    public List<TimerResponse> searchTimers(UserEntity user, LocalDate startDate, LocalDate endDate,
-                                           List<Long> categoryList, Long planId, String keyword, String status, List<String> sort) {
+    public PageResponse<TimerResponse> searchTimers(UserEntity user, LocalDate startDate, LocalDate endDate,
+                                                    List<Long> categoryList, Long planId, String keyword, String status, List<String> sort,
+                                                    int page) {
         QTimerEntity timerEntity = QTimerEntity.timerEntity;
         BooleanBuilder builder = new BooleanBuilder();
 
-        List<OrderSpecifier<?>> orders= new ArrayList<>();
-        OrderSpecifier<?> dateOrder= null;
-        OrderSpecifier<?> categoryOrder= null;
+        OrderSpecifier<?>[] orders= new OrderSpecifier[3];
 
         for(String s:sort){
             String[] arr= s.split(",");
@@ -63,29 +57,25 @@ public class TimerService {
 
             switch (field){
                 case "date" ->
-                    dateOrder= value.equals("desc")? timerEntity.createDate.desc(): timerEntity.createDate.asc();
+                    orders[0]= value.equals("desc")? timerEntity.createAt.desc(): timerEntity.createAt.asc();
                 case "category" ->
-                    categoryOrder= value.equals("desc")? timerEntity.category.name.desc():timerEntity.category.name.asc();
+                    orders[1]= value.equals("desc")? timerEntity.category.name.desc():timerEntity.category.name.asc();
                 case "name" ->
-                    orders.add(value.equals("desc")? timerEntity.name.desc(): timerEntity.name.asc());
+                    orders[2]= value.equals("desc")? timerEntity.name.desc(): timerEntity.name.asc();
                 default -> throw new BadRequestException("지원하지 않는 정렬입니다.");
             }
         }
+        if(orders[0] == null || orders[1] == null || orders[2] == null)
+            throw new BadRequestException("지원하지 않는 정렬입니다.");
 
-        //date, category, name 정렬로 정리
-        if(dateOrder != null && categoryOrder != null) {
-            orders.add(0, dateOrder);
-            orders.add(1, categoryOrder);
-        }
         builder.and(timerEntity.user.eq(user));
-        if(startDate != null) {
-            if (endDate != null) {
-                //start~end
-                builder.and(timerEntity.createDate.loe(endDate));
-            }
-            //start~전 일자
-            builder.and(timerEntity.createDate.goe(startDate));
+
+        if(startDate != null) { //startDate 있으면 endDate 있음 (컨트롤러에서 검증)
+            //Date to DateTime (MIN: 00:00:00, MAX: 23:59:59)
+            builder.and(timerEntity.createAt.goe(startDate.atTime(LocalTime.MIN))); // >=
+            builder.and(timerEntity.createAt.loe(endDate.atTime(LocalTime.MAX))); // <=
         }
+
         if(planId != null) {
             builder.and(timerEntity.plan.id.eq(planId));
         }
@@ -101,27 +91,41 @@ public class TimerService {
             builder.and(timerEntity.status.eq(timerStatus));
         }
 
-        return queryFactory
+        long pageSize= 20;
+        long offset= (page - 1) * pageSize;
+
+       List<TimerResponse> timerResponses= queryFactory
                 .select(Projections.constructor(
                         TimerResponse.class,
                         timerEntity.id,
                         timerEntity.name,
                         timerEntity.plan.plan_name,
                         timerEntity.category.name,
-                        timerEntity.createDate,
+                        timerEntity.createAt,
                         timerEntity.elapsed,
                         timerEntity.status
                 ))
                 .from(timerEntity)
                 .where(builder)
-                .orderBy(orders.toArray(new OrderSpecifier[0])) //OrderSpecifier<?> 타입의 배열 반환
+                .orderBy(orders)
+                .offset(offset)
+                .limit(pageSize)
                 .fetch();
+
+        Long totalItems= queryFactory
+                .select(timerEntity.count())
+                .from(timerEntity)
+                .where(builder)
+                .fetchOne();
+
+        long totalPages= (totalItems + pageSize - 1) / pageSize;
+        return new PageResponse<>(timerResponses, totalItems, totalPages, page, pageSize);
     }
 
     //단일 조회
-    public TimerDetailResponse getTimer(Long id, UserEntity user) {
+    public TimerDetailResponse getTimer(Long id, UserEntity user, int page) {
         TimerEntity timer= getTimerByUserAndId(user, id);
-        return TimerDetailResponse.toDto(timer); //여기서 laps도 뽑아옴
+        return TimerDetailResponse.toDto(timer);
     }
 
     public TimerDetailResponse createTimer(TimerRequest request, UserEntity user) {
@@ -210,13 +214,7 @@ public class TimerService {
         TimerEntity timer= getTimerByUserAndId(user, id);
         if(!timer.getStatus().equals(TimerStatus.RUNNING))
             throw new BadRequestException("실행 중인 타이머가 아닙니다.");
-        //실행 중인 랩 가져오기
-        lapRepository.findByTimerAndStatus(timer, TimerStatus.RUNNING)
-                        .ifPresent(lap -> {
-                            lap.updateElapsed(TimerLapUtils.getTotalElapsed(lap));
-                            lap.updateSyncedAt();
-                        });
-        timer.updateElapsed(TimerLapUtils.getTotalElapsed(timer)); //누적 경과+startAt+동기화 시간
+        timer.updateElapsed(getTotalElapsed(timer)); //누적 경과+startAt+동기화 시간
         timer.updateSyncedAt(); //동기화
         checkCompletion(timer, user, true);
         return TimerDetailResponse.toDto(timer);
@@ -227,19 +225,12 @@ public class TimerService {
         TimerEntity timer= getTimerByUserAndId(user, id);
 
         switch (timer.getStatus()) { //디폴트 안 써도 됨
-            case RUNNING -> {
-                timer.pause();
-                lapRepository.findByTimerAndStatus(timer, TimerStatus.RUNNING)
-                        .ifPresent(lap -> {
-                            lap.pause();
-                            lap.updateElapsed(TimerLapUtils.getTotalElapsed(lap));
-                        });
-            }
+            case RUNNING -> timer.pause();
             case ENDED -> throw new BadRequestException("종료된 타이머는 정지가 불가합니다.");
             default -> throw new BadRequestException("실행 중인 타이머가 아닙니다.");
         }
 
-        timer.updateElapsed(TimerLapUtils.getTotalElapsed(timer)); //누적 시간 갱신
+        timer.updateElapsed(getTotalElapsed(timer)); //누적 시간 갱신
         if(timer.getPlan() != null) checkCompletion(timer, user, false);
         return TimerDetailResponse.toDto(timer);
     }
@@ -250,25 +241,11 @@ public class TimerService {
         switch (timer.getStatus()) { //디폴트 안 써도 됨
             case RUNNING -> {
                 timer.end(LocalDateTime.now());
-                timer.updateElapsed(TimerLapUtils.getTotalElapsed(timer)); //누적 시간 갱신
+                timer.updateElapsed(getTotalElapsed(timer)); //누적 시간 갱신
             }
             case ENDED -> throw new BadRequestException("이미 종료된 타이머입니다.");
             case READY -> throw new BadRequestException("실행 중인 타이머가 아닙니다.");
             case PAUSED -> timer.end(timer.getPauseAt()); //정지된 타이머라면 정지 시간 == 종료 시간 (누적 시간 갱신은 정지할 때 함)
-        }
-        List<LapEntity> laps= lapRepository.findAllByTimer(timer);
-        for (LapEntity lap : laps) {
-            switch (lap.getStatus()) {
-                case RUNNING -> {
-                    lap.end(LocalDateTime.now());
-                    lap.updateElapsed(TimerLapUtils.getTotalElapsed(lap));
-                }
-                case PAUSED -> {
-                    lap.end(lap.getPauseAt()); //pasue -> end는 pauseAt == endAt
-                    lap.updateElapsed(TimerLapUtils.getTotalElapsed(lap));
-                }
-                case READY -> lap.end(null);
-            }
         }
         if(timer.getPlan() != null) checkCompletion(timer, user, false);
         return TimerDetailResponse.toDto(timer);
@@ -281,107 +258,14 @@ public class TimerService {
         switch (timer.getStatus()) {
             case ENDED -> throw new BadRequestException("종료된 타이머는 초기화가 불가합니다.");
             case READY -> throw new BadRequestException("초기화 상태입니다.");
-            default -> {
-                timer.reset();
-                List<LapEntity> laps= lapRepository.findAllByTimer(timer);
-                for (LapEntity lap : laps) {
-                    lap.reset();
-                }
-            }
+            default -> timer.reset();
+
         }
-        log.info("타이머 초기화 완료");
         return TimerDetailResponse.toDto(timer);
     }
-    public TimerDetailResponse startLap(Long timerId, Long lapId, UserEntity user) {
-        LapEntity lap= getLapAndValidate(lapId, user, timerId); //연관엔티티 반환
-        if(lap.getTimer().getId().equals(timerId))
-            throw new BadRequestException("해당 타이머에 존재하지 않는 랩입니다.");
-        TimerEntity timer= lap.getTimer();
-
-        if(!lap.getTimer().getStatus().equals(TimerStatus.RUNNING))
-            throw new BadRequestException("실행 중인 타이머가 아닙니다.");
-
-        //실행 타이머라면 랩 상태 체크
-        if(lap.getStatus().equals(TimerStatus.RUNNING))
-            throw new BadRequestException("이미 실행 중인 랩입니다.");
-
-        if(lapRepository.existsByTimerAndStatus(timer, TimerStatus.RUNNING))
-            throw new BadRequestException("실행 중인 랩이 있습니다. 정지/종료 후 다시 시도해 주세요.");
-
-        if(lap.getStatus().equals(TimerStatus.ENDED))
-            throw new BadRequestException("종료된 랩은 재실행이 불가합니다.");
-
-        lap.start();
-        return TimerDetailResponse.toDto(timer);
-    }
-
-    public TimerDetailResponse pauseLap(Long timerId, Long lapId, UserEntity user) {
-        LapEntity lap= getLapAndValidate(lapId, user, timerId); //연관엔티티 반환
-        TimerEntity timer= lap.getTimer();
-
-        switch (lap.getStatus()) {
-            case RUNNING -> lap.pause();
-            case ENDED -> throw new BadRequestException("종료된 랩은 재실행이 불가합니다.");
-            default -> throw new BadRequestException("실행 중인 랩이 아닙니다.");
-        }
-
-        lap.updateElapsed(TimerLapUtils.getTotalElapsed(lap));
-        return TimerDetailResponse.toDto(timer);
-    }
-
-    public TimerDetailResponse endLap(Long timerId, Long lapId, UserEntity user) {
-        LapEntity lap= getLapAndValidate(lapId, user, timerId); //연관엔티티 반환
-        TimerEntity timer= lap.getTimer();
-
-        switch (lap.getStatus()) { //디폴트 안 써도 됨
-            case RUNNING -> {
-                lap.end(LocalDateTime.now());
-                lap.updateElapsed(TimerLapUtils.getTotalElapsed(lap)); //누적 시간 갱신
-            }
-            case ENDED -> throw new BadRequestException("이미 종료된 랩입니다.");
-            case READY -> throw new BadRequestException("실행 중인 랩이 아닙니다.");
-            case PAUSED -> lap.end(lap.getPauseAt()); //정지된 타이머라면 정지 시간 == 종료 시간 (누적 시간 갱신은 정지할 때 함)
-        }
-
-        return TimerDetailResponse.toDto(timer);
-    }
-    //랩 추가는 실행, 정지 상관 X, 랩 실행은 무조건 타이머 실행 상태
-    public TimerDetailResponse createLap(Long timerId, LapRequest request, UserEntity user) {
-        //timer 영속성 컨텍스트에 관리돼서 lap save 하면 컨텍스트에도 새로운 LapEntity 등록됨
-        //랩 엔티티 만들 때 타이머만 잘 들어가면 됨
-        TimerEntity timer= getTimerByUserAndId(user, timerId);
-        if(timer.getStatus().equals(TimerStatus.ENDED))
-            throw new BadRequestException("종료된 타이머는 랩 생성이 불가합니다.");
-        //타이머에 동일 랩 네임 X
-        if(lapRepository.existsByTimerIdAndName(timerId, request.getName().trim()))
-            throw new BadRequestException("해당 랩명이 존재합니다.");
-        //존재 X 랩명이면
-        LapEntity lap= request.toEntity(request, timer);
-        lapRepository.save(lap); //id 필드도 다 참
-        return TimerDetailResponse.toDto(timer);
-    }
-
-    public TimerDetailResponse updateLap(Long timerId, Long lapId, LapRequest request, UserEntity user) {
-        LapEntity lap= getLapAndValidate(lapId, user, timerId);
-        if(lapRepository.existsByTimerIdAndName(timerId, request.getName().trim())) {
-            if(!lap.getName().equals(request.getName().trim()))
-                throw new BadRequestException("해당 랩명이 존재합니다.");
-        }
-        lap.updateName(request.getName());
-        return TimerDetailResponse.toDto(lap.getTimer());
-    }
-
-    //타이머 전체 기록에 영향 X
-    public TimerDetailResponse deleteLap(Long timerId, Long lapId, UserEntity user) {
-        LapEntity lap= getLapAndValidate(lapId, user, timerId);
-        lapRepository.delete(lap);
-        lapRepository.flush(); //delete 쿼리 안 나가서 넣음
-        return TimerDetailResponse.toDto(lap.getTimer());
-    }
-
 
     public TimerEntity getTimerByUserAndId(UserEntity user, Long id) {
-        return timerRepository.getTimerWithLapPlanCategory(user, id).orElseThrow(() -> new NotFoundException("존재하지 않는 타이머입니다."));
+        return timerRepository.getTimerWithPlanCategory(user, id).orElseThrow(() -> new NotFoundException("존재하지 않는 타이머입니다."));
     }
 
     private void checkPlan(PlanEntity plan, TimerEntity timer, TimerRequest request) {
@@ -395,6 +279,30 @@ public class TimerService {
             if(!timer.getPlan().getCategory().getId().equals(request.getCategory()))
                 throw new BadRequestException("입력된 카테고리가 계획 카테고리와 일치하지 않습니다.");
         }
+    }
+
+    public static Long getTotalElapsed(TimerEntity entity) {
+        LocalDateTime time= null;
+        LocalDateTime startAt;
+
+        if(entity.getSyncedAt() == null){ //동기화 전
+            startAt = entity.getStartAt();
+            switch (entity.getStatus()) { //디폴트 안 써도 됨
+                case RUNNING -> time = LocalDateTime.now();
+                case PAUSED -> time= entity.getPauseAt();
+                case ENDED -> time= entity.getEndAt();
+            }
+        } else {
+            startAt = entity.getSyncedAt();
+            switch (entity.getStatus()) { //디폴트 안 써도 됨
+                case RUNNING -> time = LocalDateTime.now();
+                case PAUSED -> time= entity.getPauseAt();
+                case ENDED -> time= entity.getEndAt();
+            }
+        }
+
+        Duration duration= Duration.between(startAt, time);
+        return duration.getSeconds() + entity.getElapsed();
     }
 
     private void checkCompletion(TimerEntity timer, UserEntity user, boolean isSyncCheck){
@@ -434,22 +342,13 @@ public class TimerService {
         List<TimerEntity> runningTimerList= timerRepository.findAllByStatus(TimerStatus.RUNNING);
         //timer 영속상태
         for (TimerEntity timer : runningTimerList) {
-            timer.updateElapsed(TimerLapUtils.getTotalElapsed(timer)); //누적 경과+startAt+동기화 시간
+            timer.updateElapsed(getTotalElapsed(timer)); //누적 경과+startAt+동기화 시간
             timer.updateSyncedAt(); //자동 동기화
             if(timer.getPlan() != null){ //타이머에 계획이 있다면
                checkCompletion(timer, timer.getUser(), true);
             }
-            lapRepository.findByTimerAndStatus(timer, TimerStatus.RUNNING)
-                    .ifPresent(lap -> {
-                        lap.updateElapsed(TimerLapUtils.getTotalElapsed(lap));
-                        lap.updateSyncedAt();
-                    }); //타이머에 실행 중인 랩도 있다면 같이 동기화 처리
         }
     }
 
-    private LapEntity getLapAndValidate(Long lapId, UserEntity user, Long timerId){
-        return lapRepository.getLapWithTimer(lapId, user, timerId)
-                .orElseThrow(()-> new NotFoundException("해당 타이머에 존재하지 않는 랩입니다."));
-    }
 }
 

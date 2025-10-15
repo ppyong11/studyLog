@@ -18,7 +18,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,21 +40,21 @@ public class PlanController {
     @Operation(summary = "계획 목록 조회 (범위 조회 시, 메시지 포함)", description = "정렬(sort) 기본 값: 시작일자/카테고리명 오름차순")
     @ApiResponse(responseCode = "200", description = "조회 성공",
             content= @Content(mediaType = "application/json",
-                    array = @ArraySchema(schema= @Schema(implementation = PagePlanResponse.class))))
+                    array = @ArraySchema(schema= @Schema(implementation = ScrollPlanResponse.class))))
     @GetMapping("/search")
-    public ResponseEntity<PagePlanResponse> searchTablePlans(@RequestParam(required = false) LocalDate startDate,
-                                                        @RequestParam(required = false) LocalDate endDate,
-                                                        @RequestParam(required = false) String category,
-                                                        @RequestParam(required = false) String keyword,
-                                                        @RequestParam(name="status", required = false) String statusStr,
-                                                        @RequestParam(required = false) List<String> sort,
-                                                        @RequestParam(required = false) Integer page,
-                                                        @AuthenticationPrincipal CustomUserDetail user) {
+    public ResponseEntity<ScrollPlanResponse> searchTablePlans(@RequestParam(required = false) LocalDate startDate,
+                                                               @RequestParam(required = false) LocalDate endDate,
+                                                               @RequestParam(required = false) String category,
+                                                               @RequestParam(required = false) String keyword,
+                                                               @RequestParam(name="status", required = false) String statusStr,
+                                                               @RequestParam(required = false) List<String> sort,
+                                                               @RequestParam(required = false) Integer page,
+                                                               @AuthenticationPrincipal CustomUserDetail user) {
 
         if(page == null || page < 1) throw new BadRequestException("잘못된 페이지 값입니다.");
 
-        if(sort != null){
-            if(sort.size() != 2) throw new BadRequestException("잘못된 정렬 값입니다.");
+        if(sort != null && sort.size() != 2){
+            throw new BadRequestException("잘못된 정렬 값입니다.");
         }
 
         List<Long> categoryList = new ArrayList<>();
@@ -89,7 +88,7 @@ public class PlanController {
         //start 값 없으면 당일로 설정
         if(startDate == null) startDate= LocalDate.now();
 
-        PagePlanResponse response= planService.searchTablePlans(user.getUser(), startDate, endDate,
+        ScrollPlanResponse response= planService.searchTablePlans(user.getUser(), startDate, endDate,
                 categoryList, keyword, status, sort, page);
         return ResponseEntity.ok(response); //빈 리스트도 보내짐
         }

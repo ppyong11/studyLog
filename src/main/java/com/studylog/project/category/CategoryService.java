@@ -6,6 +6,7 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.board.BoardService;
 import com.studylog.project.global.PageResponse;
+import com.studylog.project.global.ScrollResponse;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.exception.DuplicateException;
 import com.studylog.project.global.exception.NotFoundException;
@@ -40,7 +41,7 @@ public class CategoryService {
     }
 
     //카테고리 전체&키워드 조회
-    public PageResponse<CategoryResponse> searchCategories(String keyword, int page, UserEntity user) {
+    public ScrollResponse<CategoryResponse> searchCategories(String keyword, int page, UserEntity user) {
         QCategoryEntity categoryEntity = QCategoryEntity.categoryEntity;
         BooleanBuilder builder = new BooleanBuilder();
         builder.and(categoryEntity.user.eq(user)); //이거만 해도 전체 카테고리 나옴
@@ -73,7 +74,7 @@ public class CategoryService {
         boolean hasNext= page * pageSize < totalItems;
 
         //빈 리스트여도 문제 없이 controller에 빈 리스트로 반환돼서 위에서 에러 터뜨림
-        return new PageResponse<>(responses, totalItems, page, hasNext);
+        return new ScrollResponse<>(responses, totalItems, page, pageSize, hasNext);
     }
 
     //카테고리 단일 조회
