@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @AllArgsConstructor
@@ -28,13 +27,4 @@ public class TimerResponse{
     private Long elapsed;
     @Schema(description = "타이머 상태", example = "PAUSED")
     private TimerStatus status;
-
-    //plan, category 조인해서 N+1 안 됨
-    public static TimerResponse toDto(TimerEntity timer) {
-        return new TimerResponse(timer.getId(), timer.getName(),
-                timer.getPlan() == null? null : timer.getPlan().getPlan_name(),
-                timer.getPlan() == null? null : "plans/"+timer.getPlan().getId(),
-                timer.getCategory().getName(), timer.getCreateAt(), timer.getElapsed(),
-                timer.getStatus());
-    }
 }

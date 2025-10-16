@@ -53,7 +53,7 @@ public class TimerController {
     public ResponseEntity<PageResponse<TimerResponse>> searchTimer(@RequestParam(required = false) LocalDate startDate,
                                                          @RequestParam(required = false) LocalDate endDate,
                                                          @RequestParam(required = false) String category,
-                                                         @RequestParam(required = false) Long plan,
+                                                         @RequestParam(required = false) String planKeyword,
                                                          @RequestParam(required = false) String keyword,
                                                          @RequestParam(required = false) String status,
                                                          @RequestParam(required = false) List<String> sort,
@@ -73,9 +73,9 @@ public class TimerController {
         }
 
         if (startDate == null ^ endDate == null) //fasle, true / true, false일 때 들어감
-            throw new BadRequestException("범위 시작 날짜를 입력해 주세요.");
+            throw new BadRequestException("조회 날짜 범위를 입력해 주세요.");
         if(startDate != null && startDate.isAfter(endDate))
-            throw new BadRequestException("범위 종료 날짜를 입력해 주세요.");
+            throw new BadRequestException("시작 날짜가 종료 날짜보다 뒤일 수 없습니다.");
 
         if (category != null && !category.trim().isEmpty()){
             categoryList= CommonUtil.parseAndValidateCategory(category);
@@ -83,9 +83,10 @@ public class TimerController {
         if (status != null && !VALID_STATUS.contains(status)) { //null 들어가도 문제 X
             throw new BadRequestException("입력한 상태값이 올바르지 않습니다.");
         }
-        keyword= keyword == null ? null : keyword.trim();
+        planKeyword= planKeyword == null? null:planKeyword.trim();
+        keyword= keyword == null? null:keyword.trim();
         PageResponse<TimerResponse> response= timerService.searchTimers(user.getUser(), startDate, endDate, categoryList,
-                plan, keyword, status, sort, page);
+                planKeyword, keyword, status, sort, page);
         return ResponseEntity.ok(response);
     }
 
@@ -102,11 +103,8 @@ public class TimerController {
     })
     @GetMapping("/{timerId}")
     public ResponseEntity<TimerDetailResponse> getTimer(@PathVariable("timerId") Long id,
-                                                        @RequestParam(required = false) Integer page,
                                                         @AuthenticationPrincipal CustomUserDetail user) {
-        if(page == null || page <1)
-            throw new BadRequestException("잘못된 페이지 값입니다."); //랩 페이지
-        TimerDetailResponse response = timerService.getTimer(id, user.getUser(), page);
+        TimerDetailResponse response = timerService.getTimer(id, user.getUser());
         return ResponseEntity.ok(response);
     }
 

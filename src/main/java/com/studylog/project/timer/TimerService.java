@@ -3,6 +3,7 @@ package com.studylog.project.timer;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
@@ -41,12 +42,13 @@ public class TimerService {
     private final NotificationRepository notificationRepository;
     //조건 조회
     public PageResponse<TimerResponse> searchTimers(UserEntity user, LocalDate startDate, LocalDate endDate,
-                                                    List<Long> categoryList, Long planId, String keyword, String status, List<String> sort,
+                                                    List<Long> categoryList, String planKeyword, String keyword, String status, List<String> sort,
                                                     int page) {
         QTimerEntity timerEntity = QTimerEntity.timerEntity;
         BooleanBuilder builder = new BooleanBuilder();
 
         OrderSpecifier<?>[] orders= new OrderSpecifier[3];
+
 
         for(String s:sort){
             String[] arr= s.split(",");
@@ -65,6 +67,7 @@ public class TimerService {
                 default -> throw new BadRequestException("지원하지 않는 정렬입니다.");
             }
         }
+
         if(orders[0] == null || orders[1] == null || orders[2] == null)
             throw new BadRequestException("지원하지 않는 정렬입니다.");
 
@@ -76,8 +79,8 @@ public class TimerService {
             builder.and(timerEntity.createAt.loe(endDate.atTime(LocalTime.MAX))); // <=
         }
 
-        if(planId != null) {
-            builder.and(timerEntity.plan.id.eq(planId));
+        if(planKeyword != null && !planKeyword.isEmpty()) {
+            builder.and(timerEntity.plan.plan_name.like('%' + planKeyword + '%'));
         }
 
         if(!categoryList.isEmpty()) {
@@ -99,13 +102,18 @@ public class TimerService {
                         TimerResponse.class,
                         timerEntity.id,
                         timerEntity.name,
-                        timerEntity.plan.plan_name,
-                        timerEntity.category.name,
+                        timerEntity.plan.plan_name, //외래키로 연결된 다른 테이블 컬럼값 가져오려면 join 필수
+                        Expressions.stringTemplate(
+                                "'plans/' || {0}", timerEntity.plan.id //페이지 URL
+                        ),
+                        timerEntity.category.name, //Projections이라 join 영속성 관리 안 됨 -> 바로 DTO 매핑이기 때문
                         timerEntity.createAt,
                         timerEntity.elapsed,
                         timerEntity.status
                 ))
                 .from(timerEntity)
+                .leftJoin(timerEntity.plan) //select(엔티티) 아니라서 fetchJoin 쓰면 오류남
+                .leftJoin(timerEntity.category)
                 .where(builder)
                 .orderBy(orders)
                 .offset(offset)
@@ -123,7 +131,7 @@ public class TimerService {
     }
 
     //단일 조회
-    public TimerDetailResponse getTimer(Long id, UserEntity user, int page) {
+    public TimerDetailResponse getTimer(Long id, UserEntity user) {
         TimerEntity timer= getTimerByUserAndId(user, id);
         return TimerDetailResponse.toDto(timer);
     }
@@ -259,7 +267,6 @@ public class TimerService {
             case ENDED -> throw new BadRequestException("종료된 타이머는 초기화가 불가합니다.");
             case READY -> throw new BadRequestException("초기화 상태입니다.");
             default -> timer.reset();
-
         }
         return TimerDetailResponse.toDto(timer);
     }
