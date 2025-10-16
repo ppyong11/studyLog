@@ -1,11 +1,9 @@
 package com.studylog.project.category;
 
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.board.BoardService;
-import com.studylog.project.global.PageResponse;
 import com.studylog.project.global.ScrollResponse;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.exception.DuplicateException;
