@@ -1,6 +1,7 @@
 package com.studylog.project.plan;
 
 import com.studylog.project.global.CommonUtil;
+import com.studylog.project.global.ScrollResponse;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.response.CommonResponse;
 import com.studylog.project.jwt.CustomUserDetail;
@@ -57,20 +58,15 @@ public class PlanController {
             throw new BadRequestException("잘못된 정렬 값입니다.");
         }
 
+        sort = sort == null? List.of("date,desc", "category,asc"):sort; //기본값 설정
         List<Long> categoryList = new ArrayList<>();
         Boolean status = null; //null값 필요해서 객체 타입으로
 
-        if (sort == null) { //null or 빈 리스트
-            sort = List.of("date,asc", "category,asc"); //기본값 설정
+        if(startDate == null || endDate == null){
+            throw new BadRequestException("조회 날짜 범위를 입력해 주세요.");
         }
-        if (endDate != null && startDate == null) {
-            //종료 일자 입력됐으면 시작 일자는 필수
-            throw new BadRequestException("시작 일자는 필수 입력 값입니다.");
-        }
-        if (startDate != null && endDate != null) { //둘 다 입력됐을 때
-            if (startDate.isAfter(endDate)) {
-                throw new BadRequestException("시작 날짜가 종료 날짜보다 뒤일 수 없습니다.");
-            }
+        if (startDate.isAfter(endDate)) {
+            throw new BadRequestException("시작 날짜가 종료 날짜보다 뒤일 수 없습니다.");
         }
         if (category != null && !category.trim().isEmpty()) {
             //여기 안 들어가면 categoryList는 null? ㄴㄴ 내가 위에 빈 리스트 집어넣음 .isEmpty로 검사
@@ -83,10 +79,6 @@ public class PlanController {
         }
         log.info("status 값: {}", status);
         keyword = (keyword == null) ? null : keyword.trim(); //공백 제거
-
-        //바디에 end 값 없으면 null 들어감 (start~전체 일정, end도 설정해야 당일/start~end 일정 나옴)
-        //start 값 없으면 당일로 설정
-        if(startDate == null) startDate= LocalDate.now();
 
         ScrollPlanResponse response= planService.searchTablePlans(user.getUser(), startDate, endDate,
                 categoryList, keyword, status, sort, page);
@@ -132,7 +124,7 @@ public class PlanController {
 
     //계획 상태 수정
     @Operation(summary = "계획 상태 수정")
-    @PatchMapping("{planId}/status")
+    @PatchMapping("/{planId}/status")
     public ResponseEntity<CommonResponse> setPlanStatus(@PathVariable Long planId,
                                                         @RequestParam("status") String statusStr,
                                                         @AuthenticationPrincipal CustomUserDetail user) {
@@ -144,7 +136,7 @@ public class PlanController {
 
     //계획 수정
     @Operation(summary = "계획 수정")
-    @PatchMapping("{planId}")
+    @PatchMapping("/{planId}")
     public ResponseEntity<CommonResponse> updatePlan(@PathVariable Long planId,
                                                      @Valid @RequestBody PlanRequest request,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
@@ -154,11 +146,34 @@ public class PlanController {
 
     //계획 삭제
     @Operation(summary = "계획 삭제")
-    @DeleteMapping("{planId}")
+    @DeleteMapping("/{planId}")
     public ResponseEntity<CommonResponse> deletePlan(@PathVariable Long planId,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
         planService.deletePlan(planId, user.getUser());
         return ResponseEntity.ok(new CommonResponse(true, "계획이 삭제되었습니다."));
+    }
+
+    //계획 조회 (타이머 목록바용)
+    @Operation(summary = "타이머 목록바용 계획 조회")
+    @GetMapping("/for-timer")
+    public ResponseEntity<ScrollResponse<PlansForTimerResponse>> getPlansForTimer(@RequestParam(required = false) LocalDate startDate,
+                                                                                      @RequestParam(required = false) LocalDate endDate,
+                                                                                      @RequestParam(required = false) String keyword,
+                                                                                      @RequestParam(required = false) String sort,
+                                                                                      @RequestParam(required = false) Integer page,
+                                                                                      @AuthenticationPrincipal CustomUserDetail user){
+        if(page == null || page < 1) throw new BadRequestException("잘못된 페이지 값입니다.");
+        sort= sort == null? "desc":sort.trim().toLowerCase();
+        keyword= keyword == null? null:keyword.trim();
+
+        if(startDate == null || endDate == null){
+            throw new BadRequestException("조회 날짜 범위를 입력해 주세요.");
+        }
+        if (startDate.isAfter(endDate)) {
+            throw new BadRequestException("시작 날짜가 종료 날짜보다 뒤일 수 없습니다.");
+        }
+
+        return ResponseEntity.ok(planService.getPlansForTimer(startDate, endDate, keyword, sort, page, user.getUser()));
     }
 
     //status 파싱

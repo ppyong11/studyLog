@@ -7,9 +7,11 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
+import com.studylog.project.global.ScrollResponse;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.exception.NotFoundException;
 import com.studylog.project.timer.QTimerEntity;
@@ -70,14 +72,10 @@ public class PlanService {
         if(orders[0] == null || orders[1] == null) throw new BadRequestException("지원하지 않는 정렬입니다.");
 
         builder.and(planEntity.user.eq(user)); //유저 것만 조회 결과로
-        if(startDate != null) {
-            if (endDate != null) {
-                //start~end
-                builder.and(planEntity.endDate.loe(endDate)); // <=
-            }
-            //start~전 일자
-            builder.and(planEntity.startDate.goe(startDate)); // >=
-        }
+        //startDate, endDate 항상 있음 (컨트롤러에서 검증)
+        builder.and(planEntity.startDate.goe(startDate)); // >=
+        builder.and(planEntity.endDate.loe(endDate)); // <=
+
         if(!categoryList.isEmpty()) {
             //빈 리스트가 아니라면, 빈 리스트인데 실행 시 모든 조건이 false처리됨 (and니께)
             builder.and(planEntity.category.id.in(categoryList)); //in(1, 2, 3) 일케 들어감
@@ -293,6 +291,69 @@ public class PlanService {
                 .orElseThrow(() -> new NotFoundException("존재하지 않는 계획입니다."));
 
         planRepository.delete(plan); //cascade로 타이머도 삭제됨
+    }
+
+    //타이머에 보내는 계획 리스트
+    public ScrollResponse<PlansForTimerResponse> getPlansForTimer(LocalDate startDate, LocalDate endDate, String keyword,
+                                                                  String sort, int page, UserEntity user){
+        QPlanEntity planEntity= QPlanEntity.planEntity;
+        QTimerEntity timerEntity= QTimerEntity.timerEntity;
+
+        BooleanBuilder builder= new BooleanBuilder();
+        OrderSpecifier<?> order;
+
+        switch (sort){
+            case ("asc")-> order= planEntity.startDate.asc();
+            case ("desc")-> order= planEntity.startDate.desc();
+            default -> throw new BadRequestException("지원하지 않는 정렬입니다.");
+        }
+
+        builder.and(planEntity.user.eq(user));
+        //startDate, endDate 항상 있음
+        builder.and(planEntity.startDate.goe(startDate)); // >=
+        builder.and(planEntity.endDate.loe(endDate)); // <=
+        builder.and(planEntity.id.notIn( //서브쿼리 결과 포함 X
+                JPAExpressions
+                        .select(timerEntity.plan.id)
+                        .from(timerEntity)
+                        .where(timerEntity.plan.isNotNull()))); //설정한 계획 안 뜸 (서브쿼리)
+        /*
+        where plan_id not in (
+            select t.plan_id
+            from timer t
+            where t.plan_id is not null
+        )
+        */
+        builder.and(planEntity.status.isFalse()); //완료된 계획 안 뜸
+
+        if(keyword != null && !keyword.isEmpty())
+            builder.and(planEntity.plan_name.like('%' + keyword + '%'));
+
+        long pageSize= 20;
+        long offset= (page - 1) * pageSize;
+        List<PlansForTimerResponse> responses= queryFactory
+                                    .select(Projections.constructor(
+                                            PlansForTimerResponse.class,
+                                            planEntity.id,
+                                            planEntity.plan_name,
+                                            planEntity.startDate,
+                                            planEntity.endDate
+                                    ))
+                .from(planEntity)
+                .where(builder)
+                .orderBy(order)
+                .offset(offset)
+                .limit(pageSize)
+                .fetch();
+
+        Long totalItems= queryFactory
+                .select(planEntity.count())
+                .from(planEntity)
+                .where(builder)
+                .fetchOne();
+
+        boolean hasNext= page * pageSize < totalItems;
+        return new ScrollResponse<>(responses, totalItems, page, pageSize, hasNext);
     }
 
     //유저, planId 검사
