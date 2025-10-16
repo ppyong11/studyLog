@@ -1,5 +1,7 @@
 package com.studylog.project.notification;
 
+import com.studylog.project.global.ScrollResponse;
+import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.response.CommonResponse;
 import com.studylog.project.jwt.CustomUserDetail;
 import io.swagger.v3.oas.annotations.Operation;
@@ -57,8 +59,10 @@ public class NotificationController {
                                     example = "{\n  \"success\": false,\n  \"message\": \"로그인이 필요한 요청입니다.\"\n}")))
     })
     @GetMapping("")
-    public ResponseEntity<List<NotificationResponse>> getAllNoti(@AuthenticationPrincipal CustomUserDetail user){
-        return ResponseEntity.ok(notificationService.getAllNoti(user.getUser()));
+    public ResponseEntity<ScrollResponse<NotificationResponse>> getAllNoti(@RequestParam(required = false) Integer page,
+                                                                           @AuthenticationPrincipal CustomUserDetail user){
+        if(page == null || page < 1) throw new BadRequestException("잘못된 페이지 값입니다.");
+        return ResponseEntity.ok(notificationService.getAllNoti(page, user.getUser()));
     }
 
     @Operation(summary = "미확인 알림 개수 조회", description = "미확인 알림 개수 띄우는 API")
