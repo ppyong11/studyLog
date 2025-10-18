@@ -31,9 +31,9 @@ public class PlanEntity {
     private CategoryEntity category;
 
     @Column(nullable = false)
-    private String plan_name;
+    private String name;
 
-    private String plan_memo;
+    private String memo;
 
     @Column(name= "start_date",nullable = false)
     private LocalDate startDate;
@@ -41,18 +41,18 @@ public class PlanEntity {
     @Column(name= "end_date",nullable = false)
     private LocalDate endDate; //미지정 시 start_date와 같음
 
-    @Column(name="plan_minutes")
+    @Column(name="minutes")
     private Integer minutes; //시간 지정
 
-    @Column(name = "plan_status",nullable = false)
-    private boolean status; //계획 생성 시 0으로 설정
+    @Column(name = "is_complete",nullable = false)
+    private boolean isComplete; //계획 생성 시 0으로 설정
 
     @OneToOne(mappedBy = "plan", cascade = CascadeType.REMOVE, optional = true)
     //타이머 삭제 로직은 따로 있어서 orphanRemoval 필요X
     private TimerEntity timer;
 
     @Builder
-    public PlanEntity (UserEntity user, CategoryEntity category, String plan_name, String memo,
+    public PlanEntity (UserEntity user, CategoryEntity category, String name, String memo,
                        LocalDate startDate, LocalDate endDate, int minutes)
     {
         if(startDate.isAfter(endDate)){
@@ -63,12 +63,12 @@ public class PlanEntity {
         }
         this.user = user;
         this.category = category;
-        this.plan_name = plan_name.trim();
-        this.plan_memo = memo.trim();
+        this.name = name.trim();
+        this.memo = memo.trim();
         this.startDate = startDate;
         this.endDate = endDate;
         this.minutes = minutes; //미지정 시 0
-        this.status = false;
+        this.isComplete = false;
     } //plan_id는 DB에서 자동 설정
 
     public void updateCategory(CategoryEntity category){
@@ -85,15 +85,15 @@ public class PlanEntity {
         if(request.getMinutes() < 0){
             throw new BadRequestException("음수값은 입력될 수 없습니다.");
         }
-        this.plan_memo= request.getMemo().trim();
-        this.plan_name = request.getName().trim();
+        this.memo= request.getMemo().trim();
+        this.name = request.getName().trim();
         this.category = category;
         this.startDate = request.getStartDate();
         this.endDate = request.getEndDate();
         this.minutes = request.getMinutes();
     }
 
-    public void updateStatus(boolean status){
-        this.status = status;
+    public void updateStatus(boolean isComplete){
+        this.isComplete = isComplete;
     }
 }

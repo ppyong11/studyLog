@@ -83,7 +83,34 @@ public class PlanController {
         ScrollPlanResponse response= planService.searchTablePlans(user.getUser(), startDate, endDate,
                 categoryList, keyword, status, sort, page);
         return ResponseEntity.ok(response); //빈 리스트도 보내짐
+    }
+
+    //main용
+    @Operation(summary = "메인페이지 todo 조회")
+    @GetMapping("/daily")
+    //HTTP 응답 바디 타입을 T로 지정해서 제네릭 사용 (타입 안정성 보장)
+    public ResponseEntity<ScrollPlanResponse> getDailyPlans(@AuthenticationPrincipal CustomUserDetail user,
+                                                            @RequestParam(required = false) Integer page,
+                                                            @RequestParam(required = false) LocalDate startDate){
+        if(page == null || page < 1) throw new BadRequestException("잘못된 페이지 값입니다.");
+        if(startDate == null || !startDate.equals(LocalDate.now())) throw new BadRequestException("잘못된 날짜 값입니다.");
+
+        return ResponseEntity.ok(planService.MainDailyPlans(user.getUser(), startDate, page));
+    }
+
+    //main & plan창
+    @Operation(summary = "캘린더형 조회")
+    @GetMapping("/calender")
+    public ResponseEntity<List<CalenderPlanResponse>> getCalenderPlans(@RequestParam(required = false) LocalDate startDate,
+                                                                 @RequestParam(required = false) LocalDate endDate,
+                                                                 @RequestParam(required = false) String range,
+                                                                 @AuthenticationPrincipal CustomUserDetail user){
+        if(range == null) throw new BadRequestException("조회 범위가 입력되지 않았습니다.");
+        if(startDate == null || endDate == null){
+            throw new BadRequestException("조회 날짜 범위를 입력해 주세요.");
         }
+        return ResponseEntity.ok(planService.getCalenderPlans(startDate, endDate, range, user.getUser()));
+    }
 
     //계획 하나 조회
     @Operation(summary = "계획 단일 조회")
@@ -124,13 +151,12 @@ public class PlanController {
 
     //계획 상태 수정
     @Operation(summary = "계획 상태 수정")
-    @PatchMapping("/{planId}/status")
+    @PatchMapping("/{planId}/complete")
     public ResponseEntity<CommonResponse> setPlanStatus(@PathVariable Long planId,
-                                                        @RequestParam("status") String statusStr,
+                                                        @RequestParam("status") String status,
                                                         @AuthenticationPrincipal CustomUserDetail user) {
-        log.info(statusStr); //" false "
-        boolean status= parseStatus(statusStr);
-        planService.updateStatus(planId, status, user.getUser());
+        boolean isComplete= parseStatus(status);
+        planService.updateStatus(planId, isComplete, user.getUser());
         return ResponseEntity.ok(new CommonResponse( true, "계획 상태가 변경되었습니다."));
     }
 

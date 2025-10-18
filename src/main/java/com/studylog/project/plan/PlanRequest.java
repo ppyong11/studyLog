@@ -8,8 +8,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 
@@ -42,7 +40,7 @@ public class PlanRequest {
         return PlanEntity.builder()
                 .user(user)
                 .category(category)
-                .plan_name(this.name)
+                .name(this.name)
                 .memo(this.memo)
                 .startDate(this.startDate)
                 .endDate(this.endDate)
