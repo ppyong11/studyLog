@@ -32,7 +32,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final RedisTemplate<String, String> redisTemplate;
 
-    @Operation(description = "로그인 (jwt 토큰 발급), 회원탈퇴 철회")
+    @Operation(summary= "로그인", description = "로그인 (jwt 토큰 발급), 회원탈퇴 철회")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "로그인 성공",
             content= @Content(mediaType = "application/json",
