@@ -5,6 +5,7 @@ import com.studylog.project.category.CategoryRepository;
 import com.studylog.project.category.CategoryService;
 import com.studylog.project.global.exception.*;
 import com.studylog.project.jwt.CustomUserDetail;
+import com.studylog.project.notification.NotificationService;
 import com.studylog.project.plan.PlanRepository;
 import com.studylog.project.timer.TimerRepository;
 import jakarta.transaction.Transactional;
@@ -29,10 +30,13 @@ public class UserService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final RedisTemplate<String, String> redisTemplate; //제네릭 타입 명시
     private final CategoryService categoryService;
+    private final NotificationService notificationService;
+
     private final PlanRepository planRepository;
     private final CategoryRepository categoryRepository;
     private final BoardRepository boardRepository;
     private final TimerRepository timerRepository;
+
     @Transactional
     //회원 DB에 저장
     public void register(SignInRequest user) {
@@ -148,6 +152,11 @@ public class UserService {
         return resolution;
     }
 
+    public UserInfoResponse getUserInfo(UserEntity user){
+        return new UserInfoResponse(user.getNickname(), user.getResolution(),
+                notificationService.getUnreadCount(user));
+    }
+
     public UserEntity getUser(UserEntity user){
         return userRepository.findById(user.getUser_id())
                 .orElseThrow(() -> new NotFoundException("존재하지 않는 회원입니다.")); //회원 객체 받기
@@ -167,6 +176,7 @@ public class UserService {
             userRepository.delete(user);
         }
     }
+
     //컨트롤러에서도 repo 접근해야 돼서 만듦... 이왕 만든 김에 서비스에서도 그냥 사용
     //서비스에서는 레포로 바로 접근해도 문제 X, 컨트롤러->서비스->레포
     public Boolean existsEmail(String email) {

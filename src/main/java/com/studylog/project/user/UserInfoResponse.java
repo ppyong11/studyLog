@@ -1,11 +1,11 @@
-package com.studylog.project.Main;
+package com.studylog.project.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public class MainUserInfoResponse {
+public class UserInfoResponse {
     private String nickname;
     private String resolution;
     private long UnreadNotification;
