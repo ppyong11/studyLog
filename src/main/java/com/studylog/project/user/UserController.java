@@ -29,6 +29,12 @@ public class UserController {
     private final UserService userService;
     private final MailService mailService;
 
+    @Operation(summary = "유저 닉네임, 다짐 반환")
+    @GetMapping("/member/user-info")
+    public ResponseEntity<UserInfoResponse> getUserInfo(@AuthenticationPrincipal CustomUserDetail user){
+        return ResponseEntity.ok(userService.getUserInfo(user.getUser()));
+    }
+
     @Operation(summary= "아이디 중복 확인")
     @GetMapping("/signup/check-id")
     public ResponseEntity<CommonResponse> checkId(@RequestParam(required = false) String id) {

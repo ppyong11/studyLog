@@ -18,13 +18,13 @@ public class TimerResponse{
     private String planName;
     @Schema(description = "플랜 URL", example = "plans/{plan_id}")
     private String planUrl;
-    @Schema(description = "카테고리명", example = "공부")
-    private String categoryName;
+    @Schema(description = "카테고리 id", example = "3")
+    private Long categoryId;
     @Schema(description = "타이머 생성일자", example = "2025-07-12 20:30:00")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createAt;
     @Schema(description = "타이머 경과시간", example = "1200")
-    private Long elapsed;
+    private String elapsed;
     @Schema(description = "타이머 상태", example = "PAUSED")
     private TimerStatus status;
 }

@@ -80,12 +80,13 @@ public class TimerService {
         }
 
         if(planKeyword != null && !planKeyword.isEmpty()) {
-            builder.and(timerEntity.plan.plan_name.like('%' + planKeyword + '%'));
+            builder.and(timerEntity.plan.name.like('%' + planKeyword + '%'));
         }
 
         if(!categoryList.isEmpty()) {
             builder.and(timerEntity.category.id.in(categoryList));
         }
+        //조인 안 하면 암묵적 접근으로 알아서 join or 서브쿼리로 나감
         if(keyword != null && !keyword.isEmpty()) {
             builder.and(timerEntity.name.like("%"+keyword+"%"));
         }
@@ -102,11 +103,11 @@ public class TimerService {
                         TimerResponse.class,
                         timerEntity.id,
                         timerEntity.name,
-                        timerEntity.plan.plan_name, //외래키로 연결된 다른 테이블 컬럼값 가져오려면 join 필수
+                        timerEntity.plan.name, //외래키로 연결된 다른 테이블 컬럼값 가져오려면 join 필수
                         Expressions.stringTemplate(
                                 "'plans/' || {0}", timerEntity.plan.id //페이지 URL
                         ),
-                        timerEntity.category.name, //Projections이라 join 영속성 관리 안 됨 -> 바로 DTO 매핑이기 때문
+                        timerEntity.category.id, //Projections이라 join 영속성 관리 안 됨 -> 바로 DTO 매핑이기 때문
                         timerEntity.createAt,
                         timerEntity.elapsed,
                         timerEntity.status
@@ -133,7 +134,7 @@ public class TimerService {
     //단일 조회
     public TimerDetailResponse getTimer(Long id, UserEntity user) {
         TimerEntity timer= getTimerByUserAndId(user, id);
-        return TimerDetailResponse.toDto(timer);
+        return TimerDetailResponse.toDto(timer, formatElapsed(timer.getElapsed()));
     }
 
     public TimerDetailResponse createTimer(TimerRequest request, UserEntity user) {
@@ -152,7 +153,7 @@ public class TimerService {
 
         timer= request.toEntity(user, plan, category);
         timerRepository.saveAndFlush(timer); //이때 timer에도 id 매핑됨 (AI 된 값)
-        return TimerDetailResponse.toDto(timer); //첫 생성 후 조회
+        return TimerDetailResponse.toDto(timer, formatElapsed(timer.getElapsed())); //첫 생성 후 조회
     }
 
     /*
@@ -172,7 +173,7 @@ public class TimerService {
             checkPlan(plan, timer, request);
             category= plan.getCategory();
         } else{ //request에 플랜 X
-            if(timer.getPlan() != null && timer.getPlan().isStatus())
+            if(timer.getPlan() != null && timer.getPlan().isComplete())
                 throw new BadRequestException("완료 처리된 계획은 수정할 수 없습니다.");
             category= categoryRepository.findByUserAndId(user, request.getCategory())
                     .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다."));
@@ -181,7 +182,7 @@ public class TimerService {
         timer.updateName(request.getName());
         timer.updatePlan(plan);
         timer.updateCategory(category);
-        return TimerDetailResponse.toDto(timer);
+        return TimerDetailResponse.toDto(timer, formatElapsed(timer.getElapsed()));
     }
 
     public TimerDetailResponse startTimer(Long id, UserEntity user) {
@@ -198,7 +199,7 @@ public class TimerService {
             throw new BadRequestException("종료된 타이머는 실행이 불가합니다.");
 
         timer.start();
-        return TimerDetailResponse.toDto(timer);
+        return TimerDetailResponse.toDto(timer, formatElapsed(timer.getElapsed()));
     }
 
     //타이머 삭제 + 알림 경로 삭제
@@ -225,7 +226,7 @@ public class TimerService {
         timer.updateElapsed(getTotalElapsed(timer)); //누적 경과+startAt+동기화 시간
         timer.updateSyncedAt(); //동기화
         checkCompletion(timer, user, true);
-        return TimerDetailResponse.toDto(timer);
+        return TimerDetailResponse.toDto(timer, formatElapsed(timer.getElapsed()));
     }
 
     //정지 시 실행 중인 랩도 정지됨
@@ -240,7 +241,7 @@ public class TimerService {
 
         timer.updateElapsed(getTotalElapsed(timer)); //누적 시간 갱신
         if(timer.getPlan() != null) checkCompletion(timer, user, false);
-        return TimerDetailResponse.toDto(timer);
+        return TimerDetailResponse.toDto(timer, formatElapsed(timer.getElapsed()));
     }
 
     public TimerDetailResponse endTimer(Long id, UserEntity user) {
@@ -256,19 +257,19 @@ public class TimerService {
             case PAUSED -> timer.end(timer.getPauseAt()); //정지된 타이머라면 정지 시간 == 종료 시간 (누적 시간 갱신은 정지할 때 함)
         }
         if(timer.getPlan() != null) checkCompletion(timer, user, false);
-        return TimerDetailResponse.toDto(timer);
+        return TimerDetailResponse.toDto(timer, formatElapsed(timer.getElapsed()));
     }
 
     //완료 체킹은 그대로
     public TimerDetailResponse resetTimer(Long id, UserEntity user) {
         TimerEntity timer= getTimerByUserAndId(user, id);
-        if(timer.getPlan().isStatus()) throw new BadRequestException("타이머의 계획이 완료 상태일 경우 초기화가 불가합니다.");
+        if(timer.getPlan().isComplete()) throw new BadRequestException("타이머의 계획이 완료 상태일 경우 초기화가 불가합니다.");
         switch (timer.getStatus()) {
             case ENDED -> throw new BadRequestException("종료된 타이머는 초기화가 불가합니다.");
             case READY -> throw new BadRequestException("초기화 상태입니다.");
             default -> timer.reset();
         }
-        return TimerDetailResponse.toDto(timer);
+        return TimerDetailResponse.toDto(timer, formatElapsed(timer.getElapsed()));
     }
 
     public TimerEntity getTimerByUserAndId(UserEntity user, Long id) {
@@ -278,7 +279,7 @@ public class TimerService {
     private void checkPlan(PlanEntity plan, TimerEntity timer, TimerRequest request) {
         if(timer == null || timer.getPlan() == null || !timer.getPlan().getId().equals(plan.getId())){
             if(timerRepository.existsByPlanId(plan.getId())) throw new BadRequestException("선택한 계획의 타이머가 이미 존재합니다.");
-            if(plan.isStatus()) throw new BadRequestException("이미 완료된 계획은 설정할 수 없습니다.");
+            if(plan.isComplete()) throw new BadRequestException("이미 완료된 계획은 설정할 수 없습니다.");
             if(!plan.getCategory().getId().equals(request.getCategory())){
                 throw new BadRequestException("입력된 카테고리가 계획 카테고리와 일치하지 않습니다.");
             }
@@ -288,7 +289,7 @@ public class TimerService {
         }
     }
 
-    public static Long getTotalElapsed(TimerEntity entity) {
+    public long getTotalElapsed(TimerEntity entity) {
         LocalDateTime time= null;
         LocalDateTime startAt;
 
@@ -312,12 +313,19 @@ public class TimerService {
         return duration.getSeconds() + entity.getElapsed();
     }
 
+    public String formatElapsed(long elapsedSeconds){
+        long hours= elapsedSeconds / 3600;
+        long minutes= (elapsedSeconds % 3600) / 60;
+        long seconds= elapsedSeconds % 60;
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+    }
+
     private void checkCompletion(TimerEntity timer, UserEntity user, boolean isSyncCheck){
         LocalDate timerStartDate= timer.getSyncedAt() == null? timer.getStartAt().toLocalDate():timer.getSyncedAt().toLocalDate();
         LocalDate planStart= timer.getPlan().getStartDate();
         LocalDate planEnd= timer.getPlan().getEndDate();
 
-        if(timer.getPlan().isStatus() || timer.getPlan().getMinutes() == 0) return; //이미 완료된 계획이거나 목표 시간이 0이라면
+        if(timer.getPlan().isComplete() || timer.getPlan().getMinutes() == 0) return; //이미 완료된 계획이거나 목표 시간이 0이라면
         //미완료 & 계획 일자 이후에 수행되었으면
 
         boolean inRange= false; //체킹 값 저장

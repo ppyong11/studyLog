@@ -11,8 +11,13 @@ public class CategoryResponse {
     private Long id;
     @Schema(description = "카테고리명", example = "공부")
     private String name;
+    @Schema(description = "카테고리 색상", example = "#F7F7F7")
+    private String bgColor;
+    @Schema(description = "텍스트 색상", example = "#484848")
+    private String textColor;
 
     public static CategoryResponse toDto(CategoryEntity category) {
-        return new CategoryResponse(category.getId(), category.getName());
+        return new CategoryResponse(category.getId(), category.getName(), category.getBgColor(),
+                category.getTextColor());
     }
 }

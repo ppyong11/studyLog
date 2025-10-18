@@ -29,19 +29,19 @@ public class FileEntity {
     @Column(name= "draft_id")
     private String draftId;
 
-    @Column(name="file_size", nullable = false)
+    @Column(name="size", nullable = false)
     private Long size;
 
-    @Column(name= "file_path", nullable = false)
+    @Column(name= "path", nullable = false)
     private String path;
 
-    @Column(name = "file_original_name", nullable = false)
+    @Column(name = "original_name", nullable = false)
     private String originalName;
 
-    @Column(name= "file_name", nullable = false)
+    @Column(name= "name", nullable = false)
     private String name;
 
-    @Column(name = "file_type", nullable = false)
+    @Column(name = "type", nullable = false)
     private String type;
 
     @Column(name= "upload_at", nullable = false)

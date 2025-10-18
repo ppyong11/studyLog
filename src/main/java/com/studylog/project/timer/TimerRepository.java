@@ -20,7 +20,7 @@ public interface TimerRepository extends JpaRepository<TimerEntity, Long> {
     @Query("select t from TimerEntity t join fetch t.category join fetch t.plan " +
             "where t.user= :userId and t.id= :timerId")
     Optional<TimerEntity> getTimerWithPlanCategory(@Param("userId") UserEntity userId,
-                                                      @Param("timerId") Long timerId);
+                                                   @Param("timerId") Long timerId);
 
     void deleteAllByUser(UserEntity user);
 

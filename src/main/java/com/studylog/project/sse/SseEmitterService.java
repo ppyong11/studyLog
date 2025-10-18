@@ -82,7 +82,8 @@ public class SseEmitterService {
         payload.setType("plan-completed");
         payload.setId(timer.getUser().getUser_id());
         payload.setTitle(String.format("[%s] 계획이 %s완료 처리되었어요. 🥳",
-                timer.getPlan().getPlan_name(), isSyncCheck? "자동":""));
+                timer.getPlan().getName(), isSyncCheck? "자동":""));
+        payload.setContent("알림창을 확인해 주세요.");
 
         broadcast(timer.getUser(), payload);
     }

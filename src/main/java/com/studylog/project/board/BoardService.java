@@ -80,7 +80,7 @@ public class BoardService {
                         Projections.constructor(
                         BoardResponse.class,
                         boardEntity.id,
-                        boardEntity.category.name,
+                        boardEntity.category.id,
                         boardEntity.title,
                         boardEntity.content,
                         boardEntity.update_at,

@@ -67,13 +67,12 @@ public class NotificationService {
         //동기화로 완료 체크 시 - 타이머 있음
         //정지, 종료로 체크 시 - 타이머 없음
         String title = String.format("[%s] 계획이 %s완료 처리되었어요. 🥳",
-                timer.getPlan().getPlan_name(), isSyncCheck ? "자동" : "");
-        String content = "해당 타이머로 이동해서 타이머를 종료해 주세요.";
+                timer.getPlan().getName(), isSyncCheck ? "자동" : "");
         NotificationEntity notification = NotificationEntity.builder()
                 .user(user)
                 .timer(timer) //null이면 알아서 들어감
                 .title(title)
-                .content(isSyncCheck ? content : "다른 목표도 달성하러 가볼까요?")
+                .content(isSyncCheck ? "해당 타이머로 이동해서 타이머를 종료해 주세요." : "확인하러 가볼까요?")
                 .url(isSyncCheck ? "timers/" + timer.getId() : "plans/" + timer.getPlan().getId())
                 .build();
         notificationRepository.save(notification);

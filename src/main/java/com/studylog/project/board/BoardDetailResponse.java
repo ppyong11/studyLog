@@ -1,12 +1,10 @@
 package com.studylog.project.board;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.studylog.project.file.FileResponse;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 

@@ -1,6 +1,5 @@
 package com.studylog.project.category;
 
-import com.studylog.project.global.PageResponse;
 import com.studylog.project.global.ScrollResponse;
 import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.global.response.CommonResponse;
@@ -19,7 +18,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @Slf4j
@@ -28,8 +29,26 @@ import java.util.List;
 @Tag(name="Category", description = "Category API, 모든 요청 access token 필요")
 public class CategoryController {
     private final CategoryService categoryService;
+    private final Map<String, String> COLORS= Map.of(
+            "#F7F7F7", "#484848", //기본
+            "#E3E3E3", "#484848", //회색
+            "#F1E7E1", "#554539", //갈색
+            "#FFE5E5", "##821912", //빨간색
+            "#FFE7CD", "#72471D", //주황색
+            "#FCF4CC", "#584C12", //노란색
+            "#E4EFE7", "#134F14", //초록색
+            "#E4F2FD", "#265882", //하늘색
+            "#F4F2FF", "#652F79", //보라색
+            "#FFEDF5", "#7E1734" //분홍색
+    );
 
-    //카테고리 전체&키워드 조회
+    @Operation(summary = "전체 카테고리 조회", description = "front-end 전역상태 관리용")
+    @GetMapping("")
+    public ResponseEntity<List<CategoryResponse>> getAllCategories(@AuthenticationPrincipal CustomUserDetail user){
+        return ResponseEntity.ok(categoryService.getAllCategories(user.getUser()));
+    }
+
+    //카테고리 전체&키워드 조회 (페이지)
     @Operation(summary = "카테고리 목록 조회 (리스트)", description = "정렬 (sort) 기본값: 카테고리명 오름차순")
     @ApiResponse(responseCode = "200", description = "조회 성공",
         content= @Content(mediaType = "application/json",
@@ -67,7 +86,8 @@ public class CategoryController {
     @PostMapping("")
     public ResponseEntity<CommonResponse> newCategory(@Valid @RequestBody CategoryRequest request,
                                                       @AuthenticationPrincipal CustomUserDetail user) {
-        categoryService.addCategory(request, user.getUser());
+        if(!COLORS.containsKey(request.getBgColor())) throw new BadRequestException("지원하지 않는 색상입니다.");
+        categoryService.addCategory(request, COLORS.get(request.getBgColor()), user.getUser());
         return ResponseEntity.ok(new CommonResponse( true, "카테고리가 등록되었습니다."));
     }
 
@@ -77,7 +97,8 @@ public class CategoryController {
     public ResponseEntity<CommonResponse> updateCategory(@PathVariable Long categoryId,
                                                          @Valid @RequestBody CategoryRequest request,
                                                          @AuthenticationPrincipal CustomUserDetail user) {
-        categoryService.updateCategory(categoryId, request, user.getUser());
+        if(!COLORS.containsKey(request.getBgColor())) throw new BadRequestException("지원하지 않는 색상입니다.");
+        categoryService.updateCategory(categoryId, request, COLORS.get(request.getBgColor()), user.getUser());
         return ResponseEntity.ok(new CommonResponse(true, "카테고리가 수정되었습니다."));
     }
 

@@ -12,8 +12,8 @@ import java.time.LocalDateTime;
 public class BoardResponse {
     @Schema(description = "게시글 id", example = "1")
     private Long id;
-    @Schema(description = "카테고리명", example = "기타")
-    private String categoryName;
+    @Schema(description = "카테고리 id", example = "2")
+    private Long categoryId;
     @Schema(description = "게시글명", example = "swagger 공부")
     private String title;
     @Schema(description = "게시글 내용", example = "swagger는 API 설계와 문서화에 좋은 도구입니다.")
@@ -26,7 +26,7 @@ public class BoardResponse {
     private LocalDateTime updateAt;
 
     public static BoardResponse toDto(BoardEntity board) {
-        return new BoardResponse(board.getId(), board.getCategory().getName(),
+        return new BoardResponse(board.getId(), board.getCategory().getId(),
                 board.getTitle(), board.getContent(), board.getUpload_at(), board.getUpdate_at());
     }
 }

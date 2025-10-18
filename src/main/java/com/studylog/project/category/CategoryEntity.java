@@ -21,17 +21,27 @@ public class CategoryEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
-    @Column(name="category_name")
+    @Column(name="name")
     private String name;
 
+    @Column(name="bg_color")
+    private String bgColor;
+
+    @Column(name="text_color")
+    private String textColor;
+
     @Builder
-    public CategoryEntity(UserEntity user_id, String category_name) {
+    public CategoryEntity(UserEntity user_id, String name, String bgColor, String textColor) {
         this.user = user_id;
-        this.name = category_name.trim(); //공백 없애고 저장
+        this.name = name;
+        this.bgColor= bgColor;
+        this.textColor= textColor;
     }
 
     //카테고리 수정
-    public void setCategory_name(String name) {
-        this.name = name.trim();
+    public void updateCategory(CategoryRequest request, String textColor) {
+        this.name = request.getName().trim();
+        this.bgColor= request.getBgColor();
+        this.textColor= textColor;
     }
 }

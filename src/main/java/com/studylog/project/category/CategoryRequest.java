@@ -2,6 +2,7 @@ package com.studylog.project.category;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -16,4 +17,6 @@ public class CategoryRequest {
     @Size(max= 10, message ="카테고리명은 10자 이내여야 합니다.")
     @Pattern(regexp = "^[a-zA-Z0-9가-힣 ]+$", message = "특수 문자는 입력할 수 없습니다.")
     private String name;
+    @NotNull(message = "색상을 선택해 주세요.")
+    private String bgColor;
 }

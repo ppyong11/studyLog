@@ -32,10 +32,27 @@ public class CategoryService {
     public void defaultCategory(UserEntity user) {
         CategoryEntity category = CategoryEntity.builder()
                 .user_id(user) //알아서 long타입으로 들어감
-                .category_name("기타")
+                .name("#F7F7F7")
+                .bgColor("#484848")
                 .build();
         categoryRepository.save(category);
         log.info("기본 카테고리 저장 완료");
+    }
+
+    public List<CategoryResponse> getAllCategories(UserEntity user){
+        QCategoryEntity categoryEntity= QCategoryEntity.categoryEntity;
+
+        return queryFactory
+                .select(Projections.constructor(
+                        CategoryResponse.class,
+                        categoryEntity.id,
+                        categoryEntity.name,
+                        categoryEntity.bgColor,
+                        categoryEntity.textColor
+                ))
+                .from(categoryEntity)
+                .where(categoryEntity.user.eq(user))
+                .fetch();
     }
 
     //카테고리 전체&키워드 조회
@@ -54,7 +71,9 @@ public class CategoryService {
                 .select(Projections.constructor(
                         CategoryResponse.class,
                         categoryEntity.id,
-                        categoryEntity.name
+                        categoryEntity.name,
+                        categoryEntity.bgColor,
+                        categoryEntity.textColor
                 ))
                 .from(categoryEntity)
                 .where(builder)
@@ -79,23 +98,23 @@ public class CategoryService {
     public CategoryResponse getCategory(Long id, UserEntity user) {
         CategoryEntity category = categoryRepository.findByUserAndId(user, id)
                 .orElseThrow(()-> new NotFoundException("존재하지 않는 카테고리입니다."));
-        return new CategoryResponse(category.getId(), category.getName());
+        return CategoryResponse.toDto(category);
     }
 
-    public void addCategory(CategoryRequest request, UserEntity user) {
-        log.info("{}",user.getUser_id());
+    public void addCategory(CategoryRequest request, String textColor, UserEntity user) {
         if (categoryRepository.existsByUserAndName(user, request.getName())){
             throw new DuplicateException("동일한 카테고리가 있습니다.");
         }
         CategoryEntity category= CategoryEntity.builder()
-                .category_name(request.getName())
+                .name(request.getName())
                 .user_id(user)
+                .bgColor(request.getBgColor())
+                .textColor(textColor)
                 .build();
         categoryRepository.save(category);
-        log.info("새 카테고리 저장 완료");
     }
 
-    public void updateCategory(Long id, CategoryRequest request, UserEntity user) {
+    public void updateCategory(Long id, CategoryRequest request, String textColor, UserEntity user) {
         //카테고리 엔티티 가져옴
         CategoryEntity category= categoryRepository.findByUserAndId(user, id)
                 .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다."));
@@ -107,7 +126,7 @@ public class CategoryService {
             if(!category.getName().equals(request.getName().trim()))
                 throw new DuplicateException("동일한 카테고리가 있습니다.");
         }
-        category.setCategory_name(request.getName());
+        category.updateCategory(request, textColor);
     }
 
     public void delCategory(Long id, UserEntity user) {
