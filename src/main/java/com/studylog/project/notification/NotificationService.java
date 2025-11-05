@@ -78,11 +78,11 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
-    public CommonResponse deleteAllNoti(UserEntity user){
+    public CommonResponse<Void> deleteAllNoti(UserEntity user){
         List<NotificationEntity> notifications= notificationRepository.findAllByUser(user);
-        if(notifications.isEmpty()) return new CommonResponse(true, "삭제할 알림이 없습니다.");
+        if(notifications.isEmpty()) return new CommonResponse<>(true, "삭제할 알림이 없습니다.");
         notificationRepository.deleteAll(notifications); //인자 없으면 모든 행 삭제
-        return new CommonResponse(true, "모든 알림이 삭제되었습니다.");
+        return new CommonResponse<>(true, "모든 알림이 삭제되었습니다.");
     }
     public void deleteNoti(Long id, UserEntity user){
         NotificationEntity notification= notificationRepository.findByUserAndId(user, id)
@@ -96,13 +96,13 @@ public class NotificationService {
         notification.updateIsRead();
     }
 
-    public CommonResponse readAllNoti(UserEntity user){
+    public CommonResponse<Void> readAllNoti(UserEntity user){
         List<NotificationEntity> notifications= notificationRepository.findAllByUserAndIsReadFalse(user);
-        if(notifications.isEmpty()) return new CommonResponse(true, "읽음 처리할 알림이 없습니다.");
+        if(notifications.isEmpty()) return new CommonResponse<>(true, "읽음 처리할 알림이 없습니다.");
         for(NotificationEntity noti:notifications) {
             noti.updateIsRead();
         }
-        return new CommonResponse(true, "모든 알림이 읽음 처리되었습니다.");
+        return new CommonResponse<>(true, "모든 알림이 읽음 처리되었습니다.");
     }
 
 }

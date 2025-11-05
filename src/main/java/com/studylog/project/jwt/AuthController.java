@@ -3,6 +3,7 @@ package com.studylog.project.jwt;
 import com.studylog.project.global.exception.JwtException;
 import com.studylog.project.global.response.CommonResponse;
 import com.studylog.project.user.LogInRequest;
+import com.studylog.project.user.UserResponse;
 import com.studylog.project.user.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -46,12 +47,12 @@ public class AuthController {
     })
     //토큰 관련 처리 담당
     @PostMapping("/login")
-    public ResponseEntity<CommonResponse> logIn(@RequestBody @Valid LogInRequest request, HttpServletResponse response) {
+    public ResponseEntity<CommonResponse<UserResponse>> logIn(@RequestBody @Valid LogInRequest request, HttpServletResponse response) {
         userService.validateAndRestoreUser(request); //회원 검증 및 탈퇴 복구 처리
         JwtToken jwtToken = jwtService.logIn(request.getId(), request.getPw()); //예외 발생 시 아래 로직 실행 X
         log.info("요청- ID: {}, PW: {}", request.getId(), request.getPw());
         log.info("AccessToken: {}, RefreshToken: {}", jwtToken.getAccessToken(), jwtToken.getRefreshToken());
-        String nickname = userService.getNickname(request);
+        UserResponse userResponse = userService.getCurrentUser(request.getId());
         String accessCookie= jwtService.createCookie("access_token",jwtToken.getAccessToken(),
                 "/", 30*60); //30분 동안 쿠키 보냄 (TTL이랑 오차 거의 없음)
 
@@ -60,14 +61,14 @@ public class AuthController {
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie);
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie);
-        return ResponseEntity.ok(new CommonResponse( true, String.format("%s 님, 반갑습니다. ☺️", nickname)));
+        return ResponseEntity.ok(new CommonResponse<>( true, "로그인 성공", userResponse));
     }
 
 
     //hidden: Swagger에서 안 보임
     @PostMapping("/logout")
     @Operation(summary = "로그아웃")
-    public ResponseEntity<CommonResponse> logout(@Parameter(hidden=true) @CookieValue(name="access_token")String accessToken,
+    public ResponseEntity<CommonResponse<Void>> logout(@Parameter(hidden=true) @CookieValue(name="access_token")String accessToken,
                                                  HttpServletResponse response,
                                                  @AuthenticationPrincipal CustomUserDetail user) {
         //토큰 없는 경우엔 필터에서 다 걸러서 여기까지 안 옴 -> 토큰은 항상 있음! 인증된 객체라는 뜻 (authenticated)
@@ -79,7 +80,7 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE, deleteAccessCookie);
         response.addHeader(HttpHeaders.SET_COOKIE, deleteRefreshCookie);
 
-        return ResponseEntity.ok(new CommonResponse( true, "로그아웃 처리되었습니다."));
+        return ResponseEntity.ok(new CommonResponse<>( true, "로그아웃 처리되었습니다."));
     }
 
     @PostMapping("/member/withdraw")
@@ -100,7 +101,7 @@ public class AuthController {
                     example = "{\n  \"success\": false,\n  \"message\": \"로그인이 필요한 요청입니다.\"\n}"
             )))
     })
-    public ResponseEntity<CommonResponse> withdraw(@Parameter(hidden=true) @CookieValue(name="access_token")String accessToken,
+    public ResponseEntity<CommonResponse<Void>> withdraw(@Parameter(hidden=true) @CookieValue(name="access_token")String accessToken,
                                                    HttpServletResponse response,
                                                    @AuthenticationPrincipal CustomUserDetail user) {
         //자동 로그아웃 + user 속성 바꾸기
@@ -111,7 +112,7 @@ public class AuthController {
         response.addHeader(HttpHeaders.SET_COOKIE, deleteRefreshCookie);
 
         userService.withdraw(user.getUser());
-        return ResponseEntity.ok(new CommonResponse( true, "회원탈퇴 처리되었습니다."));
+        return ResponseEntity.ok(new CommonResponse<>( true, "회원탈퇴 처리되었습니다."));
     }
 
     @PostMapping("/refresh")
@@ -128,7 +129,7 @@ public class AuthController {
                         " / 블랙리스트 처리된 리프레시 토큰- 유효하지 않은 토큰입니다.\"\n}"
         )))
     })
-    public ResponseEntity<CommonResponse> refreshAccessToken(@Parameter(hidden=true) @CookieValue(name="access_token", required = false)String accessToken,
+    public ResponseEntity<CommonResponse<Void>> refreshAccessToken(@Parameter(hidden=true) @CookieValue(name="access_token", required = false)String accessToken,
                                                              @Parameter(hidden=true) @CookieValue(name="refresh_token", required = false)String refreshToken,
                                                              @AuthenticationPrincipal CustomUserDetail user,
                                                              HttpServletResponse response) {
@@ -154,6 +155,11 @@ public class AuthController {
         log.info("토큰 재발급 완료");
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie);
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie);
-        return ResponseEntity.ok(new CommonResponse( true, "로그인이 연장되었습니다."));
+        return ResponseEntity.ok(new CommonResponse<>( true, "로그인이 연장되었습니다."));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getCurrentUser(@AuthenticationPrincipal CustomUserDetail user) {
+        return ResponseEntity.ok(userService.getCurrentUser(user.getUser()));
     }
 }

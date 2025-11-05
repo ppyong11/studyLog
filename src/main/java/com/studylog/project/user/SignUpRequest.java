@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Getter
 @Schema(description = "회원가입 reqeust")
-public class SignInRequest {
+public class SignUpRequest {
     @Schema(description = "유저 id (영문 및 숫자, 4~12자 이내)")
     @NotBlank(message = "아이디가 입력되지 않았습니다.")
     @Pattern(regexp = "^[a-zA-Z0-9]{4,12}$", message = "아이디는 4~12자 영문 또는 숫자여야 합니다.")
@@ -18,7 +18,7 @@ public class SignInRequest {
     @Schema(description = "유저 pw (영문 및 숫자, 6~20자 이내)")
     @NotBlank(message = "비밀번호가 입력되지 않았습니다.")
     @Pattern(regexp = "^[a-zA-Z0-9]{6,20}$", message = "비밀번호는 6~20자 영문 또는 숫자여야 합니다.")
-    private String pw;
+    private String password;
     @Schema(description = "유저 닉네임 (특수 문자 X, 2~10자 이내)")
     @NotBlank(message = "닉네임이 입력되지 않았습니다.")
     @Pattern(regexp = "^[가-힣a-zA-Z0-9]{2,10}$", message = "닉네임은 2~10자 한글, 영어, 숫자여야 합니다")
@@ -32,7 +32,7 @@ public class SignInRequest {
     public UserEntity toEntity() {
         return UserEntity.builder()
                 .id(id)
-                .pw(pw)
+                .pw(password)
                 .nickname(nickname)
                 .email(email)
                 .build();

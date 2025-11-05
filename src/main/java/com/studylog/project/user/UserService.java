@@ -19,7 +19,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @Service
 @Transactional
@@ -39,22 +38,17 @@ public class UserService {
 
     @Transactional
     //회원 DB에 저장
-    public void register(SignInRequest user) {
-        if(existsId(user.getId())){
-            throw new DuplicateException(String.format("[%s] 이미 가입된 회원입니다.", user.getId()));
-        }
-        if(existsNickname(user.getNickname())){
-            throw new DuplicateException(String.format("[%s] 이미 가입된 회원입니다.", user.getNickname()));
-        }
-        if(existsEmail(user.getEmail())){
-            throw new DuplicateException(String.format("[%s] 이미 가입된 회원입니다.", user.getEmail()));
-        }
-        //null안정 보장
+    public void register(SignUpRequest user) {
+        existsId(user.getId());
+        existsNickname(user.getNickname());
+        existsEmail(user.getEmail());
+
+        // null안정 보장
         if(!Boolean.TRUE.equals(redisTemplate.hasKey("verified:" + user.getEmail())))
-        {//키 없는 경우
-            throw new MailException("인증 세션이 만료됐거나 인증된 메일이 아닙니다.");
+        {// 키 없는 경우
+            throw new MailException("인증 세션이 만료됐거나 인증된 메일이 아닙니다.\n회원가입을 다시 진행해 주세요.");
         }
-        String encryptedPw= passwordEncoder.encode(user.getPw());
+        String encryptedPw= passwordEncoder.encode(user.getPassword());
         UserEntity userEntity = user.toEntity();
         userEntity.setEncodedPw(encryptedPw); //빌더 객체 pw 값 바뀜
         userRepository.save(userEntity);
@@ -63,12 +57,6 @@ public class UserService {
         log.info("{}", userEntity.getUser_id());
         categoryService.defaultCategory(userEntity);
     }
-    //로그인한 유저 닉네임 반환
-    public String getNickname(LogInRequest request){
-        UserEntity userEntity= userRepository.findById(request.getId())
-                .orElseThrow(() -> new UsernameNotFoundException(String.format("[%s]에 해당하는 회원을 찾을 수 없습니다.", request.getId())));
-        return userEntity.getNickname();
-    }
 
     @Transactional
     //아이디, 비밀번호 확인
@@ -76,8 +64,9 @@ public class UserService {
         //아이디 검증
         UserEntity userEntity= userRepository.findById(request.getId())
                 .orElseThrow(() -> new LoginFaildException("아이디 또는 비밀번호가 일치하지 않습니다."));
-
+        log.info("요청- ID: {}, PW: {}", request.getId(), request.getPw());
         if (passwordEncoder.matches(request.getPw(), userEntity.getPw())) {
+
             log.info(String.format("id: [%s], 로그인 성공", userEntity.getId()));
             if(userEntity.isDelete()){//회원탈퇴한 회원이라면
                 //7일 지났는데 스케쥴러 안 돌아서 삭제 안 된 경우
@@ -121,9 +110,8 @@ public class UserService {
             throw new InvalidRequestException("현재 닉네임과 동일합니다.");
         }
         //닉네임 중복 시 (존재 닉네임)
-        if(existsNickname(nicknameRequest.getNickname())){
-            throw new DuplicateException("이미 존재하는 닉네임입니다.");
-        }
+        existsNickname(nicknameRequest.getNickname());
+
         //위 경우가 아니라면
         UserEntity userEntity= userRepository.findById(customUserDTO.getUser().getUser_id())
                 .orElseThrow(() -> new NotFoundException("존재하지 않는 회원입니다.")); //요청 날린 토큰의 인증 객체로 영속성 컨텍스트 저장
@@ -179,13 +167,31 @@ public class UserService {
 
     //컨트롤러에서도 repo 접근해야 돼서 만듦... 이왕 만든 김에 서비스에서도 그냥 사용
     //서비스에서는 레포로 바로 접근해도 문제 X, 컨트롤러->서비스->레포
-    public Boolean existsEmail(String email) {
-        return userRepository.existsByEmail(email);
+    public void existsEmail(String email) {
+        if (userRepository.existsByEmail(email)) {
+            throw new DuplicateException("이미 사용 중인 이메일입니다.");
+        }
     }
-    public Boolean existsId(String id) {
-        return userRepository.existsById(id);
+    public void existsId(String id) {
+        if (userRepository.existsById(id)) {
+            throw new DuplicateException("이미 사용 중인 아이디입니다.");
+        }
     }
-    public Boolean existsNickname(String nickname) {
-        return userRepository.existsByNickname(nickname);
+    public void existsNickname(String nickname) {
+        if (userRepository.existsByNickname(nickname)) {
+            throw new DuplicateException("이미 사용 중인 닉네임입니다.");
+        }
     }
+
+    public UserResponse getCurrentUser(UserEntity user) {
+        return UserResponse.toDto(getUser(user));
+    }
+
+    public UserResponse getCurrentUser(String id) {
+        UserEntity userEntity = userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("존재하지 않는 회원입니다.")); //회원 객체 받기
+        return getCurrentUser(userEntity);
+    }
+
+
 }

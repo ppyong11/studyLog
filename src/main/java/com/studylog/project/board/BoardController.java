@@ -109,9 +109,9 @@ public class BoardController {
 
     @Operation(summary = "게시글 삭제 (해당 게시글의 파일 함께 삭제)")
     @DeleteMapping("{boardId}")
-    public ResponseEntity<CommonResponse> deleteBoard(@PathVariable("boardId") Long boardId,
+    public ResponseEntity<CommonResponse<Void>> deleteBoard(@PathVariable("boardId") Long boardId,
                                                       @AuthenticationPrincipal CustomUserDetail user) {
         boardService.deleteBoard(boardId, user.getUser());
-        return ResponseEntity.ok(new CommonResponse(true, "게시글이 삭제되었습니다."));
+        return ResponseEntity.ok(new CommonResponse<>(true, "게시글이 삭제되었습니다."));
     }
 }

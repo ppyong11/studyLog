@@ -16,8 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
@@ -73,7 +71,7 @@ public class NotificationController {
 
     @Operation(summary = "알림 전체 삭제")
     @DeleteMapping("/")
-    public ResponseEntity<CommonResponse> deleteAllNoti(@AuthenticationPrincipal CustomUserDetail user){
+    public ResponseEntity<CommonResponse<Void>> deleteAllNoti(@AuthenticationPrincipal CustomUserDetail user){
         return ResponseEntity.ok(notificationService.deleteAllNoti(user.getUser()));
     }
 
@@ -88,7 +86,7 @@ public class NotificationController {
     //알림 모두 읽음 처리
     @Operation(summary = "모든 알림 읽음 처리")
     @PatchMapping("/read-all")
-    public ResponseEntity<CommonResponse> readAllNoti(@AuthenticationPrincipal CustomUserDetail user){
+    public ResponseEntity<CommonResponse<Void>> readAllNoti(@AuthenticationPrincipal CustomUserDetail user){
         return ResponseEntity.ok(notificationService.readAllNoti(user.getUser()));
     }
 

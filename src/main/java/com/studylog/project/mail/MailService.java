@@ -23,10 +23,6 @@ public class MailService {
     @Async
     public void sendEmailCode(String email) {
         SimpleMailMessage message = new SimpleMailMessage(); //전송 내용 담는 객체
-        if(Boolean.TRUE.equals(redisTemplate.hasKey("verified:" + email))) {
-            //이미 검증 완료된 메일
-            throw new MailException("이미 검증 완료된 메일입니다. 회원가입을 진행해 주세요.");
-        }
         String code= randomCode(); //랜덤 코드 생성
         String text = String.format("""
         안녕하세요, Study Log입니다.
@@ -73,11 +69,18 @@ public class MailService {
         log.info("redis 인증 코드 저장 완료: "+redisTemplate.opsForValue().get("send:"+email));
     }
 
+    public void existsRedis(String email) {
+        if(Boolean.TRUE.equals(redisTemplate.hasKey("verified:" + email))) {
+            //이미 검증 완료된 메일을 인증 시도하려 할 때
+            throw new MailException("이미 인증이 완료된 메일입니다. 나중에 다시 시도해 주세요.");
+        }
+    }
+
     //인증 코드 검증
     public void verifyEmailCode(String email, String code) {
         String storedCode= redisTemplate.opsForValue().get("send:"+email); //코드 값 꺼내기
 
-        if(storedCode == null) throw new MailException("인증 코드가 만료되었습니다."); //TTL 만료 or 이메일 저장 X
+        if(storedCode == null) throw new MailException("인증 코드가 없거나 만료되었습니다."); //TTL 만료 or 이메일 저장 X
         if(!storedCode.equals(code)) throw new MailException("인증 코드가 일치하지 않습니다."); //코드 일치 X
 
         redisTemplate.opsForValue().set("verified:" + email, "true", Duration.ofMinutes(10)); //검증 완료한 메일 담는 redis

@@ -1,16 +1,17 @@
 package com.studylog.project.user;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+@AllArgsConstructor
 @Getter
 public class UserResponse {
-    private String id;
+    private Long id;
     private String nickname;
-    private String email;
+    private String role;
 
-    public UserResponse(UserEntity user) {
-        this.id = user.getId();
-        this.nickname = user.getNickname();
-        this.email = user.getEmail();
+    public static UserResponse toDto(UserEntity user) {
+        String role = user.getRole()? "ADMIN" : "USER";
+        return new UserResponse(user.getUser_id(), user.getNickname(), role);
     }
 }

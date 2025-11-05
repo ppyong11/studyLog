@@ -32,8 +32,9 @@ public class CategoryService {
     public void defaultCategory(UserEntity user) {
         CategoryEntity category = CategoryEntity.builder()
                 .user_id(user) //알아서 long타입으로 들어감
-                .name("#F7F7F7")
-                .bgColor("#484848")
+                .name("기타")
+                .bgColor("#F7F7F7")
+                .textColor("#484848")
                 .build();
         categoryRepository.save(category);
         log.info("기본 카테고리 저장 완료");

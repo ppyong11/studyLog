@@ -161,10 +161,10 @@ public class TimerController {
     //타이머 계획 or 카테고리 업데이트 시, 계획/카테고리 대조 잘하기 계획 잇는데 카테고리 다른 거로 바꿀 수 X
     @Operation(summary = "타이머 삭제 (타이머 랩 함께 삭제)")
     @DeleteMapping("/{timerId}")
-    public ResponseEntity<CommonResponse> deleteTimer(@PathVariable("timerId") Long id,
+    public ResponseEntity<CommonResponse<Void>> deleteTimer(@PathVariable("timerId") Long id,
                                                       @AuthenticationPrincipal CustomUserDetail user) {
         timerService.deleteTimer(id, user.getUser());
-        return ResponseEntity.ok(new CommonResponse( true, "타이머가 삭제되었습니다."));
+        return ResponseEntity.ok(new CommonResponse<>( true, "타이머가 삭제되었습니다."));
     }
 
     //동기화 컨트롤러

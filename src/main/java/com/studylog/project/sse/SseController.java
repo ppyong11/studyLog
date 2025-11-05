@@ -37,10 +37,10 @@ public class SseController {
                     example = "{\n  \"success\": true,\n  \"message\": \"구독된 알림 채널이 없습니다.\"\n}")))
     })
     @GetMapping("/subscribe/status")
-    public ResponseEntity<CommonResponse> isSubscribe(@AuthenticationPrincipal CustomUserDetail user) {
+    public ResponseEntity<CommonResponse<Void>> isSubscribe(@AuthenticationPrincipal CustomUserDetail user) {
         if (!sseEmitterService.isSubscribe(user.getUser()))
-            return ResponseEntity.ok(new CommonResponse(true, "구독된 알림 채널이 없습니다."));
-        return ResponseEntity.ok(new CommonResponse(true, "구독된 알림 채널이 있습니다."));
+            return ResponseEntity.ok(new CommonResponse<>(true, "구독된 알림 채널이 없습니다."));
+        return ResponseEntity.ok(new CommonResponse<>(true, "구독된 알림 채널이 있습니다."));
     }
 
     //구독

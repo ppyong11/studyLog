@@ -77,11 +77,11 @@ public class FileController {
                 example = "{\n  \"success\": false,\n  \"message\": \"존재하지 않는 게시글입니다.\"\n}")))
     })
     @DeleteMapping("/{fileId}")
-    public ResponseEntity<CommonResponse> deleteFile(@PathVariable Long fileId,
+    public ResponseEntity<CommonResponse<Void>> deleteFile(@PathVariable Long fileId,
                                                      @RequestParam(required = false) Long boardId,
                                                      @RequestParam(required = false) String draftId,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
         fileService.deleteMeta(fileId, boardId, draftId, user.getUser());
-        return ResponseEntity.ok(new CommonResponse(true, "파일이 삭제되었습니다."));
+        return ResponseEntity.ok(new CommonResponse<>(true, "파일이 삭제되었습니다."));
     }
 }

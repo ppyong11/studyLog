@@ -6,6 +6,7 @@ import com.studylog.project.timer.TimerRepository;
 import com.studylog.project.timer.TimerStatus;
 import com.studylog.project.user.UserEntity;
 import com.studylog.project.user.UserRepository;
+import com.studylog.project.user.UserResponse;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -136,5 +136,4 @@ public class JwtService {
         redisTemplate.delete("RT:"+ id); //리프레시 토큰 삭제 (강제 무효화)
         redisTemplate.delete("RT:" + refreshToken); //토큰에 저장된 id 삭제
     }
-
 }

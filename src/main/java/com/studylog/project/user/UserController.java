@@ -1,7 +1,6 @@
 package com.studylog.project.user;
 
 import com.studylog.project.global.exception.BadRequestException;
-import com.studylog.project.global.exception.DuplicateException;
 import com.studylog.project.jwt.CustomUserDetail;
 import com.studylog.project.mail.MailRequest;
 import com.studylog.project.global.response.CommonResponse;
@@ -15,7 +14,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -37,29 +35,17 @@ public class UserController {
 
     @Operation(summary= "아이디 중복 확인")
     @GetMapping("/signup/check-id")
-    public ResponseEntity<CommonResponse> checkId(@RequestParam(required = false) String id) {
-        if (id == null) throw new BadRequestException("아이디를 입력해 주세요.");
-
-        if (!id.matches("^[a-zA-Z0-9]{4,12}$")) { //영어, 숫자, 6~20자 사이의 아이디만 가능
-            throw new BadRequestException("아이디는 4~12자 영문 또는 숫자여야 합니다.");
-        } else { //유효성 검사 통과
-            //id 중복 시 1 반환, available은 0이 됨
-            if (!userService.existsId(id))
-                return ResponseEntity.ok(new CommonResponse(true, "사용 가능한 아이디입니다."));
-            else throw new DuplicateException("이미 사용 중인 아이디입니다.");
-        }
+    public ResponseEntity<CommonResponse> checkId(@Valid @ModelAttribute IdRequest request) {
+        log.info(request.getId());
+        userService.existsId(request.getId().trim());
+        return ResponseEntity.ok(new CommonResponse(true, "사용 가능한 아이디입니다."));
     }
+
     @Operation(summary= "닉네임 중복 확인")
     @GetMapping("/signup/check-nickname")
-    public ResponseEntity<CommonResponse> checkNickname(@RequestParam(required = false) String nickname) {
-        if(nickname == null) throw new BadRequestException("닉네임을 입력해 주세요.");
-        if (!nickname.matches("^[가-힣a-zA-Z0-9]{2,10}$")) { //한글, 영어, 숫자, 2~10자 사이의 닉네임만 가능
-            throw new BadRequestException("닉네임은 2~10자 한글, 영어, 숫자여야 합니다");
-        } else {
-            if(!userService.existsNickname(nickname))
-                return ResponseEntity.ok(new CommonResponse(true, "사용 가능한 닉네임입니다."));
-            else throw new DuplicateException("이미 사용 중인 닉네임입니다.");
-        }
+    public ResponseEntity<CommonResponse> checkNickname(@Valid @ModelAttribute NicknameRequest request) {
+        userService.existsNickname(request.getNickname().trim());
+        return ResponseEntity.ok(new CommonResponse(true, "사용 가능한 닉네임입니다."));
     }
 
 
@@ -77,14 +63,12 @@ public class UserController {
             )))
     })
     @PostMapping("/signup/send-email-code")
-    public ResponseEntity<CommonResponse> sendEmailCode(@RequestBody @Valid MailRequest reqeust) {
+    public ResponseEntity<CommonResponse<Void>> sendEmailCode(@RequestBody @Valid MailRequest reqeust) {
         String email = reqeust.getEmail(); //유효성 검사 후 받은 이메일 string형 변환
-        if (userService.existsEmail(email)) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).
-                    body(new CommonResponse( false, "이미 사용 중인 이메일입니다."));
-        }
+        userService.existsEmail(email); // 이미 가입한 이메일일 경우
+        mailService.existsRedis(email); // 이미 인증 완료된 메일일 경우
         mailService.sendEmailCode(email); //랜덤 코드 생성 후 이메일 발송, 에러 시 핸들러가 처리
-        return ResponseEntity.ok(new CommonResponse( true, "사용 가능한 이메일입니다. 이메일 발송 완료"));
+        return ResponseEntity.ok(new CommonResponse<>( true, "인증 메일이 전송되었습니다."));
     }
 
     @Operation(summary= "이메일 인증 코드 검증")
@@ -100,12 +84,12 @@ public class UserController {
             )))
     })
     @PostMapping("/signup/verify-email-code")
-    public ResponseEntity<CommonResponse> verifyCode(@RequestBody @Valid MailRequest reqeust) {
+    public ResponseEntity<CommonResponse<Void>> verifyCode(@RequestBody @Valid MailRequest reqeust) {
         if (reqeust.getCode() == null || reqeust.getCode().isBlank()) { //code 입력 안 했을 때
-            return ResponseEntity.badRequest().body(new CommonResponse( false, "인증 코드를 입력하세요."));
+            throw new BadRequestException("인증 코드를 입력하세요.");
         }
         mailService.verifyEmailCode(reqeust.getEmail(), reqeust.getCode()); //Redis 값 비교, 오류 시 핸들러 처리
-        return ResponseEntity.ok(new CommonResponse(true, "이메일이 인증되었습니다.")); //mailService에서 문제 없으면 처리
+        return ResponseEntity.ok(new CommonResponse<>(true, "이메일이 인증되었습니다.\n이 인증은 10분 동안 유효하니 시간 내에 회원가입을 완료해 주세요.")); //mailService에서 문제 없으면 처리
     }
 
     @Operation(summary= "회원가입")
@@ -121,28 +105,35 @@ public class UserController {
                         )))
     })
     @PostMapping("/signup")
-    public ResponseEntity<CommonResponse> signUp(@RequestBody @Valid SignInRequest signInRequest) {
-        userService.register(signInRequest);
-        return ResponseEntity.ok(new CommonResponse(true, "회원가입 되었습니다."));
+    public ResponseEntity<CommonResponse<Void>> signUp(@RequestBody @Valid SignUpRequest request) {
+        userService.register(request);
+        return ResponseEntity.ok(new CommonResponse<>(true, "회원가입 되었습니다."));
     }
 
+    @GetMapping("/member")
+    @Operation(summary = "유저 정보 반환")
+    public ResponseEntity<UserResponse> getMemberInfo(@AuthenticationPrincipal CustomUserDetail user) {
+        log.info("유저 정보 반환");
+        UserResponse userResponse = userService.getCurrentUser(user.getUser());
+        return ResponseEntity.ok(userResponse);
+    }
     @PatchMapping("/member/change-pw")
     @Operation(summary = "비밀번호 변경")
-    public ResponseEntity<CommonResponse> updatePW(@AuthenticationPrincipal CustomUserDetail user,
+    public ResponseEntity<CommonResponse<Void>> updatePW(@AuthenticationPrincipal CustomUserDetail user,
                                                    @RequestBody @Valid UpdatePwRequest request) {
         //유효 토큰 및 로그인 상태 확인(redis) 필터에서 검증됨
         userService.changePw(user, request);
-        return ResponseEntity.ok(new CommonResponse(true, "비밀번호가 변경되었습니다."));
+        return ResponseEntity.ok(new CommonResponse<>(true, "비밀번호가 변경되었습니다."));
     }
 
     @PatchMapping("/member/change-nickname")
     @Operation(summary = "닉네임 변경")
-    public ResponseEntity<CommonResponse> updateNickname(@AuthenticationPrincipal CustomUserDetail user,
+    public ResponseEntity<CommonResponse<Void>> updateNickname(@AuthenticationPrincipal CustomUserDetail user,
                                                          @RequestBody @Valid UpdateNicknameRequest request) {
         //유효 토큰 및 로그인 상태 확인(redis) 필터에서 검증됨
         userService.changeNickname(user, request);
         log.info(user.getUsername());
-        return ResponseEntity.ok(new CommonResponse(true, "닉네임이 변경되었습니다."));
+        return ResponseEntity.ok(new CommonResponse<>(true, "닉네임이 변경되었습니다."));
     }
 
     @Operation(summary = "다짐 변경")

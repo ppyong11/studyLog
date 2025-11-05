@@ -143,40 +143,40 @@ public class PlanController {
                     example = "{\n  \"success\": false,\n  \"message\": \"없는 카테고리 지정- 존재하지 않는 카테고리입니다.\"\n}")))
     })
     @PostMapping("")
-    public ResponseEntity<CommonResponse> setPlan(@Valid @RequestBody PlanRequest request,
+    public ResponseEntity<CommonResponse<Void>> setPlan(@Valid @RequestBody PlanRequest request,
                                                   @AuthenticationPrincipal CustomUserDetail user) {
         planService.addPlan(request, user.getUser());
-        return ResponseEntity.ok(new CommonResponse( true, "계획이 저장되었습니다."));
+        return ResponseEntity.ok(new CommonResponse<>( true, "계획이 저장되었습니다."));
     }
 
     //계획 상태 수정
     @Operation(summary = "계획 상태 수정")
     @PatchMapping("/{planId}/complete")
-    public ResponseEntity<CommonResponse> setPlanStatus(@PathVariable Long planId,
+    public ResponseEntity<CommonResponse<Void>> setPlanStatus(@PathVariable Long planId,
                                                         @RequestParam("status") String status,
                                                         @AuthenticationPrincipal CustomUserDetail user) {
         boolean isComplete= parseStatus(status);
         planService.updateStatus(planId, isComplete, user.getUser());
-        return ResponseEntity.ok(new CommonResponse( true, "계획 상태가 변경되었습니다."));
+        return ResponseEntity.ok(new CommonResponse<>( true, "계획 상태가 변경되었습니다."));
     }
 
     //계획 수정
     @Operation(summary = "계획 수정")
     @PatchMapping("/{planId}")
-    public ResponseEntity<CommonResponse> updatePlan(@PathVariable Long planId,
+    public ResponseEntity<CommonResponse<Void>> updatePlan(@PathVariable Long planId,
                                                      @Valid @RequestBody PlanRequest request,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
         planService.updatePlan(planId, request, user.getUser());
-        return ResponseEntity.ok(new CommonResponse( true, "계획이 수정되었습니다."));
+        return ResponseEntity.ok(new CommonResponse<>( true, "계획이 수정되었습니다."));
     }
 
     //계획 삭제
     @Operation(summary = "계획 삭제")
     @DeleteMapping("/{planId}")
-    public ResponseEntity<CommonResponse> deletePlan(@PathVariable Long planId,
+    public ResponseEntity<CommonResponse<Void>> deletePlan(@PathVariable Long planId,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
         planService.deletePlan(planId, user.getUser());
-        return ResponseEntity.ok(new CommonResponse(true, "계획이 삭제되었습니다."));
+        return ResponseEntity.ok(new CommonResponse<>(true, "계획이 삭제되었습니다."));
     }
 
     //계획 조회 (타이머 목록바용)

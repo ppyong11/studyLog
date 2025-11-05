@@ -18,7 +18,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -84,22 +83,22 @@ public class CategoryController {
     //카테고리 추가
     @Operation(summary = "카테고리 등록")
     @PostMapping("")
-    public ResponseEntity<CommonResponse> newCategory(@Valid @RequestBody CategoryRequest request,
+    public ResponseEntity<CommonResponse<Void>> newCategory(@Valid @RequestBody CategoryRequest request,
                                                       @AuthenticationPrincipal CustomUserDetail user) {
         if(!COLORS.containsKey(request.getBgColor())) throw new BadRequestException("지원하지 않는 색상입니다.");
         categoryService.addCategory(request, COLORS.get(request.getBgColor()), user.getUser());
-        return ResponseEntity.ok(new CommonResponse( true, "카테고리가 등록되었습니다."));
+        return ResponseEntity.ok(new CommonResponse<>( true, "카테고리가 등록되었습니다."));
     }
 
     //카테고리 수정
     @Operation(summary = "카테고리 수정")
     @PatchMapping("/{categoryId}")
-    public ResponseEntity<CommonResponse> updateCategory(@PathVariable Long categoryId,
+    public ResponseEntity<CommonResponse<Void>> updateCategory(@PathVariable Long categoryId,
                                                          @Valid @RequestBody CategoryRequest request,
                                                          @AuthenticationPrincipal CustomUserDetail user) {
         if(!COLORS.containsKey(request.getBgColor())) throw new BadRequestException("지원하지 않는 색상입니다.");
         categoryService.updateCategory(categoryId, request, COLORS.get(request.getBgColor()), user.getUser());
-        return ResponseEntity.ok(new CommonResponse(true, "카테고리가 수정되었습니다."));
+        return ResponseEntity.ok(new CommonResponse<>(true, "카테고리가 수정되었습니다."));
     }
 
     //카테고리 삭제
@@ -119,9 +118,9 @@ public class CategoryController {
                     example = "{\n  \"success\": false,\n  \"message\": \"존재하지 않는 카테고리입니다.\"\n}")))
     })
     @DeleteMapping("/{categoryId}")
-    public ResponseEntity<CommonResponse> delCategory(@PathVariable Long categoryId,
+    public ResponseEntity<CommonResponse<Void>> delCategory(@PathVariable Long categoryId,
                                                       @AuthenticationPrincipal CustomUserDetail user) {
         categoryService.delCategory(categoryId, user.getUser());
-        return ResponseEntity.ok(new CommonResponse( true, "카테고리가 삭제되었습니다."));
+        return ResponseEntity.ok(new CommonResponse<>( true, "카테고리가 삭제되었습니다."));
     }
 }
