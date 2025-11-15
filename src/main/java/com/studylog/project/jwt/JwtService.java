@@ -1,12 +1,11 @@
 package com.studylog.project.jwt;
 
-import com.studylog.project.global.exception.BadRequestException;
-import com.studylog.project.global.exception.NotFoundException;
+import com.studylog.project.global.exception.CustomException;
+import com.studylog.project.global.exception.ErrorCode;
 import com.studylog.project.timer.TimerRepository;
 import com.studylog.project.timer.TimerStatus;
 import com.studylog.project.user.UserEntity;
 import com.studylog.project.user.UserRepository;
-import com.studylog.project.user.UserResponse;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +45,7 @@ public class JwtService {
 
         //3. 인증 정보를 기반으로 JWT 토큰 생성
         JwtToken jwtToken= jwtTokenProvider.createToken(authentication);
-        String rt= jwtToken.getRefreshToken(); //검증 후에 토큰 만드니까 오류 X
+        String rt= jwtToken.refreshToken(); //검증 후에 토큰 만드니까 오류 X
         saveToken("RT:" + id, rt, null, null); //리프레시 토큰 저장 (id -> 토큰)
         saveToken("RT:" + rt, rt, id, null); //양방향 저장 (토큰 -> id)
         return jwtToken;
@@ -69,14 +68,14 @@ public class JwtService {
                     redisTemplate.opsForValue().set(key, token, TTL, TimeUnit.MILLISECONDS);
                 }
             } catch (Exception e) {
-                throw new RuntimeException(e.getMessage()); //잡아서 에러 던짐
+                throw new CustomException(ErrorCode.REDIS_ERROR); //잡아서 에러 던짐
             }
             log.info("rt 저장 완료: "+redisTemplate.opsForValue().get(key));
         } else{ //로그아웃한 AT 저장
             try {
                 redisTemplate.opsForValue().set(key, state, TTL, TimeUnit.MILLISECONDS);
             } catch (Exception e) {
-                throw new RuntimeException(e.getMessage()); //잡아서 에러 던짐
+                throw new CustomException(ErrorCode.REDIS_ERROR); //잡아서 에러 던짐
             }
         }
     }
@@ -84,7 +83,7 @@ public class JwtService {
     //블랙리스트 저장 (로그아웃)
     public void saveBlacklistToken(CustomUserDetail userDetail, String token){
         if(timerRepository.existsByUserAndStatus(userDetail.getUser(), TimerStatus.RUNNING))
-            throw new BadRequestException("실행 중인 타이머를 종료한 후 다시 시도해 주세요.");
+            throw new CustomException(ErrorCode.TIMER_RUNNING);
         saveToken("AT:"+ token, token, null, "로그아웃"); //액세스 저장
         deleteRefreshToken(userDetail.getUsername());
     }
@@ -93,13 +92,13 @@ public class JwtService {
     //redis에 토큰 회전 및 쿠키에 재발급한 토큰들 내려주기
     public JwtToken createNewToken(String userId, CustomUserDetail userDetail, String access){
         UserEntity userEntity= userRepository.findById(userId) //userId 유니크 필드라 조회 문제 X
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 회원입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         //인증 객체 임의 생성
         List<GrantedAuthority> authorities= List.of(new SimpleGrantedAuthority(userEntity.getRole()? "ROLE_USER" : "ROLE_ADMIN"));
         Authentication authentication= new UsernamePasswordAuthenticationToken(userEntity.getId(), null, authorities);
         JwtToken jwtToken= jwtTokenProvider.createToken(authentication);
         //기존 AT 로그아웃 처리, 저장된 RT 삭제 후 새 RT 저장
-        String newRefresh= jwtToken.getRefreshToken();
+        String newRefresh= jwtToken.refreshToken();
 
         saveToken("AT:"+ access, access, null, "로그아웃");
         String id= userDetail.getUsername();
