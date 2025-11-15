@@ -1,7 +1,8 @@
 package com.studylog.project.global.filterExceptionHandler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.studylog.project.global.response.CommonResponse;
+import com.studylog.project.global.exception.ErrorCode;
+import com.studylog.project.global.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -20,14 +21,13 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response,
                        AccessDeniedException e) throws IOException {
-        log.info("denied Handler 호출 완");
-        HttpStatus status = HttpStatus.FORBIDDEN;
+        log.info("accessDeniedHandler 호출: 403 에러 발생");
+        ErrorCode errorCode = ErrorCode.ACCESS_DENIED;
 
-        CommonResponse commonResponse = new CommonResponse(false, "접근 권한이 없습니다.");
-        response.setStatus(status.value());
+        response.setStatus(errorCode.getStatus().value());
         response.setContentType("application/json; charset=UTF-8");
 
-        String responseBody=objectMapper.writeValueAsString(commonResponse);
+        String responseBody=objectMapper.writeValueAsString(new ErrorResponse(errorCode.getCode(), errorCode.getMessage()));
         response.getWriter().write(responseBody);
     }
 }
