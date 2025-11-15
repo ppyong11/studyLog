@@ -9,9 +9,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface FileRepository extends JpaRepository<FileEntity, Long> {
+    Optional<FileEntity> findByUserAndIdAndBoard(UserEntity user, Long id, Long boardId);
     Optional<FileEntity> findByUserAndId(UserEntity user, Long id);
+    Optional<FileEntity> findByUserAndIdAndDraftId(UserEntity user, Long id, String draftId);
     List<FileEntity> findAllByUserAndDraftId(UserEntity user, String draftId);
     List<FileEntity> findAllByUserAndBoard(UserEntity user, BoardEntity board);
-    List<FileEntity> findAllByUploadAtBeforeAndDraftTrue(LocalDateTime cutoff);
+    List<FileEntity> findAllByUploadAtBeforeAndDraftIsNotNull(LocalDateTime cutoff);
 
 }

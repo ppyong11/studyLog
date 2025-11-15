@@ -1,14 +1,14 @@
 package com.studylog.project.global;
 
-import com.studylog.project.global.exception.BadRequestException;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 @Slf4j
 public class CommonUtil {
+
+    private CommonUtil() {}; // 인스턴스 생성 방지
 
     //카테고리 조회 검증 로직 (static이라 다른 파일에서 객체 선언 없이 사용 O)
     public static List<Long> parseAndValidateCategory(String category) {

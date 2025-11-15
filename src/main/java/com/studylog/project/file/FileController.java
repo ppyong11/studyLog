@@ -1,6 +1,8 @@
 package com.studylog.project.file;
 
-import com.studylog.project.global.response.CommonResponse;
+import com.studylog.project.global.CommonThrow;
+import com.studylog.project.global.CommonValidator;
+import com.studylog.project.global.response.SuccessResponse;
 import com.studylog.project.jwt.CustomUserDetail;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -9,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @Controller
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name="File", description = "File API, 모든 요청 access token 필요")
 public class FileController {
     private final FileService fileService;
@@ -44,12 +48,14 @@ public class FileController {
               example = "{\n  \"success\": false,\n  \"message\": \"파일 업로드 실패\"\n}")))
     })
     @PostMapping("")
-    public ResponseEntity<FileResponse> uploadFile(@RequestParam("file") MultipartFile file,
-                                                   @RequestParam(required = false) Long boardId,
+    // 업로드 시 boardId 필요 X, 게시글 등록, 수정 시 알아서 매핑함
+    public ResponseEntity<SuccessResponse<Void>> uploadTempFile(@RequestParam("file") MultipartFile file,
                                                    @RequestParam(required = false) String draftId,
                                                    @AuthenticationPrincipal CustomUserDetail user) {
+        CommonValidator.validateDraftId(draftId);
+        fileService.uploadTempFile(file, draftId.trim(), user.getUser());
 
-        return ResponseEntity.ok(fileService.saveMeta(file, boardId, draftId == null? null:draftId.trim(), user.getUser()));
+        return ResponseEntity.ok(SuccessResponse.of("파일이 업로드되었습니다."));
     }
 
     @Operation(summary = "front에 파일 띄우기")
@@ -76,12 +82,26 @@ public class FileController {
         schema = @Schema(
                 example = "{\n  \"success\": false,\n  \"message\": \"존재하지 않는 게시글입니다.\"\n}")))
     })
+
     @DeleteMapping("/{fileId}")
-    public ResponseEntity<CommonResponse<Void>> deleteFile(@PathVariable Long fileId,
+    public ResponseEntity<SuccessResponse<Void>> deleteFile(@PathVariable Long fileId,
                                                      @RequestParam(required = false) Long boardId,
-                                                     @RequestParam(required = false) String draftId,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
-        fileService.deleteMeta(fileId, boardId, draftId, user.getUser());
-        return ResponseEntity.ok(new CommonResponse<>(true, "파일이 삭제되었습니다."));
+        if (boardId == null) {
+            CommonThrow.invalidRequest("게시글 번호 null");
+        }
+
+        fileService.deleteMeta(fileId, boardId, user.getUser());
+        return ResponseEntity.ok(SuccessResponse.of("파일이 삭제되었습니다."));
+    }
+
+    @DeleteMapping("/{fileId}")
+    public ResponseEntity<SuccessResponse<Void>> deleteTempFile(@PathVariable Long fileId,
+                                                            @RequestParam(required = false) String draftId,
+                                                            @AuthenticationPrincipal CustomUserDetail user) {
+        CommonValidator.validateDraftId(draftId);
+
+        fileService.deleteTempMeta(fileId, draftId, user.getUser());
+        return ResponseEntity.ok(SuccessResponse.of("파일이 삭제되었습니다."));
     }
 }

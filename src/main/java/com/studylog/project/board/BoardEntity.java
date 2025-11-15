@@ -2,7 +2,6 @@ package com.studylog.project.board;
 
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.file.FileEntity;
-import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;

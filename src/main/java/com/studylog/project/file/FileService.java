@@ -2,9 +2,7 @@ package com.studylog.project.file;
 
 import com.studylog.project.board.BoardEntity;
 import com.studylog.project.board.BoardRepository;
-import com.studylog.project.global.exception.BadRequestException;
-import com.studylog.project.global.exception.FileUploadFailedException;
-import com.studylog.project.global.exception.NotFoundException;
+import com.studylog.project.global.exception.*;
 import com.studylog.project.user.UserEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,22 +59,15 @@ public class FileService {
         return savedName;
     }
 
-    public FileResponse saveMeta(MultipartFile multipartFile, Long boardId, String draftId, UserEntity user) {
+    // 임시 파일 등록
+    public void uploadTempFile(MultipartFile multipartFile, String draftId, UserEntity user) {
         String savedName= saveFile(multipartFile);
-        BoardEntity board= null;
-        if(boardId == null && (draftId == null || draftId.isBlank()))
-            throw new BadRequestException("파일 업로드에 필요한 값이 없습니다.");
-        if (boardId != null) {
-            board = boardRepository.findByUserAndId(user, boardId)
-                    .orElseThrow(() -> new NotFoundException("존재하지 않는 게시글입니다."));
-            draftId= null;
-        }
 
         //DB에 메타 정보 저장
         FileEntity fileEntity= FileEntity.builder()
                 .user(user)
-                .board(board) //게시글 등록 전엔 id 안 받음, 수정 중엔 바로 채워짐
-                .draft(draftId) //게시글 있을 땐 null
+                .board(null) //게시글 등록 전엔 id 안 받음, 수정 중엔 바로 채워짐
+                .draft(draftId)
                 .size(multipartFile.getSize())
                 .path(fileDir + savedName) //서버에 저장된 경로
                 .originalName(multipartFile.getOriginalFilename())
@@ -84,26 +75,31 @@ public class FileService {
                 .type(multipartFile.getContentType()) //밈타입+확장자
                 .build();
         fileRepository.save(fileEntity);
-        return FileResponse.toDto(fileEntity);
-
     }
 
-    public void deleteMeta(Long fileId, Long boardId, String draftId, UserEntity user) {
-        FileEntity file= getFileEntity(fileId, user);
-        if(file.getBoard() != null) { //게시글에 등록된 파일을 삭제할 경우
-            if(boardId == null) throw new BadRequestException("삭제할 파일의 게시글을 입력해 주세요.");
-            BoardEntity board= boardRepository.findByUserAndId(user, boardId)
-                    .orElseThrow(()-> new NotFoundException("존재하지 않는 게시글입니다."));
-            if(!file.getBoard().getId().equals(board.getId()))
-                throw new BadRequestException("파일이 등록된 게시글과 일치하지 않습니다.");
-        }
-        else{ //임시 파일이라면
-            if(draftId == null)  throw new BadRequestException("파일 삭제에 필요한 값이 없습니다.");
-            if(!file.getDraftId().equals(draftId))
-                throw new BadRequestException("파일 삭제에 필요한 값이 일치하지 않습니다.");
-        }
+    public void deleteTempMeta(Long fileId, String draftId, UserEntity user) {
+        FileEntity file = fileRepository.findByUserAndIdAndDraftId(user, fileId, draftId)
+                .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
+
         //임시 파일 draft 값 검증 or 게시글 검증된 파일 삭제 시
         fileRepository.delete(file);
+    }
+
+    public void deleteMeta(Long fileId, Long boardId, UserEntity user) {
+        FileEntity file = fileRepository.findByUserAndIdAndBoard(user, fileId, boardId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
+
+        fileRepository.delete(file);
+    }
+
+    public void attachDraftFilesToBoard(UserEntity user, BoardEntity board, String draftId) {
+        // 빈 리스트면 동작 X
+        List<FileEntity> files = fileRepository.findAllByUserAndDraftId(user, draftId);
+
+        for (FileEntity file : files) {
+            file.attachBoard(board);
+            file.resetDraftId();
+        }
     }
 
     public ResponseEntity<Resource> getFileResponse(Long fileId, UserEntity user) {
@@ -125,21 +121,13 @@ public class FileService {
 
     public FileEntity getFileEntity(Long fileId, UserEntity user) {
         return fileRepository.findByUserAndId(user, fileId)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 파일입니다."));
-    }
-
-    public List<FileEntity> getFilesByUserAndDraftId(UserEntity user, String draftId){
-        return fileRepository.findAllByUserAndDraftId(user, draftId);
-    }
-
-    public List<FileEntity> getFilesByBoard(UserEntity user, BoardEntity board){
-        return fileRepository.findAllByUserAndBoard(user, board);
+                .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
     }
 
     @Scheduled(cron= "0 */30 * * * *") //30분마다 시행
     public void deleteDraftFiles(){
         LocalDateTime cutoff= LocalDateTime.now().minusHours(2);
-        List<FileEntity> expiredFiles= fileRepository.findAllByUploadAtBeforeAndDraftTrue(cutoff);
+        List<FileEntity> expiredFiles= fileRepository.findAllByUploadAtBeforeAndDraftIsNotNull(cutoff);
         fileRepository.deleteAll(expiredFiles);
     }
 }

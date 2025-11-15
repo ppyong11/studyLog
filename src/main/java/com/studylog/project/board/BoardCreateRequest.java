@@ -23,8 +23,6 @@ public class BoardCreateRequest {
     private String title;
     @Schema(description = "게시글 내용")
     private String content;
-    @Schema(description = "프론트에서 생성된 게시글 임시 식별자 (UUID 형식으로 파일 등록 시 활용됨)")
-    private String draftId;
 
     public BoardEntity toEntity(UserEntity user, CategoryEntity category) {
         return BoardEntity.builder()

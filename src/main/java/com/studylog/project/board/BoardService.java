@@ -6,18 +6,17 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
-import com.studylog.project.file.FileEntity;
 import com.studylog.project.file.FileService;
-import com.studylog.project.global.PageResponse;
-import com.studylog.project.global.exception.BadRequestException;
-import com.studylog.project.global.exception.NotFoundException;
+import com.studylog.project.global.CommonThrow;
+import com.studylog.project.global.exception.CustomException;
+import com.studylog.project.global.exception.ErrorCode;
+import com.studylog.project.global.response.PageResponse;
 import com.studylog.project.user.UserEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -45,12 +44,14 @@ public class BoardService {
         for(String s : sort) {
             String[] arr= s.split(","); //arr[0]= title, arr[1]= asc
             if(arr.length != 2) {
-                throw new BadRequestException("지원하지 않는 정렬입니다.");
+                CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
             }
             String field = arr[0].trim().toLowerCase();
             String value = arr[1].trim().toLowerCase();
-            if(!value.equals("asc") && !value.equals("desc"))
-                throw new BadRequestException("지원하지 않는 정렬입니다.");
+
+            if(!value.equals("asc") && !value.equals("desc")) {
+                CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
+            }
 
             switch (field) { //->: 자동 break 처리
                 case "date" ->
@@ -59,11 +60,14 @@ public class BoardService {
                         orders[1]= value.equals("desc")? boardEntity.category.name.desc() : boardEntity.category.name.asc();
                 case "title" ->
                     orders[2]= value.equals("desc")? boardEntity.title.desc() : boardEntity.title.asc();
-                default -> throw new BadRequestException("지원하지 않는 정렬입니다."); //field 이상하면 여기서 걸림
+                default -> CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
+
             }
         }
-        if(orders[0] == null || orders[1] == null || orders[2] == null)
-            throw new BadRequestException("지원하지 않는 정렬입니다.");
+
+        if (orders[0] == null || orders[1] == null || orders[2] == null) {
+            CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
+        }
 
         builder.and(boardEntity.user.eq(user));
         if(!categoryList.isEmpty()) {
@@ -105,34 +109,26 @@ public class BoardService {
         return new PageResponse<>(boardResponses, totalItems, totalPages, page, pageSize);
     }
 
-    public BoardDetailResponse createBoard(BoardCreateRequest request, UserEntity user) {
-        if(request.getDraftId() == null) throw new BadRequestException("게시글 고유 값이 없습니다.");
+    public BoardDetailResponse createBoard(BoardCreateRequest request, String draftId, UserEntity user) {
         //board의 category는 categoryEntity타입으로 조회하고 엔티티로 받기
         CategoryEntity category= categoryRepository.findByUserAndId(user, request.getCategoryId())
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
 
         BoardEntity board = request.toEntity(user, category);
-        boardRepository.saveAndFlush(board); //이때는 board.id 있음
-        List<FileEntity> files= fileService.getFilesByUserAndDraftId(user, request.getDraftId());
-        for (FileEntity file : files) {
-            file.updateBoard(board);
-            file.resetDraftIdAndDraftFalse(); //임시파일 게시글 연결됐으니까 초기화
-            board.getFiles().add(file); //파일 반영 안 돼서 직접 추가
-        }
+        boardRepository.saveAndFlush(board); // 이때는 board.id 있음
 
+        fileService.attachDraftFilesToBoard(user, board, draftId);
         return BoardDetailResponse.toDto(BoardResponse.toDto(board), board);
     }
 
-    public BoardDetailResponse updateBoard(Long id, BoardUpdateRequest request, UserEntity user) {
+    public BoardDetailResponse updateBoard(Long id, BoardUpdateRequest request, String draftId, UserEntity user) {
         BoardEntity board = getBoardByUserAndId(user, id);
         CategoryEntity category= categoryRepository.findByUserAndId(user, request.getCategoryId())
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
 
         board.updateBoard(category, request);
-        List<FileEntity> files= fileService.getFilesByBoard(user, board);
-        for(FileEntity file : files) {
-            file.resetDraftIdAndDraftFalse();
-        }
+
+        fileService.attachDraftFilesToBoard(user, board, draftId);
         return BoardDetailResponse.toDto(BoardResponse.toDto(board), board);
     }
 
@@ -143,7 +139,7 @@ public class BoardService {
     }
 
     private BoardEntity getBoardByUserAndId(UserEntity user, Long id) {
-        return boardRepository.findByUserAndId(user, id).orElseThrow(() -> new NotFoundException("존재하지 않는 게시글입니다."));
+        return boardRepository.findByUserAndId(user, id).orElseThrow(() -> new CustomException(ErrorCode.BOARD_NOT_FOUND));
     }
 
     public void updateCategory(CategoryEntity deleteCategory, CategoryEntity defaultCategory){
