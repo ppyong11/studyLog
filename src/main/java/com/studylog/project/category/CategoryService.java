@@ -4,10 +4,8 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.board.BoardService;
-import com.studylog.project.global.ScrollResponse;
-import com.studylog.project.global.exception.BadRequestException;
-import com.studylog.project.global.exception.DuplicateException;
-import com.studylog.project.global.exception.NotFoundException;
+import com.studylog.project.global.exception.*;
+import com.studylog.project.global.response.ScrollResponse;
 import com.studylog.project.plan.PlanService;
 import com.studylog.project.timer.TimerService;
 import com.studylog.project.user.UserEntity;
@@ -97,19 +95,20 @@ public class CategoryService {
 
     //카테고리 단일 조회
     public CategoryResponse getCategory(Long id, UserEntity user) {
-        CategoryEntity category = categoryRepository.findByUserAndId(user, id)
-                .orElseThrow(()-> new NotFoundException("존재하지 않는 카테고리입니다."));
+        CategoryEntity category = getCategory(user, id);
+
         return CategoryResponse.toDto(category);
     }
 
     public void addCategory(CategoryRequest request, String textColor, UserEntity user) {
-        if (categoryRepository.existsByUserAndName(user, request.getName())){
-            throw new DuplicateException("동일한 카테고리가 있습니다.");
+        if (categoryRepository.existsByUserAndName(user, request.name())){
+            throw new CustomException(ErrorCode.CATEGORY_NAME_DUPLICATE);
         }
+
         CategoryEntity category= CategoryEntity.builder()
-                .name(request.getName())
+                .name(request.name())
                 .user_id(user)
-                .bgColor(request.getBgColor())
+                .bgColor(request.bgColor())
                 .textColor(textColor)
                 .build();
         categoryRepository.save(category);
@@ -117,35 +116,43 @@ public class CategoryService {
 
     public void updateCategory(Long id, CategoryRequest request, String textColor, UserEntity user) {
         //카테고리 엔티티 가져옴
-        CategoryEntity category= categoryRepository.findByUserAndId(user, id)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다."));
+        CategoryEntity category= getCategory(user, id);
 
-        if(category.getName().equals("기타"))
-            throw new BadRequestException("해당 카테고리는 수정할 수 없습니다.");
-
-        if (categoryRepository.existsByUserAndName(user, request.getName().trim())){
-            if(!category.getName().equals(request.getName().trim()))
-                throw new DuplicateException("동일한 카테고리가 있습니다.");
+        if(category.getName().equals("기타")) {
+            log.info("기타 카테고리 변경 요청 - 불가");
+            throw new CustomException(ErrorCode.CATEGORY_NOT_MODIFIABLE);
         }
+
+        if (categoryRepository.existsByUserAndName(user, request.name().trim())){
+            if(!category.getName().equals(request.name().trim()))
+                throw new CustomException(ErrorCode.CATEGORY_NAME_DUPLICATE);
+        }
+
         category.updateCategory(request, textColor);
     }
 
     public void delCategory(Long id, UserEntity user) {
         //카테고리 엔티티 가져옴
-        CategoryEntity deleteCategory= categoryRepository.findByUserAndId(user, id)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다."));
-        if (deleteCategory.getName().equals("기타"))
-            throw new BadRequestException("해당 카테고리는 삭제할 수 없습니다.");
+        CategoryEntity deleteCategory= getCategory(user, id);
 
+        if (deleteCategory.getName().equals("기타")) {
+            log.info("기타 카테고리 삭제 요청 - 불가");
+            throw new CustomException(ErrorCode.CATEGORY_NOT_MODIFIABLE);
+        }
         //유저의 기본 카테고리 조회 후 적용
         CategoryEntity defaultCategory= categoryRepository.findByUserAndName(user, "기타")
-                .orElseThrow(()-> new NotFoundException("기타 카테고리가 없습니다."));
+                .orElseThrow(()-> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
 
         planService.updateCategory(deleteCategory,defaultCategory);
         boardService.updateCategory(deleteCategory, defaultCategory);
         timerService.updateCategory(deleteCategory, defaultCategory);
 
         categoryRepository.delete(deleteCategory);
+    }
+
+    private CategoryEntity getCategory(UserEntity user, Long id) {
+        return categoryRepository.findByUserAndId(user, id)
+                .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
     }
 }
 

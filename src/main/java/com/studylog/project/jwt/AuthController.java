@@ -1,5 +1,7 @@
 package com.studylog.project.jwt;
 
+import com.studylog.project.global.exception.CustomException;
+import com.studylog.project.global.exception.ErrorCode;
 import com.studylog.project.global.response.SuccessResponse;
 import com.studylog.project.user.LogInRequest;
 import com.studylog.project.user.UserResponse;
@@ -50,13 +52,13 @@ public class AuthController {
         userService.validateAndRestoreUser(request); //회원 검증 및 탈퇴 복구 처리
         JwtToken jwtToken = jwtService.logIn(request.id(), request.pw()); //예외 발생 시 아래 로직 실행 X
         log.info("요청- ID: {}, PW: {}", request.id(), request.pw());
-        log.info("AccessToken: {}, RefreshToken: {}", jwtToken.getAccessToken(), jwtToken.getRefreshToken());
+        log.info("AccessToken: {}, RefreshToken: {}", jwtToken.accessToken(), jwtToken.refreshToken());
 
         UserResponse userResponse = userService.getCurrentUser(request.pw());
-        String accessCookie= jwtService.createCookie("access_token",jwtToken.getAccessToken(),
+        String accessCookie= jwtService.createCookie("access_token",jwtToken.accessToken(),
                 "/", 30*60); //30분 동안 쿠키 보냄 (TTL이랑 오차 거의 없음)
 
-        String refreshCookie= jwtService.createCookie("refresh_token", jwtToken.getRefreshToken(),
+        String refreshCookie= jwtService.createCookie("refresh_token", jwtToken.refreshToken(),
                 "/api/refresh", 7*24*60*60); //7일 동안 쿠키 보냄
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie);
@@ -137,18 +139,20 @@ public class AuthController {
         //permitAll 경로라 필터에서 쿠키 있든 없든 컨트롤러 호출 O
         //컨트롤러에서 RT 써야 해서 파라미터로 꺼냄
         if(refreshToken == null) { //쿠키에 토큰 X
-            throw new JwtException("재발급 검증에 필요한 토큰이 없습니다.");
+            log.info("refresh 토큰 없음");
+            throw new CustomException(ErrorCode.AUTH_REQUIRED);
         }
         //토큰 O, 검증 완료 -> id 얻어옴
         String userId= redisTemplate.opsForValue().get("RT:" + refreshToken); //userId (long) 타입으로 안 넣음
         if (userId == null) { //서버에 등록 안 된 토큰
             log.warn("로그아웃 및 탈퇴한 회원이거나 이전에 사용한 리프레시 토큰입니다.");
-            throw new JwtException("유효하지 않은 토큰입니다.");
+            throw new CustomException(ErrorCode.JWT_EXPIRED);
         }
+
         JwtToken newToken= jwtService.createNewToken(userId, user, accessToken);
-        String accessCookie= jwtService.createCookie("access_token", newToken.getAccessToken(),
+        String accessCookie= jwtService.createCookie("access_token", newToken.accessToken(),
                 "/", 30*60);
-        String refreshCookie= jwtService.createCookie("refresh_token", newToken.getRefreshToken(),
+        String refreshCookie= jwtService.createCookie("refresh_token", newToken.refreshToken(),
                 "/api/refresh", 7*24*60*60);
         log.info("토큰 재발급 완료");
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie);
