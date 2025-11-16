@@ -53,16 +53,10 @@ public class PlanEntity {
     public PlanEntity (UserEntity user, CategoryEntity category, String name, String memo,
                        LocalDate startDate, LocalDate endDate, int minutes)
     {
-        if(startDate.isAfter(endDate)){
-            throw new BadRequestException("시작 날짜가 종료 날짜보다 뒤일 수 없습니다.");
-        }
-        if(minutes < 0){
-            throw new BadRequestException("음수값은 입력될 수 없습니다.");
-        }
         this.user = user;
         this.category = category;
-        this.name = name.trim();
-        this.memo = memo.trim();
+        this.name = name;
+        this.memo = memo;
         this.startDate = startDate;
         this.endDate = endDate;
         this.minutes = minutes; //미지정 시 0
@@ -74,21 +68,12 @@ public class PlanEntity {
     }
 
     public void updatePlan(PlanRequest request, CategoryEntity category){
-        if (request.getName() == null || request.getName().isBlank()) {
-            throw new BadRequestException("계획명을 입력해 주세요.");
-        }
-        if(request.getStartDate().isAfter(request.getEndDate())){
-            throw new BadRequestException("시작 날짜가 종료 날짜보다 뒤일 수 없습니다.");
-        }
-        if(request.getMinutes() < 0){
-            throw new BadRequestException("음수값은 입력될 수 없습니다.");
-        }
-        this.memo= request.getMemo().trim();
-        this.name = request.getName().trim();
+        this.memo= request.memo();
+        this.name = request.name();
         this.category = category;
-        this.startDate = request.getStartDate();
-        this.endDate = request.getEndDate();
-        this.minutes = request.getMinutes();
+        this.startDate = request.startDate();
+        this.endDate = request.endDate();
+        this.minutes = request.minutes();
     }
 
     public void updateStatus(boolean isComplete){

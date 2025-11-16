@@ -31,7 +31,6 @@ import java.util.UUID;
 public class FileService {
     private final String fileDir= "/home/ubuntu/app-data/uploads/";
     private final FileRepository fileRepository;
-    private final BoardRepository boardRepository;
     private final Set<String> blackExts= Set.of(
             "exe", "msi", "bat", "cmd", "sh", "bin", "com", "cpl", "scr", "jar",
             "js", "jsp", "php", "asp", "aspx", "cgi", "pl", "py", "rb",
@@ -47,14 +46,15 @@ public class FileService {
         //.확장자 부분 받아옴
         log.info(multipartFile.getContentType());
         String ext= originalFileName.substring(originalFileName.lastIndexOf(".")).toLowerCase();
-        if(blackExts.contains(ext)) throw new BadRequestException("해당 파일은 업로드할 수 없습니다.");
+        if (blackExts.contains(ext)) throw new CustomException(ErrorCode.INVALID_FILE_TYPE);
         String savedName= uuid + ext;
         try {
             File file= new File(fileDir + savedName); //데이터 X, 파일 객체
             //파일을 tmp/uploads/랜덤명에 저장
             multipartFile.transferTo(file); //multipartFile: 데이터
         } catch (IOException e) {
-            throw new FileUploadFailedException("파일 업로드 실패");
+            log.info("파일 업로드 중 서버 오류 발생 (500)");
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
         return savedName;
     }

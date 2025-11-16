@@ -1,5 +1,7 @@
 package com.studylog.project.sse;
 
+import com.studylog.project.global.exception.CustomException;
+import com.studylog.project.global.exception.ErrorCode;
 import com.studylog.project.notification.NotificationService;
 import com.studylog.project.timer.TimerEntity;
 import com.studylog.project.user.UserEntity;
@@ -51,7 +53,7 @@ public class SseEmitterService {
                             .data("subscribe-event, id:" + user.getUser_id())
             );
         } catch (IOException e) {
-            throw new RuntimeException("SSE 연결 실패"); //구독은 된 것
+            throw new CustomException(ErrorCode.SSE_ERROR);
         }
         return emitter;
     }

@@ -1,9 +1,11 @@
 package com.studylog.project.timer;
 
 import com.studylog.project.global.CommonUtil;
-import com.studylog.project.global.PageResponse;
-import com.studylog.project.global.exception.BadRequestException;
-import com.studylog.project.global.response.CommonResponse;
+import com.studylog.project.global.CommonValidator;
+import com.studylog.project.global.exception.CustomException;
+import com.studylog.project.global.exception.ErrorCode;
+import com.studylog.project.global.response.PageResponse;
+import com.studylog.project.global.response.SuccessResponse;
 import com.studylog.project.jwt.CustomUserDetail;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -57,31 +59,30 @@ public class TimerController {
                                                          @RequestParam(required = false) String keyword,
                                                          @RequestParam(required = false) String status,
                                                          @RequestParam(required = false) List<String> sort,
-                                                         @RequestParam(required = false) Integer page,
+                                                         @RequestParam(required = false) int page,
                                                          @AuthenticationPrincipal CustomUserDetail user) {
-        if(page == null || page < 1)
-            throw new BadRequestException("잘못된 페이지 값입니다.");
+        CommonValidator.validatePage(page);
+
         List<Long> categoryList= new ArrayList<>();
         status= status == null? null:status.trim().toUpperCase();
 
-        if(sort != null && sort.size() != 3){
-            throw new BadRequestException("잘못된 정렬 값입니다.");
-        }
-
         if (sort == null) {
             sort= List.of("date,desc", "category,asc", "name,asc");
+        } else {
+            CommonValidator.validateSort(sort, 3);
         }
 
         if (startDate == null ^ endDate == null) //fasle, true / true, false일 때 들어감
-            throw new BadRequestException("조회 날짜 범위를 입력해 주세요.");
+            throw new CustomException(ErrorCode.DATE_RANGE_REQUIRED);
         if(startDate != null && startDate.isAfter(endDate))
-            throw new BadRequestException("시작 날짜가 종료 날짜보다 뒤일 수 없습니다.");
+            throw new CustomException(ErrorCode.INVALID_DATE_RANGE);
 
         if (category != null && !category.trim().isEmpty()){
             categoryList= CommonUtil.parseAndValidateCategory(category);
         }
-        if (status != null && !VALID_STATUS.contains(status)) { //null 들어가도 문제 X
-            throw new BadRequestException("입력한 상태값이 올바르지 않습니다.");
+        if (status != null && !VALID_STATUS.contains(status)) {//null 들어가도 문제 X
+            log.info("잘못된 상태 값: {}", sort);
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
         }
         planKeyword= planKeyword == null? null:planKeyword.trim();
         keyword= keyword == null? null:keyword.trim();
@@ -161,10 +162,10 @@ public class TimerController {
     //타이머 계획 or 카테고리 업데이트 시, 계획/카테고리 대조 잘하기 계획 잇는데 카테고리 다른 거로 바꿀 수 X
     @Operation(summary = "타이머 삭제 (타이머 랩 함께 삭제)")
     @DeleteMapping("/{timerId}")
-    public ResponseEntity<CommonResponse<Void>> deleteTimer(@PathVariable("timerId") Long id,
+    public ResponseEntity<SuccessResponse<Void>> deleteTimer(@PathVariable("timerId") Long id,
                                                       @AuthenticationPrincipal CustomUserDetail user) {
         timerService.deleteTimer(id, user.getUser());
-        return ResponseEntity.ok(new CommonResponse<>( true, "타이머가 삭제되었습니다."));
+        return ResponseEntity.ok(SuccessResponse.of("타이머가 삭제되었습니다."));
     }
 
     //동기화 컨트롤러

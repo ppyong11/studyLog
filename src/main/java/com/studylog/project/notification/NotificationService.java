@@ -3,9 +3,10 @@ package com.studylog.project.notification;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
-import com.studylog.project.global.ScrollResponse;
-import com.studylog.project.global.exception.NotFoundException;
-import com.studylog.project.global.response.CommonResponse;
+import com.studylog.project.global.exception.CustomException;
+import com.studylog.project.global.exception.ErrorCode;
+import com.studylog.project.global.response.ScrollResponse;
+import com.studylog.project.global.response.SuccessResponse;
 import com.studylog.project.timer.TimerEntity;
 import com.studylog.project.user.UserEntity;
 import jakarta.transaction.Transactional;
@@ -78,31 +79,33 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
-    public CommonResponse<Void> deleteAllNoti(UserEntity user){
+    public SuccessResponse<Void> deleteAllNoti(UserEntity user){
         List<NotificationEntity> notifications= notificationRepository.findAllByUser(user);
-        if(notifications.isEmpty()) return new CommonResponse<>(true, "삭제할 알림이 없습니다.");
+        if(notifications.isEmpty()) return SuccessResponse.of( "삭제할 알림이 없습니다.");
         notificationRepository.deleteAll(notifications); //인자 없으면 모든 행 삭제
-        return new CommonResponse<>(true, "모든 알림이 삭제되었습니다.");
+        return SuccessResponse.of( "모든 알림이 삭제되었습니다.");
     }
     public void deleteNoti(Long id, UserEntity user){
         NotificationEntity notification= notificationRepository.findByUserAndId(user, id)
-                .orElseThrow(()-> new NotFoundException("존재하지 않는 알림입니다."));
+                .orElseThrow(()-> new CustomException(ErrorCode.NOTI_NOT_FOUND));
         notificationRepository.delete(notification);
     }
 
     public void readNoti(Long id, UserEntity user){
         NotificationEntity notification= notificationRepository.findByUserAndId(user, id)
-                .orElseThrow(()-> new NotFoundException("존재하지 않는 알림입니다."));
+                .orElseThrow(()-> new CustomException(ErrorCode.NOTI_NOT_FOUND));
         notification.updateIsRead();
     }
 
-    public CommonResponse<Void> readAllNoti(UserEntity user){
+    public SuccessResponse<Void> readAllNoti(UserEntity user){
         List<NotificationEntity> notifications= notificationRepository.findAllByUserAndIsReadFalse(user);
-        if(notifications.isEmpty()) return new CommonResponse<>(true, "읽음 처리할 알림이 없습니다.");
+        if(notifications.isEmpty()) {
+            return SuccessResponse.of("읽음 처리할 알림이 없습니다.");
+        }
         for(NotificationEntity noti:notifications) {
             noti.updateIsRead();
         }
-        return new CommonResponse<>(true, "모든 알림이 읽음 처리되었습니다.");
+        return SuccessResponse.of("모든 알림이 읽음 처리되었습니다.");
     }
 
 }

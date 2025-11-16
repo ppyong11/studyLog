@@ -1,6 +1,7 @@
 package com.studylog.project.mail;
 
-import com.studylog.project.global.exception.MailException;
+import com.studylog.project.global.exception.CustomException;
+import com.studylog.project.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -70,9 +71,9 @@ public class MailService {
     }
 
     public void existsRedis(String email) {
-        if(Boolean.TRUE.equals(redisTemplate.hasKey("verified:" + email))) {
+        if (Boolean.TRUE.equals(redisTemplate.hasKey("verified:" + email))) {
             //이미 검증 완료된 메일을 인증 시도하려 할 때
-            throw new MailException("이미 인증이 완료된 메일입니다. 나중에 다시 시도해 주세요.");
+            throw new CustomException(ErrorCode.MAIL_SEND_FAILED);
         }
     }
 
@@ -80,8 +81,8 @@ public class MailService {
     public void verifyEmailCode(String email, String code) {
         String storedCode= redisTemplate.opsForValue().get("send:"+email); //코드 값 꺼내기
 
-        if(storedCode == null) throw new MailException("인증 코드가 없거나 만료되었습니다."); //TTL 만료 or 이메일 저장 X
-        if(!storedCode.equals(code)) throw new MailException("인증 코드가 일치하지 않습니다."); //코드 일치 X
+        if (storedCode == null) throw new CustomException(ErrorCode.MAIL_CODE_EXPIRED); //TTL 만료 or 이메일 저장 X
+        if (!storedCode.equals(code)) throw new CustomException(ErrorCode.MAIL_CODE_MISMATCH); //코드 일치 X
 
         redisTemplate.opsForValue().set("verified:" + email, "true", Duration.ofMinutes(10)); //검증 완료한 메일 담는 redis
         log.info("인증 및 검증 메일 redis 저장 완료: {}", email);

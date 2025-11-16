@@ -282,7 +282,7 @@ public class PlanService {
     }
 
     public void addPlan(PlanRequest request, UserEntity user) {
-        CategoryEntity category= getCategory(request.getCategoryId(), user);
+        CategoryEntity category= getCategory(request.categoryId(), user);
         PlanEntity plan= request.toEntity(user, category);
         planRepository.save(plan);
     }
@@ -290,7 +290,7 @@ public class PlanService {
     public void updatePlan(Long id, PlanRequest request, UserEntity user) {
         //유저, 계획 검사
         PlanEntity plan= getPlanByUserAndId(id, user);
-        CategoryEntity category= getCategory(request.getCategoryId(), user);
+        CategoryEntity category= getCategory(request.categoryId(), user);
         //reqeust에 들어온 값 확인, 값이 있고 빈 문자열이 아닐 경우에만 처리 (시간은
 
         //타이머 있으면 처리, 없으면 패스

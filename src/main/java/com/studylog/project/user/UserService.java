@@ -38,18 +38,18 @@ public class UserService {
 
     @Transactional
     //회원 DB에 저장
-    public void register(SignUpRequest user) {
-        existsId(user.getId());
-        existsNickname(user.getNickname());
-        existsEmail(user.getEmail());
+    public void register(SignUpRequest request) {
+        existsId(request.id());
+        existsNickname(request.nickname());
+        existsEmail(request.email());
 
         // null안정 보장
-        if(!Boolean.TRUE.equals(redisTemplate.hasKey("verified:" + user.getEmail())))
+        if(!Boolean.TRUE.equals(redisTemplate.hasKey("verified:" + request.email())))
         {// 키 없는 경우
-            throw new MailException("인증 세션이 만료됐거나 인증된 메일이 아닙니다.\n회원가입을 다시 진행해 주세요.");
+            throw new CustomException(ErrorCode.AUTH_SESSION_EXPIRED);
         }
-        String encryptedPw= passwordEncoder.encode(user.getPassword());
-        UserEntity userEntity = user.toEntity();
+        String encryptedPw= passwordEncoder.encode(request.password());
+        UserEntity userEntity = request.toEntity();
         userEntity.setEncodedPw(encryptedPw); //빌더 객체 pw 값 바뀜
         userRepository.save(userEntity);
         userRepository.flush(); //userEntity DB에 저장 후 카테고리 넣기
@@ -62,60 +62,60 @@ public class UserService {
     //아이디, 비밀번호 확인
     public void validateAndRestoreUser(LogInRequest request) {
         //아이디 검증
-        UserEntity userEntity= userRepository.findById(request.getId())
-                .orElseThrow(() -> new LoginFaildException("아이디 또는 비밀번호가 일치하지 않습니다."));
-        log.info("요청- ID: {}, PW: {}", request.getId(), request.getPw());
-        if (passwordEncoder.matches(request.getPw(), userEntity.getPw())) {
+        UserEntity userEntity= userRepository.findById(request.id())
+                .orElseThrow(() -> new CustomException(ErrorCode.LOGIN_FAIL));
+
+        if (passwordEncoder.matches(request.pw(), userEntity.getPw())) {
 
             log.info(String.format("id: [%s], 로그인 성공", userEntity.getId()));
             if(userEntity.isDelete()){//회원탈퇴한 회원이라면
                 //7일 지났는데 스케쥴러 안 돌아서 삭제 안 된 경우
                 if(userEntity.getDeleteAt().isBefore(LocalDateTime.now().minusDays(7))){
-                    throw new AlreadyDeleteUserException("회원탈퇴 철회 기간이 지나 복구가 불가합니다.");
+                    throw new CustomException(ErrorCode.USER_DELETED);
                 }
                 restore(userEntity); //복구 처리
             }
         } else{
             log.warn(String.format("id: [%s], 로그인 실패", userEntity.getId()));
-            throw new LoginFaildException("아이디 또는 비밀번호가 일치하지 않습니다.");
+            throw new CustomException(ErrorCode.LOGIN_FAIL);
         }
     }
 
     @Transactional
     //비밀번호 변경
-    public void changePw(CustomUserDetail customUserDTO, UpdatePwRequest pwRequest) { //암호화된 비번(DTO), 평문 비번(request)
-        if (passwordEncoder.matches(pwRequest.getCurrentPw(), customUserDTO.getPassword())){
-            //평문 비번과 암호화 비번이 동일하다면
-            if(pwRequest.getCurrentPw().equals(pwRequest.getNewPw())){
-                throw new InvalidRequestException("기존 비밀번호와 새로운 비밀번호가 일치합니다.");
-            }
-            String encryptedPw= passwordEncoder.encode(pwRequest.getNewPw()); //새 비번 암호화
-            UserEntity userEntity= userRepository.findById(customUserDTO.getUser().getUser_id())
-                    .orElseThrow(() -> new NotFoundException("존재하지 않는 회원입니다.")); //principal의 user 객체를 entity에 넣음
-            userEntity.changePw(encryptedPw);
-            log.info("changePw: 비밀번호 변경 완료");
+    public void changePw(UserEntity user, UpdatePwRequest request) { //암호화된 비번(DTO), 평문 비번(request)
+        String currentPw = request.currentPw();
+        String newPw = request.newPw();
+
+        UserEntity userEntity = getUser(user, ErrorCode.USER_NOT_FOUND); // principal의 user 객체를 entity에 넣음
+
+        if (!passwordEncoder.matches(currentPw, user.getPw())) {
+            throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
         }
-        else{ //현재 비번 일치 X
-            log.info("changePw: 비밀번호 변경 실패");
-            throw new InvalidRequestException("기존 비밀번호와 일치하지 않습니다.");
+
+        if (currentPw.equals(newPw)) {
+            throw new CustomException(ErrorCode.PASSWORD_SAME_AS_OLD);
         }
+
+        String encryptedPw = passwordEncoder.encode(newPw);
+
+        userEntity.changePw(encryptedPw);
+        log.info("changePw: 비밀번호 변경 완료");
     }
 
     @Transactional
     //닉네임 변경
-    public void changeNickname(CustomUserDetail customUserDTO,UpdateNicknameRequest nicknameRequest) {
-        String currentNick= customUserDTO.getUser().getNickname();
-        if(currentNick.equals(nicknameRequest.getNickname())){
-            //기존 닉네임 동일 시
-            throw new InvalidRequestException("현재 닉네임과 동일합니다.");
-        }
-        //닉네임 중복 시 (존재 닉네임)
-        existsNickname(nicknameRequest.getNickname());
+    public void changeNickname(UserEntity user, String newNickname) {
+        UserEntity userEntity = getUser(user, ErrorCode.USER_NOT_FOUND); // 요청 날린 토큰의 인증 객체로 영속성 컨텍스트 저장
 
-        //위 경우가 아니라면
-        UserEntity userEntity= userRepository.findById(customUserDTO.getUser().getUser_id())
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 회원입니다.")); //요청 날린 토큰의 인증 객체로 영속성 컨텍스트 저장
-        userEntity.changeNickname(nicknameRequest.getNickname()); //닉네임 바꿈
+        if (userEntity.getNickname().equals(newNickname)) {
+            // 닉네임이 동일하면 아무 작업 X
+            return;
+        }
+
+        existsNickname(newNickname);
+
+        userEntity.changeNickname(newNickname); // 더티 체킹
         //변경 값 감지 후 update
     }
 
@@ -129,15 +129,14 @@ public class UserService {
     //회원탈퇴
     @Transactional
     public void withdraw(UserEntity user){
-        UserEntity userEntity= getUser(user);
+        UserEntity userEntity= getUser(user, ErrorCode.USER_NOT_FOUND);
         userEntity.withdraw(LocalDateTime.now()); //기존 객체를 바꾸는 거니까 빌더 필요 X
         log.info("탈퇴 처리 완료: 여부 {}, 시간 {}, ", userEntity.isDelete(), userEntity.getDeleteAt());
     }
 
-    public String updateResolution(String resolution, UserEntity user){
-        UserEntity userEntity= getUser(user); //영속 상태 만들기
+    public void updateResolution(String resolution, UserEntity user){
+        UserEntity userEntity= getUser(user, ErrorCode.USER_NOT_FOUND); //영속 상태 만들기
         userEntity.updateResolution(resolution);
-        return resolution;
     }
 
     public UserInfoResponse getUserInfo(UserEntity user){
@@ -145,9 +144,9 @@ public class UserService {
                 notificationService.getUnreadCount(user));
     }
 
-    public UserEntity getUser(UserEntity user){
+    public UserEntity getUser(UserEntity user, ErrorCode errorCode){
         return userRepository.findById(user.getUser_id())
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 회원입니다.")); //회원 객체 받기
+                .orElseThrow(() -> new CustomException(errorCode)); //회원 객체 받기
     }
 
     @Scheduled(fixedRate = 30 * 60 * 1000) //서버 실행 시간부터 30분마다 실행
@@ -169,28 +168,24 @@ public class UserService {
     //서비스에서는 레포로 바로 접근해도 문제 X, 컨트롤러->서비스->레포
     public void existsEmail(String email) {
         if (userRepository.existsByEmail(email)) {
-            throw new DuplicateException("이미 사용 중인 이메일입니다.");
+            throw new CustomException(ErrorCode.MAIL_DUPLICATE);
         }
     }
     public void existsId(String id) {
         if (userRepository.existsById(id)) {
-            throw new DuplicateException("이미 사용 중인 아이디입니다.");
+            throw new CustomException(ErrorCode.ID_DUPLICATE);
         }
     }
     public void existsNickname(String nickname) {
         if (userRepository.existsByNickname(nickname)) {
-            throw new DuplicateException("이미 사용 중인 닉네임입니다.");
+            throw new CustomException(ErrorCode.NICKNAME_DUPLICATE);
         }
-    }
-
-    public UserResponse getCurrentUser(UserEntity user) {
-        return UserResponse.toDto(getUser(user));
     }
 
     public UserResponse getCurrentUser(String id) {
         UserEntity userEntity = userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 회원입니다.")); //회원 객체 받기
-        return getCurrentUser(userEntity);
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        return UserResponse.of(userEntity);
     }
 
 

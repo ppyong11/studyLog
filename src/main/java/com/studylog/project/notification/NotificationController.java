@@ -1,8 +1,8 @@
 package com.studylog.project.notification;
 
-import com.studylog.project.global.ScrollResponse;
-import com.studylog.project.global.exception.BadRequestException;
-import com.studylog.project.global.response.CommonResponse;
+import com.studylog.project.global.CommonValidator;
+import com.studylog.project.global.response.ScrollResponse;
+import com.studylog.project.global.response.SuccessResponse;
 import com.studylog.project.jwt.CustomUserDetail;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -57,9 +57,9 @@ public class NotificationController {
                                     example = "{\n  \"success\": false,\n  \"message\": \"로그인이 필요한 요청입니다.\"\n}")))
     })
     @GetMapping("")
-    public ResponseEntity<ScrollResponse<NotificationResponse>> getAllNoti(@RequestParam(required = false) Integer page,
+    public ResponseEntity<ScrollResponse<NotificationResponse>> getAllNoti(@RequestParam(required = false) int page,
                                                                            @AuthenticationPrincipal CustomUserDetail user){
-        if(page == null || page < 1) throw new BadRequestException("잘못된 페이지 값입니다.");
+        CommonValidator.validatePage(page);
         return ResponseEntity.ok(notificationService.getAllNoti(page, user.getUser()));
     }
 
@@ -71,7 +71,7 @@ public class NotificationController {
 
     @Operation(summary = "알림 전체 삭제")
     @DeleteMapping("/")
-    public ResponseEntity<CommonResponse<Void>> deleteAllNoti(@AuthenticationPrincipal CustomUserDetail user){
+    public ResponseEntity<SuccessResponse<Void>> deleteAllNoti(@AuthenticationPrincipal CustomUserDetail user){
         return ResponseEntity.ok(notificationService.deleteAllNoti(user.getUser()));
     }
 
@@ -86,7 +86,7 @@ public class NotificationController {
     //알림 모두 읽음 처리
     @Operation(summary = "모든 알림 읽음 처리")
     @PatchMapping("/read-all")
-    public ResponseEntity<CommonResponse<Void>> readAllNoti(@AuthenticationPrincipal CustomUserDetail user){
+    public ResponseEntity<SuccessResponse<Void>> readAllNoti(@AuthenticationPrincipal CustomUserDetail user){
         return ResponseEntity.ok(notificationService.readAllNoti(user.getUser()));
     }
 

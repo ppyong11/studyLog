@@ -7,9 +7,10 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
-import com.studylog.project.global.PageResponse;
-import com.studylog.project.global.exception.BadRequestException;
-import com.studylog.project.global.exception.NotFoundException;
+import com.studylog.project.global.CommonThrow;
+import com.studylog.project.global.exception.CustomException;
+import com.studylog.project.global.exception.ErrorCode;
+import com.studylog.project.global.response.PageResponse;
 import com.studylog.project.notification.NotificationEntity;
 import com.studylog.project.notification.NotificationRepository;
 import com.studylog.project.plan.PlanEntity;
@@ -52,10 +53,14 @@ public class TimerService {
 
         for(String s:sort){
             String[] arr= s.split(",");
-            if(arr.length != 2) throw new BadRequestException("지원하지 않는 정렬입니다.");
+            if(arr.length != 2) {
+                CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
+            }
             String field= arr[0].trim().toLowerCase();
             String value= arr[1].trim().toLowerCase();
-            if(!value.equals("asc") && !value.equals("desc")) throw new BadRequestException("지원하지 않는 정렬입니다.");
+            if(!value.equals("asc") && !value.equals("desc")) {
+                CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
+            }
 
             switch (field){
                 case "date" ->
@@ -64,12 +69,14 @@ public class TimerService {
                     orders[1]= value.equals("desc")? timerEntity.category.name.desc():timerEntity.category.name.asc();
                 case "name" ->
                     orders[2]= value.equals("desc")? timerEntity.name.desc(): timerEntity.name.asc();
-                default -> throw new BadRequestException("지원하지 않는 정렬입니다.");
+                default -> CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
             }
         }
 
-        if(orders[0] == null || orders[1] == null || orders[2] == null)
-            throw new BadRequestException("지원하지 않는 정렬입니다.");
+        if(orders[0] == null || orders[1] == null || orders[2] == null) {
+            CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
+        }
+
 
         builder.and(timerEntity.user.eq(user));
 
@@ -141,14 +148,15 @@ public class TimerService {
         PlanEntity plan= null;
         CategoryEntity category;
         TimerEntity timer;
-        if(request.getPlan() != null){
-            plan= planRepository.findByUserAndId(user, request.getPlan())
-                    .orElseThrow(() -> new NotFoundException("존재하지 않는 계획입니다."));
+
+        if(request.planId() != null){
+            plan= planRepository.findByUserAndId(user, request.planId())
+                    .orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
             checkPlan(plan, null, request);
             category= plan.getCategory();
         } else{ //request에 플랜 X
-            category= categoryRepository.findByUserAndId(user, request.getCategory())
-                    .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다."));
+            category= categoryRepository.findByUserAndId(user, request.categoryId())
+                    .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
         }
 
         timer= request.toEntity(user, plan, category);
@@ -167,19 +175,19 @@ public class TimerService {
         PlanEntity plan= null;
         CategoryEntity category;
 
-        if(request.getPlan() != null){
-            plan= planRepository.findByUserAndId(user, request.getPlan())
-                    .orElseThrow(() -> new NotFoundException("존재하지 않는 계획입니다."));
+        if(request.planId() != null){
+            plan= planRepository.findByUserAndId(user, request.planId())
+                    .orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
             checkPlan(plan, timer, request);
             category= plan.getCategory();
         } else{ //request에 플랜 X
             if(timer.getPlan() != null && timer.getPlan().isComplete())
-                throw new BadRequestException("완료 처리된 계획은 수정할 수 없습니다.");
-            category= categoryRepository.findByUserAndId(user, request.getCategory())
-                    .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다."));
+                throw new CustomException(ErrorCode.TIMER_PLAN_COMPLETED);
+            category= categoryRepository.findByUserAndId(user, request.categoryId())
+                    .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
         }
 
-        timer.updateName(request.getName());
+        timer.updateName(request.name());
         timer.updatePlan(plan);
         timer.updateCategory(category);
         return TimerDetailResponse.toDto(timer, formatElapsed(timer.getElapsed()));
@@ -189,14 +197,14 @@ public class TimerService {
         TimerEntity timer= getTimerByUserAndId(user, id);
 
         if(timer.getStatus().equals(TimerStatus.RUNNING))
-            throw new BadRequestException("이미 실행 중인 타이머입니다.");
+            throw new CustomException(ErrorCode.TIMER_ALREADY_STATE);
 
         //갱신 안 되게 상태 조건 추가
         if(timerRepository.existsByUserAndStatus(user, TimerStatus.RUNNING))
-            throw new BadRequestException("실행 중인 타이머가 있습니다. 정지/종료 후 다시 시도해 주세요.");
+            throw new CustomException(ErrorCode.TIMER_RUNNING);
 
         if(timer.getStatus().equals(TimerStatus.ENDED))
-            throw new BadRequestException("종료된 타이머는 실행이 불가합니다.");
+            throw new CustomException(ErrorCode.TIMER_ENDED);
 
         timer.start();
         return TimerDetailResponse.toDto(timer, formatElapsed(timer.getElapsed()));
@@ -222,7 +230,7 @@ public class TimerService {
     public TimerDetailResponse syncedTimer(Long id, UserEntity user) {
         TimerEntity timer= getTimerByUserAndId(user, id);
         if(!timer.getStatus().equals(TimerStatus.RUNNING))
-            throw new BadRequestException("실행 중인 타이머가 아닙니다.");
+            throw new CustomException(ErrorCode.TIMER_NOT_RUNNING);
         timer.updateElapsed(getTotalElapsed(timer)); //누적 경과+startAt+동기화 시간
         timer.updateSyncedAt(); //동기화
         checkCompletion(timer, user, true);
@@ -235,8 +243,8 @@ public class TimerService {
 
         switch (timer.getStatus()) { //디폴트 안 써도 됨
             case RUNNING -> timer.pause();
-            case ENDED -> throw new BadRequestException("종료된 타이머는 정지가 불가합니다.");
-            default -> throw new BadRequestException("실행 중인 타이머가 아닙니다.");
+            case ENDED -> throw new CustomException(ErrorCode.TIMER_ENDED);
+            default -> throw new CustomException(ErrorCode.TIMER_NOT_RUNNING);
         }
 
         timer.updateElapsed(getTotalElapsed(timer)); //누적 시간 갱신
@@ -252,8 +260,8 @@ public class TimerService {
                 timer.end(LocalDateTime.now());
                 timer.updateElapsed(getTotalElapsed(timer)); //누적 시간 갱신
             }
-            case ENDED -> throw new BadRequestException("이미 종료된 타이머입니다.");
-            case READY -> throw new BadRequestException("실행 중인 타이머가 아닙니다.");
+            case ENDED -> throw new CustomException(ErrorCode.TIMER_ENDED);
+            case READY -> throw new CustomException(ErrorCode.TIMER_NOT_RUNNING);
             case PAUSED -> timer.end(timer.getPauseAt()); //정지된 타이머라면 정지 시간 == 종료 시간 (누적 시간 갱신은 정지할 때 함)
         }
         if(timer.getPlan() != null) checkCompletion(timer, user, false);
@@ -263,29 +271,29 @@ public class TimerService {
     //완료 체킹은 그대로
     public TimerDetailResponse resetTimer(Long id, UserEntity user) {
         TimerEntity timer= getTimerByUserAndId(user, id);
-        if(timer.getPlan().isComplete()) throw new BadRequestException("타이머의 계획이 완료 상태일 경우 초기화가 불가합니다.");
+        if(timer.getPlan().isComplete()) throw new CustomException(ErrorCode.TIMER_RESET_FOR_COMPLETED_PLAN);
         switch (timer.getStatus()) {
-            case ENDED -> throw new BadRequestException("종료된 타이머는 초기화가 불가합니다.");
-            case READY -> throw new BadRequestException("초기화 상태입니다.");
+            case ENDED -> throw new CustomException(ErrorCode.TIMER_ENDED);
+            case READY -> throw new CustomException(ErrorCode.TIMER_ALREADY_STATE);
             default -> timer.reset();
         }
         return TimerDetailResponse.toDto(timer, formatElapsed(timer.getElapsed()));
     }
 
     public TimerEntity getTimerByUserAndId(UserEntity user, Long id) {
-        return timerRepository.getTimerWithPlanCategory(user, id).orElseThrow(() -> new NotFoundException("존재하지 않는 타이머입니다."));
+        return timerRepository.getTimerWithPlanCategory(user, id).orElseThrow(() -> new CustomException(ErrorCode.TIMER_NOT_FOUND));
     }
 
     private void checkPlan(PlanEntity plan, TimerEntity timer, TimerRequest request) {
         if(timer == null || timer.getPlan() == null || !timer.getPlan().getId().equals(plan.getId())){
-            if(timerRepository.existsByPlanId(plan.getId())) throw new BadRequestException("선택한 계획의 타이머가 이미 존재합니다.");
-            if(plan.isComplete()) throw new BadRequestException("이미 완료된 계획은 설정할 수 없습니다.");
-            if(!plan.getCategory().getId().equals(request.getCategory())){
-                throw new BadRequestException("입력된 카테고리가 계획 카테고리와 일치하지 않습니다.");
+            if(timerRepository.existsByPlanId(plan.getId())) throw new CustomException(ErrorCode.TIMER_ALREADY_EXISTS);
+            if(plan.isComplete()) throw new CustomException(ErrorCode.TIMER_PLAN_COMPLETED);
+            if(!plan.getCategory().getId().equals(request.categoryId())){
+                throw new CustomException(ErrorCode.TIMER_CATEGORY_PLAN_MISMATCH);
             }
         } else{ //타이머에 plan 있고 수정하려는 plan과 동일할 때
-            if(!timer.getPlan().getCategory().getId().equals(request.getCategory()))
-                throw new BadRequestException("입력된 카테고리가 계획 카테고리와 일치하지 않습니다.");
+            if(!timer.getPlan().getCategory().getId().equals(request.categoryId()))
+                throw new CustomException(ErrorCode.TIMER_CATEGORY_PLAN_MISMATCH);
         }
     }
 

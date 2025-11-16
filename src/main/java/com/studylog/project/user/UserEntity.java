@@ -96,6 +96,6 @@ public class UserEntity {
 
     //다짐 수정
     public void updateResolution(String resolution){
-        this.resolution= resolution.trim();
+        this.resolution= resolution;
     }
 }
