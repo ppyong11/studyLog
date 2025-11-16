@@ -1,14 +1,12 @@
 package com.studylog.project.plan;
 
 import com.studylog.project.category.CategoryEntity;
-import com.studylog.project.global.exception.BadRequestException;
 import com.studylog.project.timer.TimerEntity;
 import com.studylog.project.user.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
-import java.sql.Time;
 import java.time.LocalDate;
 
 @NoArgsConstructor

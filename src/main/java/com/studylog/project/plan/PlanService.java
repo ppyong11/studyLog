@@ -11,9 +11,10 @@ import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
-import com.studylog.project.global.ScrollResponse;
-import com.studylog.project.global.exception.BadRequestException;
-import com.studylog.project.global.exception.NotFoundException;
+import com.studylog.project.global.CommonThrow;
+import com.studylog.project.global.exception.CustomException;
+import com.studylog.project.global.exception.ErrorCode;
+import com.studylog.project.global.response.ScrollResponse;
 import com.studylog.project.timer.QTimerEntity;
 import com.studylog.project.timer.TimerService;
 import com.studylog.project.user.UserEntity;
@@ -22,7 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.reflect.Constructor;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
@@ -54,13 +54,13 @@ public class PlanService {
 
         for(String s : sort){
             String[] arr= s.split(",");
-            if(arr.length != 2){
-                throw new BadRequestException("지원하지 않는 정렬입니다.");
+            if(arr.length != 2) {
+                CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
             }
             String field= arr[0].trim().toLowerCase();
             String value= arr[1].trim().toLowerCase();
             if(!value.equals("asc") && !value.equals("desc")){
-                throw new BadRequestException("지원하지 않는 정렬입니다.");
+                CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
             }
 
             switch (field){
@@ -68,10 +68,12 @@ public class PlanService {
                     orders[0]= value.equals("desc")? planEntity.startDate.desc() : planEntity.startDate.asc();
                 case "category" ->
                     orders[1]= value.equals("desc")? planEntity.category.name.desc() : planEntity.category.name.asc();
-                default -> throw new BadRequestException("지원하지 않는 정렬입니다.");
+                default -> CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
             }
         }
-        if(orders[0] == null || orders[1] == null) throw new BadRequestException("지원하지 않는 정렬입니다.");
+        if(orders[0] == null || orders[1] == null) {
+            CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
+        }
 
         builder.and(planEntity.user.eq(user)); //유저 것만 조회 결과로
         //startDate, endDate 항상 있음 (컨트롤러에서 검증)
@@ -127,10 +129,14 @@ public class PlanService {
                 endDate.equals(endDate.with(TemporalAdjusters.lastDayOfMonth())))
                     isSame= true;
             }
-            default -> throw new BadRequestException("잘못된 범위 값입니다.");
+            default -> CommonThrow.invalidRequest("잘못된 범위 값: " + range);
         }
 
-        if(!isSame) throw new BadRequestException("잘못된 범위 값입니다.");
+        if(!isSame) {
+            CommonThrow.invalidRequest("잘못된 범위 값: " + range);
+        }
+
+        builder.and(planEntity.user.eq(user));
         builder.and(planEntity.startDate.loe(today)); //<=
         builder.and(planEntity.endDate.goe(today)); // >=
 
@@ -306,7 +312,7 @@ public class PlanService {
     //삭제 로직
     public void deletePlan(Long id, UserEntity user) {
         PlanEntity plan= planRepository.findByUserAndId(user, id)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 계획입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
 
         planRepository.delete(plan); //cascade로 타이머도 삭제됨
     }
@@ -320,10 +326,14 @@ public class PlanService {
         BooleanBuilder builder= new BooleanBuilder();
         OrderSpecifier<?> order;
 
-        switch (sort){
-            case ("asc")-> order= planEntity.startDate.asc();
-            case ("desc")-> order= planEntity.startDate.desc();
-            default -> throw new BadRequestException("지원하지 않는 정렬입니다.");
+        if (!List.of("asc", "desc").contains(sort)) {
+            CommonThrow.invalidRequest("잘못된 정렬 값: " + sort);
+        }
+
+        if ("asc".equals(sort)) {
+            order= planEntity.startDate.asc();
+        } else {
+            order= planEntity.startDate.desc();
         }
 
         builder.and(planEntity.user.eq(user));
@@ -377,14 +387,14 @@ public class PlanService {
     //유저, planId 검사
     private PlanEntity getPlanByUserAndId(Long id, UserEntity user) {
         return planRepository.findByUserAndId(user, id)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 계획입니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
     }
     //유효성 검사 후 카테고리 가져옴
     private CategoryEntity getCategory(Long category, UserEntity user) {
         //유저에게 존재하지 않는 카테고리일 경우 반환 X
         //반환되는 카테고리도 영속 상태임 (@Transactional 써서 메서드 끝날 때까지 영속)
         return categoryRepository.findByUserAndId(user, category)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다"));
+                .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
     }
 
 }

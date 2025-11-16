@@ -1,9 +1,12 @@
 package com.studylog.project.plan;
 
+import com.studylog.project.global.CommonThrow;
 import com.studylog.project.global.CommonUtil;
-import com.studylog.project.global.ScrollResponse;
-import com.studylog.project.global.exception.BadRequestException;
-import com.studylog.project.global.response.CommonResponse;
+import com.studylog.project.global.CommonValidator;
+import com.studylog.project.global.exception.CustomException;
+import com.studylog.project.global.exception.ErrorCode;
+import com.studylog.project.global.response.ScrollResponse;
+import com.studylog.project.global.response.SuccessResponse;
 import com.studylog.project.jwt.CustomUserDetail;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -49,25 +52,22 @@ public class PlanController {
                                                                @RequestParam(required = false) String keyword,
                                                                @RequestParam(name="status", required = false) String statusStr,
                                                                @RequestParam(required = false) List<String> sort,
-                                                               @RequestParam(required = false) Integer page,
+                                                               @RequestParam(required = false) int page,
                                                                @AuthenticationPrincipal CustomUserDetail user) {
 
-        if(page == null || page < 1) throw new BadRequestException("잘못된 페이지 값입니다.");
+        CommonValidator.validatePage(page);
 
-        if(sort != null && sort.size() != 2){
-            throw new BadRequestException("잘못된 정렬 값입니다.");
+        if (sort == null || sort.isEmpty()) {
+            sort = List.of("date,desc", "category,asc");
+        } else {
+            CommonValidator.validateSort(sort, 2);
         }
 
-        sort = sort == null? List.of("date,desc", "category,asc"):sort; //기본값 설정
         List<Long> categoryList = new ArrayList<>();
         Boolean status = null; //null값 필요해서 객체 타입으로
 
-        if(startDate == null || endDate == null){
-            throw new BadRequestException("조회 날짜 범위를 입력해 주세요.");
-        }
-        if (startDate.isAfter(endDate)) {
-            throw new BadRequestException("시작 날짜가 종료 날짜보다 뒤일 수 없습니다.");
-        }
+        CommonValidator.validateDate(startDate, endDate);
+
         if (category != null && !category.trim().isEmpty()) {
             //여기 안 들어가면 categoryList는 null? ㄴㄴ 내가 위에 빈 리스트 집어넣음 .isEmpty로 검사
             log.info("category: {}", category);
@@ -75,9 +75,9 @@ public class PlanController {
         }
         if (statusStr != null && !statusStr.trim().isEmpty()) {
             //입력했으면 검사
-            status = parseStatus(statusStr);
+            status = parseStatus(statusStr.trim().toLowerCase());
         }
-        log.info("status 값: {}", status);
+
         keyword = (keyword == null) ? null : keyword.trim(); //공백 제거
 
         ScrollPlanResponse response= planService.searchTablePlans(user.getUser(), startDate, endDate,
@@ -90,10 +90,13 @@ public class PlanController {
     @GetMapping("/daily")
     //HTTP 응답 바디 타입을 T로 지정해서 제네릭 사용 (타입 안정성 보장)
     public ResponseEntity<ScrollPlanResponse> getDailyPlans(@AuthenticationPrincipal CustomUserDetail user,
-                                                            @RequestParam(required = false) Integer page,
+                                                            @RequestParam(required = false) int page,
                                                             @RequestParam(required = false) LocalDate startDate){
-        if(page == null || page < 1) throw new BadRequestException("잘못된 페이지 값입니다.");
-        if(startDate == null || !startDate.equals(LocalDate.now())) throw new BadRequestException("잘못된 날짜 값입니다.");
+        CommonValidator.validatePage(page);
+        if(startDate == null || !startDate.equals(LocalDate.now())) {
+            log.info("잘못된 날짜 값 - startDate {}", startDate);
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
 
         return ResponseEntity.ok(planService.MainDailyPlans(user.getUser(), startDate, page));
     }
@@ -105,10 +108,10 @@ public class PlanController {
                                                                  @RequestParam(required = false) LocalDate endDate,
                                                                  @RequestParam(required = false) String range,
                                                                  @AuthenticationPrincipal CustomUserDetail user){
-        if(range == null) throw new BadRequestException("조회 범위가 입력되지 않았습니다.");
-        if(startDate == null || endDate == null){
-            throw new BadRequestException("조회 날짜 범위를 입력해 주세요.");
+        if (range == null || startDate == null || endDate == null) {
+            throw new CustomException(ErrorCode.DATE_RANGE_REQUIRED);
         }
+
         return ResponseEntity.ok(planService.getCalenderPlans(startDate, endDate, range, user.getUser()));
     }
 
@@ -143,40 +146,40 @@ public class PlanController {
                     example = "{\n  \"success\": false,\n  \"message\": \"없는 카테고리 지정- 존재하지 않는 카테고리입니다.\"\n}")))
     })
     @PostMapping("")
-    public ResponseEntity<CommonResponse<Void>> setPlan(@Valid @RequestBody PlanRequest request,
+    public ResponseEntity<SuccessResponse<Void>> setPlan(@Valid @RequestBody PlanRequest request,
                                                   @AuthenticationPrincipal CustomUserDetail user) {
         planService.addPlan(request, user.getUser());
-        return ResponseEntity.ok(new CommonResponse<>( true, "계획이 저장되었습니다."));
+        return ResponseEntity.ok(SuccessResponse.of("계획이 저장되었습니다."));
     }
 
     //계획 상태 수정
     @Operation(summary = "계획 상태 수정")
     @PatchMapping("/{planId}/complete")
-    public ResponseEntity<CommonResponse<Void>> setPlanStatus(@PathVariable Long planId,
+    public ResponseEntity<SuccessResponse<Void>> setPlanStatus(@PathVariable Long planId,
                                                         @RequestParam("status") String status,
                                                         @AuthenticationPrincipal CustomUserDetail user) {
-        boolean isComplete= parseStatus(status);
+        boolean isComplete= parseStatus(status.trim().toLowerCase());
         planService.updateStatus(planId, isComplete, user.getUser());
-        return ResponseEntity.ok(new CommonResponse<>( true, "계획 상태가 변경되었습니다."));
+        return ResponseEntity.ok(SuccessResponse.of("계획 상태가 변경되었습니다."));
     }
 
     //계획 수정
     @Operation(summary = "계획 수정")
     @PatchMapping("/{planId}")
-    public ResponseEntity<CommonResponse<Void>> updatePlan(@PathVariable Long planId,
+    public ResponseEntity<SuccessResponse<Void>> updatePlan(@PathVariable Long planId,
                                                      @Valid @RequestBody PlanRequest request,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
         planService.updatePlan(planId, request, user.getUser());
-        return ResponseEntity.ok(new CommonResponse<>( true, "계획이 수정되었습니다."));
+        return ResponseEntity.ok(SuccessResponse.of("계획이 수정되었습니다."));
     }
 
     //계획 삭제
     @Operation(summary = "계획 삭제")
     @DeleteMapping("/{planId}")
-    public ResponseEntity<CommonResponse<Void>> deletePlan(@PathVariable Long planId,
+    public ResponseEntity<SuccessResponse<Void>> deletePlan(@PathVariable Long planId,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
         planService.deletePlan(planId, user.getUser());
-        return ResponseEntity.ok(new CommonResponse<>(true, "계획이 삭제되었습니다."));
+        return ResponseEntity.ok(SuccessResponse.of("계획이 삭제되었습니다."));
     }
 
     //계획 조회 (타이머 목록바용)
@@ -186,39 +189,35 @@ public class PlanController {
                                                                                       @RequestParam(required = false) LocalDate endDate,
                                                                                       @RequestParam(required = false) String keyword,
                                                                                       @RequestParam(required = false) String sort,
-                                                                                      @RequestParam(required = false) Integer page,
+                                                                                      @RequestParam(required = false) int page,
                                                                                       @AuthenticationPrincipal CustomUserDetail user){
-        if(page == null || page < 1) throw new BadRequestException("잘못된 페이지 값입니다.");
+        CommonValidator.validatePage(page);
+
         sort= sort == null? "desc":sort.trim().toLowerCase();
+
         keyword= keyword == null? null:keyword.trim();
 
-        if(startDate == null || endDate == null){
-            throw new BadRequestException("조회 날짜 범위를 입력해 주세요.");
-        }
-        if (startDate.isAfter(endDate)) {
-            throw new BadRequestException("시작 날짜가 종료 날짜보다 뒤일 수 없습니다.");
-        }
+        CommonValidator.validateDate(startDate, endDate);
 
         return ResponseEntity.ok(planService.getPlansForTimer(startDate, endDate, keyword, sort, page, user.getUser()));
     }
 
     //status 파싱
     private boolean parseStatus(String statusStr) {
-        if (statusStr == null)
-            throw new BadRequestException("완료 여부 값이 올바르지 않습니다.");
+        List<String> validList = List.of("0", "false", "1", "true");
 
-        String normalized= statusStr.trim().toLowerCase();
-        log.info("파싱 메서드 {}", normalized);
-        switch (normalized) {
+        if (statusStr == null || !validList.contains(statusStr)) {
+            log.info("잘못된 상태 값: {}", statusStr);
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+
+        switch (statusStr) {
             case "0", "false" -> {
                 return false;
             }
-            case "1", "true" -> {
+            default -> {
                 return true;
             }
-            //그 외 값들
-            default ->
-                throw new BadRequestException("완료 여부 값이 올바르지 않습니다.");
         }
     }
 }
