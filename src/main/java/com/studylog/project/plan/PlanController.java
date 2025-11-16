@@ -1,6 +1,5 @@
 package com.studylog.project.plan;
 
-import com.studylog.project.global.CommonThrow;
 import com.studylog.project.global.CommonUtil;
 import com.studylog.project.global.CommonValidator;
 import com.studylog.project.global.exception.CustomException;
