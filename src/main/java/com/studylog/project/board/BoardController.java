@@ -92,7 +92,7 @@ public class BoardController {
 
     })
     @PostMapping("")
-    public ResponseEntity<BoardDetailResponse> createBoard(@Valid @RequestBody BoardCreateRequest request,
+    public ResponseEntity<BoardDetailResponse> createBoard(@Valid @RequestBody BoardRequest request,
                                                      @RequestParam(required = false) String draftId,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
         CommonValidator.validateDraftId(draftId);
@@ -104,7 +104,7 @@ public class BoardController {
     @Operation(summary = "게시글 수정")
     @PatchMapping("{boardId}")
     public ResponseEntity<BoardDetailResponse> updateBoard(@PathVariable("boardId") Long id,
-                                                     @Valid @RequestBody BoardUpdateRequest request,
+                                                     @Valid @RequestBody BoardRequest request,
                                                      @RequestParam(required = false) String draftId,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
         CommonValidator.validateDraftId(draftId);

@@ -109,9 +109,9 @@ public class BoardService {
         return new PageResponse<>(boardResponses, totalItems, totalPages, page, pageSize);
     }
 
-    public BoardDetailResponse createBoard(BoardCreateRequest request, String draftId, UserEntity user) {
+    public BoardDetailResponse createBoard(BoardRequest request, String draftId, UserEntity user) {
         //board의 category는 categoryEntity타입으로 조회하고 엔티티로 받기
-        CategoryEntity category= categoryRepository.findByUserAndId(user, request.getCategoryId())
+        CategoryEntity category= categoryRepository.findByUserAndId(user, request.categoryId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
 
         BoardEntity board = request.toEntity(user, category);
@@ -121,9 +121,9 @@ public class BoardService {
         return BoardDetailResponse.toDto(BoardResponse.toDto(board), board);
     }
 
-    public BoardDetailResponse updateBoard(Long id, BoardUpdateRequest request, String draftId, UserEntity user) {
+    public BoardDetailResponse updateBoard(Long id, BoardRequest request, String draftId, UserEntity user) {
         BoardEntity board = getBoardByUserAndId(user, id);
-        CategoryEntity category= categoryRepository.findByUserAndId(user, request.getCategoryId())
+        CategoryEntity category= categoryRepository.findByUserAndId(user, request.categoryId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
 
         board.updateBoard(category, request);
