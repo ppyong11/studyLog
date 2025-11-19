@@ -30,7 +30,6 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name="User-auth", description = "JWT 관련 API, 로그인 제외 모든 요청 access token 필요")
 public class AuthController {
     private final UserService userService;
-    private final JwtTokenProvider jwtTokenProvider;
     private final JwtService jwtService;
     private final RedisTemplate<String, String> redisTemplate;
 
@@ -142,8 +141,10 @@ public class AuthController {
             log.info("refresh 토큰 없음");
             throw new CustomException(ErrorCode.AUTH_REQUIRED);
         }
+
         //토큰 O, 검증 완료 -> id 얻어옴
         String userId= redisTemplate.opsForValue().get("RT:" + refreshToken); //userId (long) 타입으로 안 넣음
+
         if (userId == null) { //서버에 등록 안 된 토큰
             log.warn("로그아웃 및 탈퇴한 회원이거나 이전에 사용한 리프레시 토큰입니다.");
             throw new CustomException(ErrorCode.JWT_EXPIRED);
