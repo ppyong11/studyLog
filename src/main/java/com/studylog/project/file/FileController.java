@@ -19,7 +19,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-@RequestMapping("/api/files")
+@RequestMapping("/api")
 @RestController
 @Controller
 @RequiredArgsConstructor
@@ -47,7 +47,7 @@ public class FileController {
         schema = @Schema(
               example = "{\n  \"success\": false,\n  \"message\": \"파일 업로드 실패\"\n}")))
     })
-    @PostMapping("")
+    @PostMapping("/files")
     // 업로드 시 boardId 필요 X, 게시글 등록, 수정 시 알아서 매핑함
     public ResponseEntity<SuccessResponse<Void>> uploadTempFile(@RequestParam("file") MultipartFile file,
                                                    @RequestParam(required = false) String draftId,
@@ -59,7 +59,7 @@ public class FileController {
     }
 
     @Operation(summary = "front에 파일 띄우기")
-    @GetMapping("/{fileId}")
+    @GetMapping("files/{fileId}")
     public ResponseEntity<Resource> viewFile(@PathVariable Long fileId,
                                              @AuthenticationPrincipal CustomUserDetail user) {
         return fileService.getFileResponse(fileId, user.getUser());
@@ -83,19 +83,16 @@ public class FileController {
                 example = "{\n  \"success\": false,\n  \"message\": \"존재하지 않는 게시글입니다.\"\n}")))
     })
 
-    @DeleteMapping("/{fileId}")
+    @DeleteMapping("boards/{boardId}/files/{fileId}")
     public ResponseEntity<SuccessResponse<Void>> deleteFile(@PathVariable Long fileId,
-                                                     @RequestParam(required = false) Long boardId,
+                                                     @PathVariable Long boardId,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
-        if (boardId == null) {
-            CommonThrow.invalidRequest("게시글 번호 null");
-        }
-
         fileService.deleteMeta(fileId, boardId, user.getUser());
+
         return ResponseEntity.ok(SuccessResponse.of("파일이 삭제되었습니다."));
     }
 
-    @DeleteMapping("/{fileId}")
+    @DeleteMapping("files/{fileId}")
     public ResponseEntity<SuccessResponse<Void>> deleteTempFile(@PathVariable Long fileId,
                                                             @RequestParam(required = false) String draftId,
                                                             @AuthenticationPrincipal CustomUserDetail user) {
