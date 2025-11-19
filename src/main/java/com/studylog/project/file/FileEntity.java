@@ -71,6 +71,7 @@ public class FileEntity {
 
     public void attachBoard(BoardEntity board) {
         this.board = board;
+        board.getFiles().add(this);
     }
 
     public void resetDraftId(){

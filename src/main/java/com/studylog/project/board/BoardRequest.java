@@ -20,7 +20,7 @@ public record BoardRequest (
     String content
 ) {
     public BoardRequest {
-        title = title().trim();
+        title = title.trim();
     }
 
     public BoardEntity toEntity(UserEntity user, CategoryEntity category) {

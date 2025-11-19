@@ -16,7 +16,7 @@ public class BoardDetailResponse {
     private List<FileResponse> files;
 
     public static BoardDetailResponse toDto(BoardResponse boardResponse, BoardEntity board) {
-        List<FileResponse> files = board.getFiles().stream() //임시 파일은 제외
+        List<FileResponse> files = board.getFiles().stream()
                 .map(FileResponse::toDto)
                 .collect(Collectors.toList());
 

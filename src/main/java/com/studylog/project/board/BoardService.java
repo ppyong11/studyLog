@@ -118,6 +118,7 @@ public class BoardService {
         boardRepository.saveAndFlush(board); // 이때는 board.id 있음
 
         fileService.attachDraftFilesToBoard(user, board, draftId);
+
         return BoardDetailResponse.toDto(BoardResponse.toDto(board), board);
     }
 
@@ -138,7 +139,7 @@ public class BoardService {
         log.info("게시글 삭제 완료");
     }
 
-    private BoardEntity getBoardByUserAndId(UserEntity user, Long id) {
+    public BoardEntity getBoardByUserAndId(UserEntity user, Long id) {
         return boardRepository.findByUserAndId(user, id).orElseThrow(() -> new CustomException(ErrorCode.BOARD_NOT_FOUND));
     }
 

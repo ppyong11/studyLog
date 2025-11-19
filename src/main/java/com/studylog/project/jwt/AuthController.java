@@ -53,7 +53,7 @@ public class AuthController {
         log.info("요청- ID: {}, PW: {}", request.id(), request.pw());
         log.info("AccessToken: {}, RefreshToken: {}", jwtToken.accessToken(), jwtToken.refreshToken());
 
-        UserResponse userResponse = userService.getCurrentUser(request.pw());
+        UserResponse userResponse = userService.getCurrentUser(request.id());
         String accessCookie= jwtService.createCookie("access_token",jwtToken.accessToken(),
                 "/", 30*60); //30분 동안 쿠키 보냄 (TTL이랑 오차 거의 없음)
 
