@@ -41,9 +41,9 @@ public class BoardEntity {
     private List<FileEntity> files= new ArrayList<>();
 
     @Builder
-    public BoardEntity(UserEntity user_id, CategoryEntity category_id, String title, String content) {
-        this.user = user_id;
-        this.category = category_id;
+    public BoardEntity(UserEntity user, CategoryEntity category, String title, String content) {
+        this.user = user;
+        this.category = category;
         this.title = title;
         this.content = (content != null) ? content : ""; //content가 null이 아니면 content, 맞다면 ""
         this.upload_at= LocalDateTime.now();

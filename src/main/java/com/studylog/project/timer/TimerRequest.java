@@ -27,7 +27,7 @@ public record TimerRequest (
 
     public TimerEntity toEntity(UserEntity user, PlanEntity plan, CategoryEntity category) {
         return TimerEntity.builder()
-                .timerName(name) //빌더로 값 넘김 -> 빌더를 통해 생성자로 전달됨 -> 생성자에서 trim 처리됨
+                .name(name) //빌더로 값 넘김 -> 빌더를 통해 생성자로 전달됨 -> 생성자에서 trim 처리됨
                 .user_id(user)
                 .plan_id(plan) //null 갈 수 O
                 .category_id(category)

@@ -25,8 +25,8 @@ public record BoardRequest (
 
     public BoardEntity toEntity(UserEntity user, CategoryEntity category) {
         return BoardEntity.builder()
-                .user_id(user)
-                .category_id(category)
+                .user(user)
+                .category(category)
                 .title(title)
                 .content(content)
                 //upload, update는 엔티티에서 초기화
