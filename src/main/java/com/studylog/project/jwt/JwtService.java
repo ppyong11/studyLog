@@ -93,10 +93,12 @@ public class JwtService {
     public JwtToken createNewToken(String userId, CustomUserDetail userDetail, String access){
         UserEntity userEntity= userRepository.findById(userId) //userId 유니크 필드라 조회 문제 X
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
         //인증 객체 임의 생성
         List<GrantedAuthority> authorities= List.of(new SimpleGrantedAuthority(userEntity.getRole()? "ROLE_USER" : "ROLE_ADMIN"));
         Authentication authentication= new UsernamePasswordAuthenticationToken(userEntity.getId(), null, authorities);
         JwtToken jwtToken= jwtTokenProvider.createToken(authentication);
+
         //기존 AT 로그아웃 처리, 저장된 RT 삭제 후 새 RT 저장
         String newRefresh= jwtToken.refreshToken();
 

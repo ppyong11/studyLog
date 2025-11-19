@@ -61,6 +61,14 @@ public class FileEntity {
         this.uploadAt = LocalDateTime.now();
     }
 
+    @Builder(builderMethodName = "testBuilder")
+    public FileEntity(Long id, UserEntity user, BoardEntity board, String draftId) {
+        this.id = id;
+        this.user = user;
+        this.board = board;
+        this.draftId = draftId;
+    }
+
     public void attachBoard(BoardEntity board) {
         this.board = board;
     }
