@@ -1,7 +1,6 @@
 package com.studylog.project.file;
 
 import com.studylog.project.board.BoardEntity;
-import com.studylog.project.board.BoardRepository;
 import com.studylog.project.global.exception.*;
 import com.studylog.project.user.UserEntity;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -127,7 +125,7 @@ public class FileService {
     @Scheduled(cron= "0 */30 * * * *") //30분마다 시행
     public void deleteDraftFiles(){
         LocalDateTime cutoff= LocalDateTime.now().minusHours(2);
-        List<FileEntity> expiredFiles= fileRepository.findAllByUploadAtBeforeAndDraftIsNotNull(cutoff);
+        List<FileEntity> expiredFiles= fileRepository.findAllByUploadAtBeforeAndDraftIdIsNotNull(cutoff);
         fileRepository.deleteAll(expiredFiles);
     }
 }
