@@ -19,16 +19,16 @@ import java.util.List;
 @Transactional
 public class NotificationService {
     private final NotificationRepository notificationRepository;
-    private final NotificationRepositotyImpl notificationRepositotyImpl;
+    private final NotificationRepositoryImpl notificationRepositoryImpl;
 
     public ScrollResponse<NotificationResponse> getAllNoti(int page, UserEntity user){
 
         long pageSize= 10;
 
         //엔티티 조회 + response로 매핑 (생성자에 들어감)
-        List<NotificationResponse> responses = notificationRepositotyImpl.findAllNotifications(user, page);
+        List<NotificationResponse> responses = notificationRepositoryImpl.findAllNotifications(user, page);
 
-        Long totalItems = notificationRepositotyImpl.totalItems(user);
+        Long totalItems = notificationRepositoryImpl.totalItems(user);
 
         boolean hasNext= page * pageSize < totalItems;
         return new ScrollResponse<>(responses, totalItems, page, pageSize, hasNext);

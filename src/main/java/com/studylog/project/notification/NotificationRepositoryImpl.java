@@ -10,7 +10,7 @@ import java.util.List;
 import static com.studylog.project.notification.QNotificationEntity.notificationEntity;
 
 @AllArgsConstructor
-public class NotificationRepositotyImpl implements NotificationRepositoryCustom {
+public class NotificationRepositoryImpl implements NotificationRepositoryCustom {
     private final JPAQueryFactory queryFactory;
 
     @Override
