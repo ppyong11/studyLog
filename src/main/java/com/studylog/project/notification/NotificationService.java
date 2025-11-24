@@ -1,8 +1,5 @@
 package com.studylog.project.notification;
 
-import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.types.Projections;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.global.exception.CustomException;
 import com.studylog.project.global.exception.ErrorCode;
 import com.studylog.project.global.response.ScrollResponse;
@@ -22,40 +19,17 @@ import java.util.List;
 @Transactional
 public class NotificationService {
     private final NotificationRepository notificationRepository;
-    private final JPAQueryFactory queryFactory;
+    private final NotificationRepositotyImpl notificationRepositotyImpl;
 
     public ScrollResponse<NotificationResponse> getAllNoti(int page, UserEntity user){
-        QNotificationEntity notiEntity= QNotificationEntity.notificationEntity;
-        BooleanBuilder builder= new BooleanBuilder();
-
-        builder.and(notiEntity.user.eq(user));
 
         long pageSize= 10;
-        long offset= (page - 1) * pageSize;
 
         //엔티티 조회 + response로 매핑 (생성자에 들어감)
-        List<NotificationResponse> responses= queryFactory
-                .select(Projections.constructor(
-                        NotificationResponse.class,
-                        notiEntity.id,
-                        notiEntity.title,
-                        notiEntity.content,
-                        notiEntity.alertAt,
-                        notiEntity.url,
-                        notiEntity.isRead
-                ))
-                .from(notiEntity)
-                .where(builder)
-                .offset(offset)
-                .limit(pageSize)
-                .fetch();
+        List<NotificationResponse> responses = notificationRepositotyImpl.findAllNotifications(user, page);
 
-        Long totalItems= queryFactory
-                .select(notiEntity.count())
-                .from(notiEntity)
-                .where(builder)
-                .fetchOne();
-        log.info("{}", totalItems);
+        Long totalItems = notificationRepositotyImpl.totalItems(user);
+
         boolean hasNext= page * pageSize < totalItems;
         return new ScrollResponse<>(responses, totalItems, page, pageSize, hasNext);
     }

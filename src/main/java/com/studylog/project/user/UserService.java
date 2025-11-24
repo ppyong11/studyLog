@@ -4,7 +4,6 @@ import com.studylog.project.board.BoardRepository;
 import com.studylog.project.category.CategoryRepository;
 import com.studylog.project.category.CategoryService;
 import com.studylog.project.global.exception.*;
-import com.studylog.project.jwt.CustomUserDetail;
 import com.studylog.project.notification.NotificationService;
 import com.studylog.project.plan.PlanRepository;
 import com.studylog.project.timer.TimerRepository;
@@ -13,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 

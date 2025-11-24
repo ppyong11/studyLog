@@ -1,8 +1,5 @@
 package com.studylog.project.category;
 
-import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.types.Projections;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.board.BoardService;
 import com.studylog.project.global.exception.*;
 import com.studylog.project.global.response.ScrollResponse;
@@ -22,7 +19,7 @@ import java.util.List;
 @Transactional
 public class CategoryService {
     private final CategoryRepository categoryRepository;
-    private final JPAQueryFactory queryFactory;
+    private final CategoryRepositoryImpl categoryRepositoryImpl;
     private final PlanService planService;
     private final BoardService boardService;
     private final TimerService timerService;
@@ -39,54 +36,17 @@ public class CategoryService {
     }
 
     public List<CategoryResponse> getAllCategories(UserEntity user){
-        QCategoryEntity categoryEntity= QCategoryEntity.categoryEntity;
-
-        return queryFactory
-                .select(Projections.constructor(
-                        CategoryResponse.class,
-                        categoryEntity.id,
-                        categoryEntity.name,
-                        categoryEntity.bgColor,
-                        categoryEntity.textColor
-                ))
-                .from(categoryEntity)
-                .where(categoryEntity.user.eq(user))
-                .fetch();
+        return categoryRepositoryImpl.findAllCategories(user);
     }
 
     //카테고리 전체&키워드 조회
     public ScrollResponse<CategoryResponse> searchCategories(String keyword, int page, UserEntity user) {
-        QCategoryEntity categoryEntity = QCategoryEntity.categoryEntity;
-        BooleanBuilder builder = new BooleanBuilder();
-        builder.and(categoryEntity.user.eq(user)); //이거만 해도 전체 카테고리 나옴
 
-        if (keyword != null && !keyword.isEmpty()) {
-            builder.and(categoryEntity.name.like('%' + keyword + '%'));
-        }
+        List<CategoryResponse> responses = categoryRepositoryImpl.searchCategoriesByFilter(user, keyword, page);
+
+        Long totalItems= categoryRepositoryImpl.totalItems(user, keyword);
 
         long pageSize= 10;
-        long offset= (page-1) * pageSize; //페이지당 10건씩 반환 (0~9, 10~19)
-        List<CategoryResponse> responses = queryFactory
-                .select(Projections.constructor(
-                        CategoryResponse.class,
-                        categoryEntity.id,
-                        categoryEntity.name,
-                        categoryEntity.bgColor,
-                        categoryEntity.textColor
-                ))
-                .from(categoryEntity)
-                .where(builder)
-                .orderBy(categoryEntity.name.asc())
-                .offset(offset)
-                .limit(pageSize)
-                .fetch();
-
-        Long totalItems= queryFactory
-                .select(categoryEntity.count())
-                .from(categoryEntity)
-                .where(builder)
-                .fetchOne();
-
         boolean hasNext= page * pageSize < totalItems;
 
         //빈 리스트여도 문제 없이 controller에 빈 리스트로 반환돼서 위에서 에러 터뜨림

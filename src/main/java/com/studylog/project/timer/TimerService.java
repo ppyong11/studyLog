@@ -1,13 +1,7 @@
 package com.studylog.project.timer;
 
-import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.types.OrderSpecifier;
-import com.querydsl.core.types.Projections;
-import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
-import com.studylog.project.global.CommonThrow;
 import com.studylog.project.global.exception.CustomException;
 import com.studylog.project.global.exception.ErrorCode;
 import com.studylog.project.global.response.PageResponse;
@@ -26,7 +20,6 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,100 +32,20 @@ public class TimerService {
     private final PlanRepository planRepository;
     private final CategoryRepository categoryRepository;
     private final SseEmitterService sseEmitterService;
-    private final JPAQueryFactory queryFactory;
+    private final TimerRepositoryImpl timerRepositoryImpl;
     private final NotificationRepository notificationRepository;
     //조건 조회
     public PageResponse<TimerResponse> searchTimers(UserEntity user, LocalDate startDate, LocalDate endDate,
                                                     List<Long> categoryList, String planKeyword, String keyword, String status, List<String> sort,
                                                     int page) {
-        QTimerEntity timerEntity = QTimerEntity.timerEntity;
-        BooleanBuilder builder = new BooleanBuilder();
-
-        OrderSpecifier<?>[] orders= new OrderSpecifier[3];
-
-
-        for(String s:sort){
-            String[] arr= s.split(",");
-            if(arr.length != 2) {
-                CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
-            }
-            String field= arr[0].trim().toLowerCase();
-            String value= arr[1].trim().toLowerCase();
-            if(!value.equals("asc") && !value.equals("desc")) {
-                CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
-            }
-
-            switch (field){
-                case "date" ->
-                    orders[0]= value.equals("desc")? timerEntity.createAt.desc(): timerEntity.createAt.asc();
-                case "category" ->
-                    orders[1]= value.equals("desc")? timerEntity.category.name.desc():timerEntity.category.name.asc();
-                case "name" ->
-                    orders[2]= value.equals("desc")? timerEntity.name.desc(): timerEntity.name.asc();
-                default -> CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
-            }
-        }
-
-        if(orders[0] == null || orders[1] == null || orders[2] == null) {
-            CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
-        }
-
-
-        builder.and(timerEntity.user.eq(user));
-
-        if(startDate != null) { //startDate 있으면 endDate 있음 (컨트롤러에서 검증)
-            //Date to DateTime (MIN: 00:00:00, MAX: 23:59:59)
-            builder.and(timerEntity.createAt.goe(startDate.atTime(LocalTime.MIN))); // >=
-            builder.and(timerEntity.createAt.loe(endDate.atTime(LocalTime.MAX))); // <=
-        }
-
-        if(planKeyword != null && !planKeyword.isEmpty()) {
-            builder.and(timerEntity.plan.name.like('%' + planKeyword + '%'));
-        }
-
-        if(!categoryList.isEmpty()) {
-            builder.and(timerEntity.category.id.in(categoryList));
-        }
-        //조인 안 하면 암묵적 접근으로 알아서 join or 서브쿼리로 나감
-        if(keyword != null && !keyword.isEmpty()) {
-            builder.and(timerEntity.name.like("%"+keyword+"%"));
-        }
-        if(status != null){
-            TimerStatus timerStatus= TimerStatus.valueOf(status);
-            builder.and(timerEntity.status.eq(timerStatus));
-        }
 
         long pageSize= 20;
-        long offset= (page - 1) * pageSize;
 
-       List<TimerResponse> timerResponses= queryFactory
-                .select(Projections.constructor(
-                        TimerResponse.class,
-                        timerEntity.id,
-                        timerEntity.name,
-                        timerEntity.plan.name, //외래키로 연결된 다른 테이블 컬럼값 가져오려면 join 필수
-                        Expressions.stringTemplate(
-                                "'plans/' || {0}", timerEntity.plan.id //페이지 URL
-                        ),
-                        timerEntity.category.id, //Projections이라 join 영속성 관리 안 됨 -> 바로 DTO 매핑이기 때문
-                        timerEntity.createAt,
-                        timerEntity.elapsed,
-                        timerEntity.status
-                ))
-                .from(timerEntity)
-                .leftJoin(timerEntity.plan) //select(엔티티) 아니라서 fetchJoin 쓰면 오류남
-                .leftJoin(timerEntity.category)
-                .where(builder)
-                .orderBy(orders)
-                .offset(offset)
-                .limit(pageSize)
-                .fetch();
+       List<TimerResponse> timerResponses = timerRepositoryImpl.searchTimersByFilter
+               (user, startDate, endDate, categoryList, planKeyword, keyword, status, sort, page);
 
-        Long totalItems= queryFactory
-                .select(timerEntity.count())
-                .from(timerEntity)
-                .where(builder)
-                .fetchOne();
+        Long totalItems= timerRepositoryImpl.getTotalItems(user, startDate, endDate, categoryList, planKeyword,
+                                                         keyword, status);
 
         long totalPages= (totalItems + pageSize - 1) / pageSize;
         return new PageResponse<>(timerResponses, totalItems, totalPages, page, pageSize);
@@ -336,7 +249,7 @@ public class TimerService {
         if(timer.getPlan().isComplete() || timer.getPlan().getMinutes() == 0) return; //이미 완료된 계획이거나 목표 시간이 0이라면
         //미완료 & 계획 일자 이후에 수행되었으면
 
-        boolean inRange= false; //체킹 값 저장
+        boolean inRange; //체킹 값 저장
         if(!isSyncCheck){ //정지, 종료에 의한 검사
             LocalDate timerEndDate= timer.getEndAt() == null? timer.getPauseAt().toLocalDate():timer.getEndAt().toLocalDate();
             inRange= (timerStartDate.isEqual(planStart) || timerStartDate.isAfter(planStart))

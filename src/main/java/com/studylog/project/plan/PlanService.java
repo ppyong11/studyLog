@@ -1,21 +1,11 @@
 package com.studylog.project.plan;
 
-import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.Tuple;
-import com.querydsl.core.types.OrderSpecifier;
-import com.querydsl.core.types.Projections;
-import com.querydsl.core.types.dsl.CaseBuilder;
-import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.core.types.dsl.NumberExpression;
-import com.querydsl.jpa.JPAExpressions;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
 import com.studylog.project.global.CommonThrow;
 import com.studylog.project.global.exception.CustomException;
 import com.studylog.project.global.exception.ErrorCode;
 import com.studylog.project.global.response.ScrollResponse;
-import com.studylog.project.timer.QTimerEntity;
 import com.studylog.project.timer.TimerService;
 import com.studylog.project.user.UserEntity;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +25,7 @@ import java.util.List;
 public class PlanService {
     private final PlanRepository planRepository;
     private final CategoryRepository categoryRepository;
-    private final JPAQueryFactory queryFactory; //동적 쿼리용
+    private final PlanRepositoryImpl planRepositoryImpl; //동적 쿼리용
     private final TimerService timerService;
 
     public PlanResponse getPlan(Long planId, UserEntity user) {
@@ -46,73 +36,20 @@ public class PlanService {
     public ScrollPlanResponse searchTablePlans(UserEntity user, LocalDate startDate, LocalDate endDate,
                                                List<Long> categoryList, String keyword, Boolean status, List<String> sort,
                                                int page) {
-        QPlanEntity planEntity = QPlanEntity.planEntity;
-        //where 조립 빌더
-        BooleanBuilder builder = new BooleanBuilder();
+        PlanSummary planSummary = planRepositoryImpl.getPlanSummaryByFilter(user, startDate, endDate, categoryList,
+                keyword, status, sort, page);
 
-        OrderSpecifier<?>[] orders= new OrderSpecifier[2];
-
-        for(String s : sort){
-            String[] arr= s.split(",");
-            if(arr.length != 2) {
-                CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
-            }
-            String field= arr[0].trim().toLowerCase();
-            String value= arr[1].trim().toLowerCase();
-            if(!value.equals("asc") && !value.equals("desc")){
-                CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
-            }
-
-            switch (field){
-                case "date" ->
-                    orders[0]= value.equals("desc")? planEntity.startDate.desc() : planEntity.startDate.asc();
-                case "category" ->
-                    orders[1]= value.equals("desc")? planEntity.category.name.desc() : planEntity.category.name.asc();
-                default -> CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
-            }
-        }
-        if(orders[0] == null || orders[1] == null) {
-            CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
-        }
-
-        builder.and(planEntity.user.eq(user)); //유저 것만 조회 결과로
-        //startDate, endDate 항상 있음 (컨트롤러에서 검증)
-        builder.and(planEntity.startDate.goe(startDate)); // >=
-        builder.and(planEntity.endDate.loe(endDate)); // <=
-
-        if(!categoryList.isEmpty()) {
-            //빈 리스트가 아니라면, 빈 리스트인데 실행 시 모든 조건이 false처리됨 (and니께)
-            builder.and(planEntity.category.id.in(categoryList)); //in(1, 2, 3) 일케 들어감
-        }
-        if(keyword != null && !keyword.isEmpty()) {
-            builder.and(planEntity.name.like('%' + keyword + '%'));
-        }
-        if(status != null) {
-            builder.and(planEntity.isComplete.eq(status));
-        }
-
-        return getScrollPlanResponse(planEntity, builder, orders, page, user, null); //range: 일, 주, 월
+        return getScrollPlanResponse(planSummary, page, user, null); //range: 일, 주, 월
     }
 
+    // 메인에서 보여지는 계획은 today만 가능
     public ScrollPlanResponse MainDailyPlans(UserEntity user, LocalDate today, int page){
-        QPlanEntity planEntity= QPlanEntity.planEntity;
+        PlanSummary planSummary = planRepositoryImpl.findTodayPlans(user, today, page);
 
-        OrderSpecifier<?>[] orders= {
-                planEntity.startDate.asc(),
-                planEntity.category.name.asc()
-        };
-
-        BooleanBuilder builder= new BooleanBuilder();
-
-        builder.and(planEntity.startDate.loe(today)); //<=
-        builder.and(planEntity.endDate.goe(today)); // >=
-
-        return getScrollPlanResponse(planEntity, builder, orders, page, user, "일");
+        return getScrollPlanResponse(planSummary, page, user, "일");
     }
 
     public List<CalenderPlanResponse> getCalenderPlans(LocalDate startDate, LocalDate endDate, String range, UserEntity user){
-        QPlanEntity planEntity= QPlanEntity.planEntity;
-        BooleanBuilder builder= new BooleanBuilder();
         LocalDate today= LocalDate.now(); //요청 시점 날짜 받기
         boolean isSame= false; //지역변수는 초기화 필요
 
@@ -136,113 +73,31 @@ public class PlanService {
             CommonThrow.invalidRequest("잘못된 범위 값: " + range);
         }
 
-        builder.and(planEntity.user.eq(user));
-        builder.and(planEntity.startDate.loe(today)); //<=
-        builder.and(planEntity.endDate.goe(today)); // >=
-
-        return queryFactory
-                .select(Projections.constructor(
-                CalenderPlanResponse.class,
-                        planEntity.id,
-                        planEntity.name,
-                        planEntity.category.id,
-                        planEntity.startDate,
-                        planEntity.endDate,
-                        planEntity.isComplete
-        ))
-                .from(planEntity)
-                .where(builder)
-                .orderBy(planEntity.startDate.asc(),
-                        planEntity.category.name.asc()) //user_id + category_name으로 인덱싱됨 (join 후 정렬)
-                .fetch();
+        return planRepositoryImpl.getCalenderPlans(today, user);
     }
 
-    private ScrollPlanResponse getScrollPlanResponse (QPlanEntity planEntity, BooleanBuilder builder, OrderSpecifier<?>[] orders,
-                                                    int page, UserEntity user, String range){
-
-        long pageSize= 10;
-        long offset= (page-1) * pageSize; //0~9, 10~19
-
-        List<PlanResponse> planResponse = queryFactory
-                .select(Projections.constructor(
-                        PlanResponse.class,
-                        planEntity.id,
-                        planEntity.name,
-                        planEntity.memo,
-                        planEntity.category.id,
-                        planEntity.startDate,
-                        planEntity.endDate,
-                        planEntity.minutes,
-                        planEntity.isComplete
-                ))
-                .from(planEntity)
-                .where(builder)
-                .orderBy(orders)
-                .offset(offset)
-                .limit(pageSize)
-                .fetch(); //전체 결과 반환 (List<planResponse> 타입), 결과 없을 시 빈 리스트 (Null 반환 X)
-
-        long[] planCount= getPlanCounts(builder);
-        long total= planCount[0];
-        long achieved= planCount[1];
+    private ScrollPlanResponse getScrollPlanResponse (PlanSummary planSummary, int page, UserEntity user, String range){
+        List<PlanResponse> responses = planSummary.plans();
+        long total= planSummary.totalCount(); // 오토 언박싱
+        long achieved= planSummary.achivedCount(); // 오토 언박싱
+        long totalStudyTime = planSummary.totalStudyTime();
+        long pageSize = 10;
 
         //일, 주, 월 범위일 때만 메시지 함께 반환
         double rate = total == 0 ? 0.0 : (double) achieved / total * 100;
-        String totalStudyTime= totalStudyTime(builder);
+        String totalStudyTimeString= parseTotalStudyTimeFormat(totalStudyTime);
+
         boolean hasNext= page * pageSize < total;
 
         String message= returnMessage(user.getNickname(), rate, total, range);
-        return ScrollPlanResponse.toDto(planResponse, achieved, total, rate, message, totalStudyTime, page, hasNext);
+        return ScrollPlanResponse.toDto(responses, achieved, total, rate, message, totalStudyTimeString, page, hasNext);
     }
 
-    private long[] getPlanCounts(BooleanBuilder builder){
-        QPlanEntity planEntity= QPlanEntity.planEntity;
-
-        NumberExpression<Long> totalExpr= planEntity.count();
-        NumberExpression<Long> achievedExpr= new CaseBuilder()
-                .when(planEntity.isComplete.isTrue())
-                .then(1L)
-                .otherwise(0L)
-                .sum(); // achievedCount
-
-        Tuple planCount= queryFactory
-                            .select(totalExpr, achievedExpr)
-                            .from(planEntity)
-                            .where(builder) //조회 결과 중 달성한 계획 count
-                            .fetchOne(); //계획 개수 받음
-
-        Long totalLong= planCount != null? planCount.get(totalExpr) : null;
-        long totalCount= totalLong != null? totalLong : 0L;
-
-        Long achievedLong= planCount != null? planCount.get(achievedExpr) : null;
-        long achievedCount= achievedLong != null? achievedLong : 0L;
-
-        return new long[]{totalCount, achievedCount};
-    }
-
-    private String totalStudyTime(BooleanBuilder builder){
-        QPlanEntity plan= QPlanEntity.planEntity;
-        QTimerEntity timer= QTimerEntity.timerEntity; //결합도 문제 X(성능 최적화 차원)
-
-        NumberExpression<Long> totalSencodsSelect= new CaseBuilder()
-                .when(timer.elapsed.isNotNull()) //계획이 설정된 타이머가 있으면
-                .then(timer.elapsed)
-                .when(timer.isNull().and(plan.isComplete.isTrue())) //타이머가 없고 계획이 완료됐다면
-                .then(Expressions.numberTemplate(Long.class, "{0} * 60", plan.minutes)) //int * 60을 Long으로 변환
-                .otherwise(0L)
-                .sum(); //전체합계
-
-        Long totalSecondsDecimal= queryFactory
-                .select(totalSencodsSelect)
-                .from(plan)
-                .leftJoin(timer).on(timer.plan.id.eq(plan.id)) //Plan에 Timer 필드가 없어서 직접 조인 (fetchJoin 안됨 + 단순 조회)
-                .where(builder)
-                .fetchOne();
-
-        long totalSeconds = totalSecondsDecimal == null ? 0L : totalSecondsDecimal;
+    private String parseTotalStudyTimeFormat(Long totalSeconds){
         long hours= totalSeconds / 3600;
         long minutes= (totalSeconds % 3600) /60;
         long seconds= totalSeconds % 60;
+
         return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 
@@ -320,67 +175,18 @@ public class PlanService {
     //타이머에 보내는 계획 리스트
     public ScrollResponse<PlansForTimerResponse> getPlansForTimer(LocalDate startDate, LocalDate endDate, String keyword,
                                                                   String sort, int page, UserEntity user){
-        QPlanEntity planEntity= QPlanEntity.planEntity;
-        QTimerEntity timerEntity= QTimerEntity.timerEntity;
-
-        BooleanBuilder builder= new BooleanBuilder();
-        OrderSpecifier<?> order;
+        long pageSize = 20;
 
         if (!List.of("asc", "desc").contains(sort)) {
             CommonThrow.invalidRequest("잘못된 정렬 값: " + sort);
         }
 
-        if ("asc".equals(sort)) {
-            order= planEntity.startDate.asc();
-        } else {
-            order= planEntity.startDate.desc();
-        }
-
-        builder.and(planEntity.user.eq(user));
-        //startDate, endDate 항상 있음
-        builder.and(planEntity.startDate.goe(startDate)); // >=
-        builder.and(planEntity.endDate.loe(endDate)); // <=
-        builder.and(planEntity.id.notIn( //서브쿼리 결과 포함 X
-                JPAExpressions
-                        .select(timerEntity.plan.id)
-                        .from(timerEntity)
-                        .where(timerEntity.plan.isNotNull()))); //설정한 계획 안 뜸 (서브쿼리)
-        /*
-        where plan_id not in (
-            select t.plan_id
-            from timer t
-            where t.plan_id is not null
-        )
-        */
-        builder.and(planEntity.isComplete.isFalse()); //완료된 계획 안 뜸
-
-        if(keyword != null && !keyword.isEmpty())
-            builder.and(planEntity.name.like('%' + keyword + '%'));
-
-        long pageSize= 20;
-        long offset= (page - 1) * pageSize;
-        List<PlansForTimerResponse> responses= queryFactory
-                                    .select(Projections.constructor(
-                                            PlansForTimerResponse.class,
-                                            planEntity.id,
-                                            planEntity.name,
-                                            planEntity.startDate,
-                                            planEntity.endDate
-                                    ))
-                .from(planEntity)
-                .where(builder)
-                .orderBy(order)
-                .offset(offset)
-                .limit(pageSize)
-                .fetch();
-
-        Long totalItems= queryFactory
-                .select(planEntity.count())
-                .from(planEntity)
-                .where(builder)
-                .fetchOne();
+        PlansForTimerSummary summary = planRepositoryImpl.getPlansForTimer(startDate, endDate, keyword, sort, page, user);
+        List<PlansForTimerResponse> responses = summary.plans();
+        Long totalItems = summary.totalItems();
 
         boolean hasNext= page * pageSize < totalItems;
+
         return new ScrollResponse<>(responses, totalItems, page, pageSize, hasNext);
     }
 
