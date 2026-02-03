@@ -60,7 +60,7 @@ public class CategoryService {
         return CategoryResponse.toDto(category);
     }
 
-    public void addCategory(CategoryRequest request, String textColor, UserEntity user) {
+    public CategoryResponse addCategory(CategoryRequest request, UserEntity user) {
         if (categoryRepository.existsByUserAndName(user, request.name())){
             throw new CustomException(ErrorCode.CATEGORY_NAME_DUPLICATE);
         }
@@ -69,12 +69,14 @@ public class CategoryService {
                 .name(request.name())
                 .user_id(user)
                 .bgColor(request.bgColor())
-                .textColor(textColor)
+                .textColor(request.textColor())
                 .build();
         categoryRepository.save(category);
+
+        return CategoryResponse.toDto(category);
     }
 
-    public void updateCategory(Long id, CategoryRequest request, String textColor, UserEntity user) {
+    public CategoryResponse updateCategory(Long id, CategoryRequest request, UserEntity user) {
         //카테고리 엔티티 가져옴
         CategoryEntity category= getCategory(user, id);
 
@@ -88,7 +90,8 @@ public class CategoryService {
                 throw new CustomException(ErrorCode.CATEGORY_NAME_DUPLICATE);
         }
 
-        category.updateCategory(request, textColor);
+        category.updateCategory(request);
+        return CategoryResponse.toDto(category);
     }
 
     public void delCategory(Long id, UserEntity user) {

@@ -110,10 +110,10 @@ public class UserController {
         return ResponseEntity.ok(SuccessResponse.of("회원가입 되었습니다."));
     }
 
-    @GetMapping("/member")
+    @GetMapping("auth/me")
     @Operation(summary = "유저 정보 반환")
     public ResponseEntity<UserResponse> getMemberInfo(@AuthenticationPrincipal CustomUserDetail user) {
-        log.info("유저 정보 반환");
+        log.info("로그인한 유저 정보 반환");
 
         return ResponseEntity.ok(UserResponse.of(userService.getUser(user.getUser(), ErrorCode.USER_NOT_FOUND)));
     }

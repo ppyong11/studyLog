@@ -47,7 +47,7 @@ public class PlanController {
     @GetMapping("/search")
     public ResponseEntity<ScrollPlanResponse> searchTablePlans(@RequestParam(required = false) LocalDate startDate,
                                                                @RequestParam(required = false) LocalDate endDate,
-                                                               @RequestParam(required = false) String category,
+                                                               @RequestParam(required = false) String categories,
                                                                @RequestParam(required = false) String keyword,
                                                                @RequestParam(name="status", required = false) String statusStr,
                                                                @RequestParam(required = false) List<String> sort,
@@ -55,6 +55,7 @@ public class PlanController {
                                                                @AuthenticationPrincipal CustomUserDetail user) {
 
         CommonValidator.validatePage(page);
+        log.info("{}", categories);
 
         if (sort == null || sort.isEmpty()) {
             sort = List.of("date,desc", "category,asc");
@@ -62,16 +63,12 @@ public class PlanController {
             CommonValidator.validateSort(sort, 2);
         }
 
-        List<Long> categoryList = new ArrayList<>();
+        List<Long> categoryList = CommonUtil.parseAndValidateCategory(categories);
+
         Boolean status = null; //null값 필요해서 객체 타입으로
 
         CommonValidator.validateDate(startDate, endDate);
 
-        if (category != null && !category.trim().isEmpty()) {
-            //여기 안 들어가면 categoryList는 null? ㄴㄴ 내가 위에 빈 리스트 집어넣음 .isEmpty로 검사
-            log.info("category: {}", category);
-            categoryList = CommonUtil.parseAndValidateCategory(category);
-        }
         if (statusStr != null && !statusStr.trim().isEmpty()) {
             //입력했으면 검사
             status = parseStatus(statusStr.trim().toLowerCase());
@@ -102,16 +99,17 @@ public class PlanController {
 
     //main & plan창
     @Operation(summary = "캘린더형 조회")
-    @GetMapping("/calender")
-    public ResponseEntity<List<CalenderPlanResponse>> getCalenderPlans(@RequestParam(required = false) LocalDate startDate,
-                                                                 @RequestParam(required = false) LocalDate endDate,
-                                                                 @RequestParam(required = false) String range,
-                                                                 @AuthenticationPrincipal CustomUserDetail user){
+    @GetMapping("/calendar")
+    public ResponseEntity<List<PlanResponse>> getCalendarPlans(@RequestParam(required = false) LocalDate startDate,
+                                                                       @RequestParam(required = false) LocalDate endDate,
+                                                                       @RequestParam(required = false) String range,
+                                                                       @AuthenticationPrincipal CustomUserDetail user){
+        log.info("캘린더형 조회 시작");
         if (range == null || startDate == null || endDate == null) {
             throw new CustomException(ErrorCode.DATE_RANGE_REQUIRED);
         }
 
-        return ResponseEntity.ok(planService.getCalenderPlans(startDate, endDate, range, user.getUser()));
+        return ResponseEntity.ok(planService.getCalendarPlans(startDate, endDate, range, user.getUser()));
     }
 
     //계획 하나 조회
@@ -144,11 +142,12 @@ public class PlanController {
             schema = @Schema(
                     example = "{\n  \"success\": false,\n  \"message\": \"없는 카테고리 지정- 존재하지 않는 카테고리입니다.\"\n}")))
     })
+
     @PostMapping("")
-    public ResponseEntity<SuccessResponse<Void>> setPlan(@Valid @RequestBody PlanRequest request,
+    public ResponseEntity<SuccessResponse<PlanResponse>> addPlan(@Valid @RequestBody PlanRequest request,
                                                   @AuthenticationPrincipal CustomUserDetail user) {
-        planService.addPlan(request, user.getUser());
-        return ResponseEntity.ok(SuccessResponse.of("계획이 저장되었습니다."));
+        PlanResponse response = planService.addPlan(request, user.getUser());
+        return ResponseEntity.ok(SuccessResponse.of("계획이 저장되었습니다.", response));
     }
 
     //계획 상태 수정
@@ -165,11 +164,11 @@ public class PlanController {
     //계획 수정
     @Operation(summary = "계획 수정")
     @PatchMapping("/{planId}")
-    public ResponseEntity<SuccessResponse<Void>> updatePlan(@PathVariable Long planId,
+    public ResponseEntity<SuccessResponse<PlanResponse>> updatePlan(@PathVariable Long planId,
                                                      @Valid @RequestBody PlanRequest request,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
-        planService.updatePlan(planId, request, user.getUser());
-        return ResponseEntity.ok(SuccessResponse.of("계획이 수정되었습니다."));
+        PlanResponse response = planService.updatePlan(planId, request, user.getUser());
+        return ResponseEntity.ok(SuccessResponse.of("계획이 수정되었습니다.", response));
     }
 
     //계획 삭제

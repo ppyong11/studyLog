@@ -37,8 +37,8 @@ public record PlanRequest (
     }
 
     public PlanRequest {
-        name = name().trim();
-        memo = (memo() == null)? "" : memo().trim();
+        name = name.trim();
+        memo = (memo == null)? "" : memo.trim();
     }
     public PlanEntity toEntity(UserEntity user, CategoryEntity category) {
         return PlanEntity.builder()

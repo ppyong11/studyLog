@@ -11,7 +11,7 @@ public interface PlanRepositoryCustom {
                                       String keyword, Boolean status, List<String> sort, int page);
     PlanSummary findTodayPlans(UserEntity user, LocalDate today, int page);
 
-    List<CalenderPlanResponse> getCalenderPlans(LocalDate today, UserEntity user);
+    List<PlanResponse> getCalendarPlans(LocalDate startDate, LocalDate endDate, UserEntity user);
     PlansForTimerSummary getPlansForTimer(LocalDate startDate, LocalDate endDate, String keyword,
                                            String sort, int page, UserEntity user);
 }

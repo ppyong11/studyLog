@@ -31,6 +31,7 @@ public class SecurityConfig {
                 .exceptionHandling(exceptionHandling ->
                         exceptionHandling.authenticationEntryPoint(customAuthenticationEntryPoint)
                 )
+
                 //RestAPI이므로 basic auth, csrf 보안 사용 X
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable)
@@ -78,7 +79,8 @@ public class SecurityConfig {
                 "http://localhost:3000")); // List.of 사용
 
         // 허용할 HTTP 메서드 (GET, POST, PUT, DELETE 등)
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // OPTIONS 날리고 (사전검사) 서버가 OK 주면 요청 HTTP 등 날림
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
 
         // 허용할 요청 헤더 (모든 헤더 허용)
         configuration.setAllowedHeaders(Arrays.asList("*"));

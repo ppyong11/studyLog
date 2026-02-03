@@ -76,22 +76,24 @@ public class PlanRepositoryImpl implements PlanRepositoryCustom {
     }
 
     @Override
-    public List<CalenderPlanResponse> getCalenderPlans(LocalDate today, UserEntity user) {
+    public List<PlanResponse> getCalendarPlans(LocalDate startDate, LocalDate endDate, UserEntity user) {
         return queryFactory
                 .select(Projections.constructor(
-                        CalenderPlanResponse.class,
+                        PlanResponse.class,
                         planEntity.id,
                         planEntity.name,
+                        planEntity.memo,
                         planEntity.category.id,
                         planEntity.startDate,
                         planEntity.endDate,
+                        planEntity.minutes,
                         planEntity.isComplete
                 ))
                 .from(planEntity)
                 .where(
                         planEntity.user.eq(user),
-                        planEntity.startDate.loe(today), //<=
-                        planEntity.endDate.goe(today) // >=
+                        planEntity.startDate.loe(endDate), //<=
+                        planEntity.endDate.goe(startDate) // >=
                 )
                 .orderBy(planEntity.startDate.asc(),
                         planEntity.category.name.asc()) //user_id + category_name으로 인덱싱됨 (join 후 정렬)
@@ -216,7 +218,7 @@ public class PlanRepositoryImpl implements PlanRepositoryCustom {
         Long totalCount = planCount != null? planCount.get(totalExpr) : 0L;
         Long achievedCount= planCount != null? planCount.get(achievedExpr) : 0L;
 
-        return List.of(totalCount, achievedCount);
+        return List.of(totalCount == null? 0L : totalCount, achievedCount == null? 0L : achievedCount); // List.of()은 null 허용 X, null 방지 처리 필수
     }
 
     private Long getTotalSeconds(BooleanBuilder builder) {
@@ -237,7 +239,7 @@ public class PlanRepositoryImpl implements PlanRepositoryCustom {
     }
 
     private BooleanExpression categoryId(List<Long> categoryIds) {
-        return (!categoryIds.isEmpty()) ? planEntity.category.id.in(categoryIds) : null;
+        return (categoryIds != null && !categoryIds.isEmpty()) ? planEntity.category.id.in(categoryIds) : null;
     }
 
     private BooleanExpression nameLike(String keyword) {

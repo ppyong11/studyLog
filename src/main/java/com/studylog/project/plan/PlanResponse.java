@@ -10,7 +10,7 @@ import java.time.LocalDate;
 @Getter
 public class PlanResponse {
     @Schema(description = "계획 id", example = "5")
-    private Long planId;
+    private Long id;
     @Schema(description = "계획명", example = "공부 계획")
     private String name;
     @Schema(description = "계획 메모", example = "챕터 5까지 풀기")
@@ -24,7 +24,7 @@ public class PlanResponse {
     @Schema(description = "계획 목표 시간", example = "10")
     private Integer minutes;
     @Schema(description = " 완료여부", example = "true")
-    private Boolean isComplete;
+    private Boolean completed;
     public static PlanResponse toDto(PlanEntity plan){
         //객체 생성 없이 바로 사용
         return new PlanResponse(

@@ -9,7 +9,7 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 public class ScrollPlanResponse {
-    private List<PlanResponse> planList;
+    private List<PlanResponse> plans;
     @Schema(description = "달성 계획 개수", example = "1")
     private long achieved;
     @Schema(description = "전체 계획 개수", example = "2")

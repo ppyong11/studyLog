@@ -49,22 +49,24 @@ public class PlanService {
         return getScrollPlanResponse(planSummary, page, user, "일");
     }
 
-    public List<CalenderPlanResponse> getCalenderPlans(LocalDate startDate, LocalDate endDate, String range, UserEntity user){
-        LocalDate today= LocalDate.now(); //요청 시점 날짜 받기
-        boolean isSame= false; //지역변수는 초기화 필요
-
-        LocalDate mon, sun;
+    public List<PlanResponse> getCalendarPlans(LocalDate startDate, LocalDate endDate, String range, UserEntity user){
+        LocalDate sun, sat;
+        boolean isSame = false;
 
         switch (range){
             case "weekly" -> {
-                mon= today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)); //오늘 날짜 기준 주의 월요일 받기
-                sun= today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
-                if(startDate.equals(mon) && endDate.equals(sun)) isSame= true;
+                sun= startDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
+                sat= sun.plusDays(6); //그 주의 토요일
+                log.info("주 시작일: {}, 주 마지막 날: {}", sun, sat);
+                if(startDate.equals(sun) && endDate.equals(sat)) isSame= true;
             }
             case "monthly" -> {
+                log.info("monthly 조회");
                 if(startDate.equals(startDate.with(TemporalAdjusters.firstDayOfMonth())) &&
-                endDate.equals(endDate.with(TemporalAdjusters.lastDayOfMonth())))
-                    isSame= true;
+                endDate.equals(endDate.with(TemporalAdjusters.lastDayOfMonth()))) {
+                    log.info("isSame true");
+                    isSame = true;
+                }
             }
             default -> CommonThrow.invalidRequest("잘못된 범위 값: " + range);
         }
@@ -73,7 +75,8 @@ public class PlanService {
             CommonThrow.invalidRequest("잘못된 범위 값: " + range);
         }
 
-        return planRepositoryImpl.getCalenderPlans(today, user);
+        log.info("startDate {}, endDate {}", startDate, endDate);
+        return planRepositoryImpl.getCalendarPlans(startDate, endDate, user);
     }
 
     private ScrollPlanResponse getScrollPlanResponse (PlanSummary planSummary, int page, UserEntity user, String range){
@@ -136,13 +139,17 @@ public class PlanService {
         planRepository.updateCategory(deleteCategory, defaultCategory);
     }
 
-    public void addPlan(PlanRequest request, UserEntity user) {
+    public PlanResponse addPlan(PlanRequest request, UserEntity user) {
         CategoryEntity category= getCategory(request.categoryId(), user);
         PlanEntity plan= request.toEntity(user, category);
-        planRepository.save(plan);
+        // flush 전이지만 저장된 엔티티 반환
+        // IDENTIFY일 땐 id를 알 방법이 없으니까 저장 먼저 하고 id를 자바가 가짐
+        PlanEntity savedPlan = planRepository.save(plan);
+        return PlanResponse.toDto(savedPlan);
+
     }
 
-    public void updatePlan(Long id, PlanRequest request, UserEntity user) {
+    public PlanResponse updatePlan(Long id, PlanRequest request, UserEntity user) {
         //유저, 계획 검사
         PlanEntity plan= getPlanByUserAndId(id, user);
         CategoryEntity category= getCategory(request.categoryId(), user);
@@ -154,8 +161,8 @@ public class PlanService {
                             timer.updateCategory(category);
                         });
 
-        plan.updatePlan(request, category);
-        //여기서 값 바뀐 거만 수정해 줌..
+        plan.updatePlan(request, category); //여기서 값 바뀐 거만 수정해줌
+        return PlanResponse.toDto(plan);
     }
 
     //상태 변경 로직

@@ -15,10 +15,12 @@ public record CategoryRequest(
         String name,
 
         @NotNull(message = "색상을 선택해 주세요.")
-        String bgColor
+        String bgColor,
+        String textColor
 ) {
     public CategoryRequest {
         name = name.trim();
-        bgColor = bgColor().trim().toUpperCase();
+        bgColor = bgColor.trim().toUpperCase();
+        textColor = textColor.trim().toUpperCase();
     }
 }

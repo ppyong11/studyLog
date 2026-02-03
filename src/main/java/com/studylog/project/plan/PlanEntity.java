@@ -70,7 +70,7 @@ public class PlanEntity {
     public void updatePlan(PlanRequest request, CategoryEntity category){
         this.memo= request.memo();
         this.name = request.name();
-        this.category = category;
+        this.category = category; // request.categoryId는 단순 숫자라서 Entity를 줘야 함
         this.startDate = request.startDate();
         this.endDate = request.endDate();
         this.minutes = request.minutes();
