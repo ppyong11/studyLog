@@ -82,8 +82,8 @@ public class UserService {
     @Transactional
     //비밀번호 변경
     public void changePw(UserEntity user, UpdatePwRequest request) { //암호화된 비번(DTO), 평문 비번(request)
-        String currentPw = request.currentPw();
-        String newPw = request.newPw();
+        String currentPw = request.currentPassword();
+        String newPw = request.newPassword();
 
         UserEntity userEntity = getUser(user, ErrorCode.USER_NOT_FOUND); // principal의 user 객체를 entity에 넣음
 

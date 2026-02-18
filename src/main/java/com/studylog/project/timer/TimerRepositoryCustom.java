@@ -1,6 +1,5 @@
 package com.studylog.project.timer;
 
-import com.querydsl.core.BooleanBuilder;
 import com.studylog.project.user.UserEntity;
 
 import java.time.LocalDate;

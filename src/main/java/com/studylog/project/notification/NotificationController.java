@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name="Notification", description = "알림 관련 API, 모든 요청 access token 필요")
 public class NotificationController {
     private final NotificationService notificationService;
@@ -66,6 +68,7 @@ public class NotificationController {
     @Operation(summary = "미확인 알림 개수 조회", description = "미확인 알림 개수 띄우는 API")
     @GetMapping("/unread-count")
     public ResponseEntity<Long> getUnreadCount(@AuthenticationPrincipal CustomUserDetail user){
+        log.info("알림 개수 조회 시작: {}", user.getUser());
         return ResponseEntity.ok(notificationService.getUnreadCount(user.getUser()));
     }
 

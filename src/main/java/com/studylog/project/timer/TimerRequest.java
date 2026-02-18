@@ -22,7 +22,7 @@ public record TimerRequest (
 ) {
 
     public TimerRequest {
-        name = name().trim();
+        name = name.trim();
     }
 
     public TimerEntity toEntity(UserEntity user, PlanEntity plan, CategoryEntity category) {

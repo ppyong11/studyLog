@@ -9,8 +9,7 @@ import java.util.List;
 @Getter
 public class ScrollResponse<T> {
     private List<T> content; //카테고리, 게시글 목록 등
-    private long totalItems;
     private int currentPage; //현재 페이지 번호
-    private long pageSize; //페이지 사이즈
+    private long totalItems;
     private boolean hasNext;
 }

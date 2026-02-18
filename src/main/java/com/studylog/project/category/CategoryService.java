@@ -50,7 +50,7 @@ public class CategoryService {
         boolean hasNext= page * pageSize < totalItems;
 
         //빈 리스트여도 문제 없이 controller에 빈 리스트로 반환돼서 위에서 에러 터뜨림
-        return new ScrollResponse<>(responses, totalItems, page, pageSize, hasNext);
+        return new ScrollResponse<>(responses, page, totalItems, hasNext);
     }
 
     //카테고리 단일 조회

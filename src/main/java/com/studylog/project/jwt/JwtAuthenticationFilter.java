@@ -20,6 +20,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws IOException, ServletException {
+
+        String requestURI = request.getRequestURI();
+
+            if (requestURI.equals("/api/login")) {
+                chain.doFilter(request, response);
+                return; // 여기서 메서드 종료 (아래 검증 로직 실행 X)
+            }
+
             String token = jwtTokenProvider.resolveAccessToken(request); //request에서 쿠키 꺼내서 검증
             log.info("JWT token: {}", token);
             if (token != null) {

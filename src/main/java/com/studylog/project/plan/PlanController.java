@@ -22,7 +22,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -153,12 +152,14 @@ public class PlanController {
     //계획 상태 수정
     @Operation(summary = "계획 상태 수정")
     @PatchMapping("/{planId}/complete")
-    public ResponseEntity<SuccessResponse<Void>> setPlanStatus(@PathVariable Long planId,
+    public ResponseEntity<SuccessResponse<PlanResponse>> setPlanStatus(@PathVariable Long planId,
                                                         @RequestParam("status") String status,
                                                         @AuthenticationPrincipal CustomUserDetail user) {
         boolean isComplete= parseStatus(status.trim().toLowerCase());
-        planService.updateStatus(planId, isComplete, user.getUser());
-        return ResponseEntity.ok(SuccessResponse.of("계획 상태가 변경되었습니다."));
+
+        log.info("{}", isComplete);
+        PlanResponse response = planService.updateStatus(planId, isComplete, user.getUser());
+        return ResponseEntity.ok(SuccessResponse.of("계획 상태가 변경되었습니다.", response));
     }
 
     //계획 수정

@@ -32,12 +32,13 @@ public class TimerRepositoryImpl implements TimerRepositoryCustom {
                         TimerResponse.class,
                         timerEntity.id,
                         timerEntity.name,
-                        timerEntity.plan.name, //외래키로 연결된 다른 테이블 컬럼값 가져오려면 join 필수
-                        Expressions.stringTemplate(
-                                "'plans/' || {0}", timerEntity.plan.id //페이지 URL
-                        ),
+                        timerEntity.plan.id, //외래키로 연결된 다른 테이블 컬럼값 가져오려면 join 필수
+                        timerEntity.plan.name,
                         timerEntity.category.id, //Projections이라 join 영속성 관리 안 됨 -> 바로 DTO 매핑이기 때문
                         timerEntity.createAt,
+                        timerEntity.startAt,
+                        timerEntity.endAt,
+                        timerEntity.pauseAt,
                         timerEntity.elapsed,
                         timerEntity.status
                 ))

@@ -61,13 +61,16 @@ public class TimerController {
                                                          @RequestParam(required = false) List<String> sort,
                                                          @RequestParam(required = false) int page,
                                                          @AuthenticationPrincipal CustomUserDetail user) {
+
         CommonValidator.validatePage(page);
 
+        log.info("타이머 조회 {}", sort);
         List<Long> categoryList= new ArrayList<>();
         status= status == null? null:status.trim().toUpperCase();
 
         if (sort == null) {
             sort= List.of("date,desc", "category,asc", "name,asc");
+            log.info("{}", sort);
         } else {
             CommonValidator.validateSort(sort, 3);
         }
@@ -96,66 +99,66 @@ public class TimerController {
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "조회 성공",
             content= @Content(mediaType = "application/json",
-            schema = @Schema(implementation = TimerDetailResponse.class))),
+            schema = @Schema(implementation = TimerResponse.class))),
         @ApiResponse(responseCode = "404", description = "조회 실패",
             content = @Content(mediaType = "application/json",
             schema = @Schema(
                     example = "{\n  \"success\": false,\n  \"message\": \"존재하지 않는 타이머입니다.\"\n}")))
     })
     @GetMapping("/{timerId}")
-    public ResponseEntity<TimerDetailResponse> getTimer(@PathVariable("timerId") Long id,
+    public ResponseEntity<TimerResponse> getTimer(@PathVariable("timerId") Long id,
                                                         @AuthenticationPrincipal CustomUserDetail user) {
-        TimerDetailResponse response = timerService.getTimer(id, user.getUser());
+        TimerResponse response = timerService.getTimer(id, user.getUser());
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "타이머 등록", description = "카테고리 필수, 계획 선택 / 계획 입력 시 계획의 카테고리와 동일해야 함")
     @PostMapping("")
-    public ResponseEntity<TimerDetailResponse> createTimer(@Valid @RequestBody TimerRequest request,
+    public ResponseEntity<TimerResponse> createTimer(@Valid @RequestBody TimerRequest request,
                                                            @AuthenticationPrincipal CustomUserDetail user) {
-        TimerDetailResponse response= timerService.createTimer(request, user.getUser());
+        TimerResponse response= timerService.createTimer(request, user.getUser());
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "타이머 시작")
     @PatchMapping("/{timerId}/start")
-    public ResponseEntity<TimerDetailResponse> startTimer(@PathVariable("timerId") Long id,
+    public ResponseEntity<TimerResponse> startTimer(@PathVariable("timerId") Long id,
                                                           @AuthenticationPrincipal CustomUserDetail user) {
-        TimerDetailResponse response= timerService.startTimer(id, user.getUser());
+        TimerResponse response= timerService.startTimer(id, user.getUser());
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "타이머 정지 (실행 중인 랩 함께 정지)")
     @PatchMapping("/{timerId}/pause")
-    public ResponseEntity<TimerDetailResponse> pauseTimer(@PathVariable("timerId") Long id,
+    public ResponseEntity<TimerResponse> pauseTimer(@PathVariable("timerId") Long id,
                                                           @AuthenticationPrincipal CustomUserDetail user) {
-        TimerDetailResponse response= timerService.pauseTimer(id, user.getUser());
+        TimerResponse response= timerService.pauseTimer(id, user.getUser());
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "타이머 종료 (타이머에 포함된 모든 랩 함께 종료)")
     @PatchMapping("/{timerId}/end")
-    public ResponseEntity<TimerDetailResponse> endTimer(@PathVariable("timerId") Long id,
+    public ResponseEntity<TimerResponse> endTimer(@PathVariable("timerId") Long id,
                                                         @AuthenticationPrincipal CustomUserDetail user) {
-        TimerDetailResponse response= timerService.endTimer(id, user.getUser());
+        TimerResponse response= timerService.endTimer(id, user.getUser());
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "타이머 수정", description = "설정된 계획이 완료 상태라면, 타이머 계획 수정 불가")
     @PatchMapping("/{timerId}")
-    public ResponseEntity<TimerDetailResponse> updateTimer(@PathVariable("timerId") Long id,
+    public ResponseEntity<TimerResponse> updateTimer(@PathVariable("timerId") Long id,
                                                            @Valid @RequestBody TimerRequest request,
                                                            @AuthenticationPrincipal CustomUserDetail user) {
-        TimerDetailResponse response= timerService.updateTimer(id, request,user.getUser());
+        TimerResponse response= timerService.updateTimer(id, request,user.getUser());
         return ResponseEntity.ok(response);
     }
 
     //경과 시간 리셋
     @Operation(summary = "타이머 초기화", description = "이미 종료된 타이머거나 계획이 완료된 경우 초기화 불가")
     @PatchMapping("{timerId}/reset")
-    public ResponseEntity<TimerDetailResponse> resetTimer(@PathVariable("timerId") Long id,
+    public ResponseEntity<TimerResponse> resetTimer(@PathVariable("timerId") Long id,
                                                           @AuthenticationPrincipal CustomUserDetail user) {
-        TimerDetailResponse response= timerService.resetTimer(id, user.getUser());
+        TimerResponse response= timerService.resetTimer(id, user.getUser());
         return ResponseEntity.ok(response);
     }
 
@@ -171,7 +174,7 @@ public class TimerController {
     //동기화 컨트롤러
     @Operation(summary = "타이머 수동 동기화", description = "타이머 경과 시간 갱신, 계획 자동 완료 처리 (sse 알림)")
     @PatchMapping("{timerId}/sync")
-    public ResponseEntity<TimerDetailResponse> syncedTimer(@PathVariable("timerId") Long id,
+    public ResponseEntity<TimerResponse> syncedTimer(@PathVariable("timerId") Long id,
                                                    @AuthenticationPrincipal CustomUserDetail user) {
         return ResponseEntity.ok(timerService.syncedTimer(id, user.getUser()));
     }

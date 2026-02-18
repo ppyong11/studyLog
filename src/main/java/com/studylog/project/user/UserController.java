@@ -129,12 +129,12 @@ public class UserController {
 
     @PatchMapping("/member/change-nickname")
     @Operation(summary = "닉네임 변경")
-    public ResponseEntity<SuccessResponse<Void>> updateNickname(@AuthenticationPrincipal CustomUserDetail user,
+    public ResponseEntity<SuccessResponse<String>> updateNickname(@AuthenticationPrincipal CustomUserDetail user,
                                                          @RequestBody @Valid NicknameRequest request) {
         //유효 토큰 및 로그인 상태 확인(redis) 필터에서 검증됨
         userService.changeNickname(user.getUser(), request.nickname());
-        log.info(user.getUsername());
-        return ResponseEntity.ok(SuccessResponse.of("닉네임이 변경되었습니다."));
+        log.info(request.nickname());
+        return ResponseEntity.ok(SuccessResponse.of("닉네임이 변경되었습니다.", request.nickname()));
     }
 
     @Operation(summary = "다짐 변경")

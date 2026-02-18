@@ -31,6 +31,7 @@ public class NotificationRepositoryImpl implements NotificationRepositoryCustom 
                         ))
                 .from(notificationEntity)
                 .where(notificationEntity.user.eq(user))
+                .orderBy(notificationEntity.alertAt.desc())
                 .offset(offset)
                 .limit(pageSize)
                 .fetch();

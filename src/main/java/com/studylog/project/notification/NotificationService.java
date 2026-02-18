@@ -29,9 +29,10 @@ public class NotificationService {
         List<NotificationResponse> responses = notificationRepositoryImpl.findAllNotifications(user, page);
 
         Long totalItems = notificationRepositoryImpl.totalItems(user);
+        log.info("{}", totalItems);
 
         boolean hasNext= page * pageSize < totalItems;
-        return new ScrollResponse<>(responses, totalItems, page, pageSize, hasNext);
+        return new ScrollResponse<>(responses, page, totalItems, hasNext);
     }
 
     public long getUnreadCount(UserEntity user){

@@ -62,12 +62,11 @@ public class PlanService {
             }
             case "monthly" -> {
                 log.info("monthly 조회");
-                if(startDate.equals(startDate.with(TemporalAdjusters.firstDayOfMonth())) &&
-                endDate.equals(endDate.with(TemporalAdjusters.lastDayOfMonth()))) {
-                    log.info("isSame true");
+                if (startDate.isBefore(endDate)) {
                     isSame = true;
                 }
             }
+
             default -> CommonThrow.invalidRequest("잘못된 범위 값: " + range);
         }
 
@@ -166,9 +165,11 @@ public class PlanService {
     }
 
     //상태 변경 로직
-    public void updateStatus(Long id, Boolean status, UserEntity user) {
+    public PlanResponse updateStatus(Long id, Boolean status, UserEntity user) {
         PlanEntity plan= getPlanByUserAndId(id, user);
         plan.updateStatus(status); //상태 변경
+
+        return PlanResponse.toDto(plan);
     }
 
     //삭제 로직
@@ -194,7 +195,7 @@ public class PlanService {
 
         boolean hasNext= page * pageSize < totalItems;
 
-        return new ScrollResponse<>(responses, totalItems, page, pageSize, hasNext);
+        return new ScrollResponse<>(responses, page, totalItems, hasNext);
     }
 
     //유저, planId 검사
