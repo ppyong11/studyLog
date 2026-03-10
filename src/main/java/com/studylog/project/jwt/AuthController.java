@@ -1,7 +1,8 @@
 package com.studylog.project.jwt;
 
-import com.studylog.project.global.exception.JwtException;
-import com.studylog.project.global.response.CommonResponse;
+import com.studylog.project.global.exception.CustomException;
+import com.studylog.project.global.exception.ErrorCode;
+import com.studylog.project.global.response.SuccessResponse;
 import com.studylog.project.user.LogInRequest;
 import com.studylog.project.user.UserResponse;
 import com.studylog.project.user.UserService;
@@ -29,9 +30,9 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name="User-auth", description = "JWT 관련 API, 로그인 제외 모든 요청 access token 필요")
 public class AuthController {
     private final UserService userService;
-    private final JwtTokenProvider jwtTokenProvider;
-    private final JwtService jwtService;
+    private final AuthService authService;
     private final RedisTemplate<String, String> redisTemplate;
+    final Integer EXP_TIME = 30*60;
 
     @Operation(summary= "로그인", description = "로그인 (jwt 토큰 발급), 회원탈퇴 철회")
     @ApiResponses(value = {
@@ -47,40 +48,47 @@ public class AuthController {
     })
     //토큰 관련 처리 담당
     @PostMapping("/login")
-    public ResponseEntity<CommonResponse<UserResponse>> logIn(@RequestBody @Valid LogInRequest request, HttpServletResponse response) {
+    public ResponseEntity<SuccessResponse<UserResponse>> logIn(@RequestBody @Valid LogInRequest request, HttpServletResponse response) {
         userService.validateAndRestoreUser(request); //회원 검증 및 탈퇴 복구 처리
-        JwtToken jwtToken = jwtService.logIn(request.getId(), request.getPw()); //예외 발생 시 아래 로직 실행 X
-        log.info("요청- ID: {}, PW: {}", request.getId(), request.getPw());
-        log.info("AccessToken: {}, RefreshToken: {}", jwtToken.getAccessToken(), jwtToken.getRefreshToken());
-        UserResponse userResponse = userService.getCurrentUser(request.getId());
-        String accessCookie= jwtService.createCookie("access_token",jwtToken.getAccessToken(),
-                "/", 30*60); //30분 동안 쿠키 보냄 (TTL이랑 오차 거의 없음)
+        JwtToken jwtToken = authService.logIn(request.id(), request.pw()); //예외 발생 시 아래 로직 실행 X
+        log.info("요청- ID: {}, PW: {}", request.id(), request.pw());
+        log.info("AccessToken: {}, RefreshToken: {}", jwtToken.accessToken(), jwtToken.refreshToken());
 
-        String refreshCookie= jwtService.createCookie("refresh_token", jwtToken.getRefreshToken(),
+        UserResponse userResponse = userService.getCurrentUser(request.id());
+
+        // 브라우저에 쿠키 저장 & 자동 전송 경로 설정 (path)
+        String accessCookie= authService.createCookie("access_token",jwtToken.accessToken(),
+                "/", EXP_TIME); //30분 동안 쿠키 보냄 (TTL이랑 오차 거의 없음)
+
+        String refreshCookie= authService.createCookie("refresh_token", jwtToken.refreshToken(),
                 "/api/refresh", 7*24*60*60); //7일 동안 쿠키 보냄
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie);
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie);
-        return ResponseEntity.ok(new CommonResponse<>( true, "로그인 성공", userResponse));
+
+        return ResponseEntity.ok(SuccessResponse.of("로그인 성공", userResponse, EXP_TIME));
     }
 
 
     //hidden: Swagger에서 안 보임
     @PostMapping("/logout")
     @Operation(summary = "로그아웃")
-    public ResponseEntity<CommonResponse<Void>> logout(@Parameter(hidden=true) @CookieValue(name="access_token")String accessToken,
+    public ResponseEntity<SuccessResponse<Void>> logout(@Parameter(hidden=true) @CookieValue(name="access_token")String accessToken,
                                                  HttpServletResponse response,
                                                  @AuthenticationPrincipal CustomUserDetail user) {
         //토큰 없는 경우엔 필터에서 다 걸러서 여기까지 안 옴 -> 토큰은 항상 있음! 인증된 객체라는 뜻 (authenticated)
         //로그아웃  시 액세스 토큰 필요해서 파라미터 받기 (컨트롤러에서 필요없으면 필터에서만 검증하면 됨)
-        jwtService.saveBlacklistToken(user, accessToken); //액세스 토큰 저장
+        log.info("로그아웃 요청 성공");
 
-        String deleteAccessCookie= jwtService.deleteCookie("access_token", "/");
-        String deleteRefreshCookie= jwtService.deleteCookie("refresh_token", "/api/refresh");
+        authService.saveBlacklistToken(user, accessToken); //액세스 토큰 저장
+
+        String deleteAccessCookie= authService.deleteCookie("access_token", "/");
+        String deleteRefreshCookie= authService.deleteCookie("refresh_token", "/api/refresh");
         response.addHeader(HttpHeaders.SET_COOKIE, deleteAccessCookie);
         response.addHeader(HttpHeaders.SET_COOKIE, deleteRefreshCookie);
 
-        return ResponseEntity.ok(new CommonResponse<>( true, "로그아웃 처리되었습니다."));
+        log.info("로그아웃 성공");
+        return ResponseEntity.ok(SuccessResponse.of("로그아웃 처리되었습니다."));
     }
 
     @PostMapping("/member/withdraw")
@@ -101,18 +109,18 @@ public class AuthController {
                     example = "{\n  \"success\": false,\n  \"message\": \"로그인이 필요한 요청입니다.\"\n}"
             )))
     })
-    public ResponseEntity<CommonResponse<Void>> withdraw(@Parameter(hidden=true) @CookieValue(name="access_token")String accessToken,
+    public ResponseEntity<SuccessResponse<Void>> withdraw(@Parameter(hidden=true) @CookieValue(name="access_token")String accessToken,
                                                    HttpServletResponse response,
                                                    @AuthenticationPrincipal CustomUserDetail user) {
         //자동 로그아웃 + user 속성 바꾸기
-        jwtService.saveBlacklistToken(user, accessToken); //액세스 토큰 저장
-        String deleteAccessCookie= jwtService.deleteCookie("access_token", "/");
-        String deleteRefreshCookie= jwtService.deleteCookie("refresh_token", "/api/refresh");
+        authService.saveBlacklistToken(user, accessToken); //액세스 토큰 저장
+        String deleteAccessCookie= authService.deleteCookie("access_token", "/");
+        String deleteRefreshCookie= authService.deleteCookie("refresh_token", "/api/refresh");
         response.addHeader(HttpHeaders.SET_COOKIE, deleteAccessCookie);
         response.addHeader(HttpHeaders.SET_COOKIE, deleteRefreshCookie);
 
         userService.withdraw(user.getUser());
-        return ResponseEntity.ok(new CommonResponse<>( true, "회원탈퇴 처리되었습니다."));
+        return ResponseEntity.ok(SuccessResponse.of("회원탈퇴 처리되었습니다."));
     }
 
     @PostMapping("/refresh")
@@ -129,37 +137,34 @@ public class AuthController {
                         " / 블랙리스트 처리된 리프레시 토큰- 유효하지 않은 토큰입니다.\"\n}"
         )))
     })
-    public ResponseEntity<CommonResponse<Void>> refreshAccessToken(@Parameter(hidden=true) @CookieValue(name="access_token", required = false)String accessToken,
-                                                             @Parameter(hidden=true) @CookieValue(name="refresh_token", required = false)String refreshToken,
-                                                             @AuthenticationPrincipal CustomUserDetail user,
+    // 리프레시 토큰에만 의존
+    public ResponseEntity<SuccessResponse<Void>> refreshAccessToken(@Parameter(hidden=true) @CookieValue(name="refresh_token", required = false)String refreshToken,
                                                              HttpServletResponse response) {
         //permitAll 경로라 필터에서 쿠키 있든 없든 컨트롤러 호출 O
         //컨트롤러에서 RT 써야 해서 파라미터로 꺼냄
         if(refreshToken == null) { //쿠키에 토큰 X
-            throw new JwtException("재발급 검증에 필요한 토큰이 없습니다.");
+            log.info("refresh 토큰 없음");
+            throw new CustomException(ErrorCode.AUTH_REQUIRED);
         }
-        if(!jwtTokenProvider.validateToken(refreshToken)) { //토큰 O, 검증 실패
-            throw new JwtException("유효하지 않은 토큰입니다.");
-        }
+
+        log.info("토큰 재발급");
         //토큰 O, 검증 완료 -> id 얻어옴
         String userId= redisTemplate.opsForValue().get("RT:" + refreshToken); //userId (long) 타입으로 안 넣음
+
         if (userId == null) { //서버에 등록 안 된 토큰
             log.warn("로그아웃 및 탈퇴한 회원이거나 이전에 사용한 리프레시 토큰입니다.");
-            throw new JwtException("유효하지 않은 토큰입니다.");
+            throw new CustomException(ErrorCode.JWT_EXPIRED);
         }
-        JwtToken newToken= jwtService.createNewToken(userId, user, accessToken);
-        String accessCookie= jwtService.createCookie("access_token", newToken.getAccessToken(),
+
+        JwtToken newToken= authService.createNewToken(refreshToken);
+        String accessCookie= authService.createCookie("access_token", newToken.accessToken(),
                 "/", 30*60);
-        String refreshCookie= jwtService.createCookie("refresh_token", newToken.getRefreshToken(),
+        String refreshCookie= authService.createCookie("refresh_token", newToken.refreshToken(),
                 "/api/refresh", 7*24*60*60);
         log.info("토큰 재발급 완료");
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie);
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie);
-        return ResponseEntity.ok(new CommonResponse<>( true, "로그인이 연장되었습니다."));
-    }
 
-    @GetMapping("/me")
-    public ResponseEntity<UserResponse> getCurrentUser(@AuthenticationPrincipal CustomUserDetail user) {
-        return ResponseEntity.ok(userService.getCurrentUser(user.getUser()));
+        return ResponseEntity.ok(SuccessResponse.of("로그인이 연장되었습니다."));
     }
 }

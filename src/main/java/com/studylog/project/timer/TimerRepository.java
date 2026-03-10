@@ -17,10 +17,13 @@ public interface TimerRepository extends JpaRepository<TimerEntity, Long> {
     Optional<TimerEntity> findByUserAndId(UserEntity user, Long id);
 
     //유저의 타이머가 맞으면 카테고리, 플랜, 랩 엔티티 반환
-    @Query("select t from TimerEntity t join fetch t.category join fetch t.plan " +
+    @Query("select t from TimerEntity t left join fetch t.category left join fetch t.plan " +
             "where t.user= :userId and t.id= :timerId")
     Optional<TimerEntity> getTimerWithPlanCategory(@Param("userId") UserEntity userId,
                                                    @Param("timerId") Long timerId);
+
+    @Query("select t from TimerEntity t where t.user= :user and t.status = 'RUNNING'")
+    List<TimerEntity> findRunningTimerByUserId(@Param("user") UserEntity user);
 
     void deleteAllByUser(UserEntity user);
 

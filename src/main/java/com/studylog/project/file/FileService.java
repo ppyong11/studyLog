@@ -1,12 +1,10 @@
 package com.studylog.project.file;
 
 import com.studylog.project.board.BoardEntity;
-import com.studylog.project.board.BoardRepository;
-import com.studylog.project.global.exception.BadRequestException;
-import com.studylog.project.global.exception.FileUploadFailedException;
-import com.studylog.project.global.exception.NotFoundException;
+import com.studylog.project.global.exception.*;
 import com.studylog.project.user.UserEntity;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -16,24 +14,27 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @Service
 @RequiredArgsConstructor//빈으로 등록
 @Transactional
 @Slf4j
 public class FileService {
-    private final String fileDir= "/home/ubuntu/app-data/uploads/";
+    // yml 설정 값 읽어옴
+    @Value("${file.upload.dir}")
+    private String fileDir;
+
     private final FileRepository fileRepository;
-    private final BoardRepository boardRepository;
     private final Set<String> blackExts= Set.of(
             "exe", "msi", "bat", "cmd", "sh", "bin", "com", "cpl", "scr", "jar",
             "js", "jsp", "php", "asp", "aspx", "cgi", "pl", "py", "rb",
@@ -44,39 +45,57 @@ public class FileService {
 
     public String saveFile(MultipartFile multipartFile) {
         if (multipartFile.isEmpty()) return null;
+
         String originalFileName = multipartFile.getOriginalFilename();
-        String uuid= UUID.randomUUID().toString();
-        //.확장자 부분 받아옴
-        log.info(multipartFile.getContentType());
-        String ext= originalFileName.substring(originalFileName.lastIndexOf(".")).toLowerCase();
-        if(blackExts.contains(ext)) throw new BadRequestException("해당 파일은 업로드할 수 없습니다.");
-        String savedName= uuid + ext;
+        log.info("업로드된 파일 타입: {}", multipartFile.getContentType());
+
+        int extIndex = originalFileName.lastIndexOf(".");
+        if (extIndex == -1) {
+            throw new CustomException(ErrorCode.INVALID_FILE_TYPE);
+        }
+
+        String ext = originalFileName.substring(extIndex + 1).toLowerCase();
+
+        if (blackExts.contains(ext)) {
+            throw new CustomException(ErrorCode.INVALID_FILE_TYPE);
+        }
+
+        String uuid = UUID.randomUUID().toString();
+        String savedName = uuid + "." + ext;
+
         try {
-            File file= new File(fileDir + savedName); //데이터 X, 파일 객체
-            //파일을 tmp/uploads/랜덤명에 저장
-            multipartFile.transferTo(file); //multipartFile: 데이터
+            // 1. 상대 경로("./uploads/")를 현재 프로젝트의 절대 경로로 변환 *앱폴더/uploads/
+            // 배포 시엔 앱 폴더 밖 시스템 경로에 파일 두기 (재배포 시 데이터 안 날아감)
+            Path uploadPath = Paths.get(fileDir).toAbsolutePath().normalize();
+
+            // 2. NIO 방식으로 폴더 생성 (현재 프로젝트 폴더의 절대 경로로 변환해줌)
+            // 이미 절대 경로면 변환 X
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            // 최종 파일이 저장될 완벽한 경로 완성
+            Path filePath = uploadPath.resolve(savedName);
+
+            // 파일 저장!
+            multipartFile.transferTo(filePath.toFile());
+
         } catch (IOException e) {
-            throw new FileUploadFailedException("파일 업로드 실패");
+            log.error("파일 저장 실패: {}", e.getMessage());
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
         return savedName;
     }
 
-    public FileResponse saveMeta(MultipartFile multipartFile, Long boardId, String draftId, UserEntity user) {
+    // 임시 파일 등록
+    public void uploadTempFile(MultipartFile multipartFile, String draftId, UserEntity user) {
         String savedName= saveFile(multipartFile);
-        BoardEntity board= null;
-        if(boardId == null && (draftId == null || draftId.isBlank()))
-            throw new BadRequestException("파일 업로드에 필요한 값이 없습니다.");
-        if (boardId != null) {
-            board = boardRepository.findByUserAndId(user, boardId)
-                    .orElseThrow(() -> new NotFoundException("존재하지 않는 게시글입니다."));
-            draftId= null;
-        }
 
         //DB에 메타 정보 저장
         FileEntity fileEntity= FileEntity.builder()
                 .user(user)
-                .board(board) //게시글 등록 전엔 id 안 받음, 수정 중엔 바로 채워짐
-                .draft(draftId) //게시글 있을 땐 null
+                .board(null) //게시글 등록 전엔 id 안 받음, 수정 중엔 바로 채워짐
+                .draft(draftId)
                 .size(multipartFile.getSize())
                 .path(fileDir + savedName) //서버에 저장된 경로
                 .originalName(multipartFile.getOriginalFilename())
@@ -84,26 +103,31 @@ public class FileService {
                 .type(multipartFile.getContentType()) //밈타입+확장자
                 .build();
         fileRepository.save(fileEntity);
-        return FileResponse.toDto(fileEntity);
-
     }
 
-    public void deleteMeta(Long fileId, Long boardId, String draftId, UserEntity user) {
-        FileEntity file= getFileEntity(fileId, user);
-        if(file.getBoard() != null) { //게시글에 등록된 파일을 삭제할 경우
-            if(boardId == null) throw new BadRequestException("삭제할 파일의 게시글을 입력해 주세요.");
-            BoardEntity board= boardRepository.findByUserAndId(user, boardId)
-                    .orElseThrow(()-> new NotFoundException("존재하지 않는 게시글입니다."));
-            if(!file.getBoard().getId().equals(board.getId()))
-                throw new BadRequestException("파일이 등록된 게시글과 일치하지 않습니다.");
-        }
-        else{ //임시 파일이라면
-            if(draftId == null)  throw new BadRequestException("파일 삭제에 필요한 값이 없습니다.");
-            if(!file.getDraftId().equals(draftId))
-                throw new BadRequestException("파일 삭제에 필요한 값이 일치하지 않습니다.");
-        }
+    public void deleteTempMeta(Long fileId, String draftId, UserEntity user) {
+        FileEntity file = fileRepository.findByUserAndIdAndDraftId(user, fileId, draftId)
+                .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
+
         //임시 파일 draft 값 검증 or 게시글 검증된 파일 삭제 시
         fileRepository.delete(file);
+    }
+
+    public void deleteMeta(Long fileId, Long boardId, UserEntity user) {
+        FileEntity file = fileRepository.findByUserAndIdAndBoard(user, fileId, boardId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
+
+        fileRepository.delete(file);
+    }
+
+    public void attachDraftFilesToBoard(UserEntity user, BoardEntity board, String draftId) {
+        // 빈 리스트면 동작 X
+        List<FileEntity> files = fileRepository.findAllByUserAndDraftId(user, draftId);
+
+        for (FileEntity file : files) {
+            file.attachBoard(board);
+            file.resetDraftId();
+        }
     }
 
     public ResponseEntity<Resource> getFileResponse(Long fileId, UserEntity user) {
@@ -125,21 +149,13 @@ public class FileService {
 
     public FileEntity getFileEntity(Long fileId, UserEntity user) {
         return fileRepository.findByUserAndId(user, fileId)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 파일입니다."));
-    }
-
-    public List<FileEntity> getFilesByUserAndDraftId(UserEntity user, String draftId){
-        return fileRepository.findAllByUserAndDraftId(user, draftId);
-    }
-
-    public List<FileEntity> getFilesByBoard(UserEntity user, BoardEntity board){
-        return fileRepository.findAllByUserAndBoard(user, board);
+                .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
     }
 
     @Scheduled(cron= "0 */30 * * * *") //30분마다 시행
     public void deleteDraftFiles(){
         LocalDateTime cutoff= LocalDateTime.now().minusHours(2);
-        List<FileEntity> expiredFiles= fileRepository.findAllByUploadAtBeforeAndDraftTrue(cutoff);
+        List<FileEntity> expiredFiles= fileRepository.findAllByUploadAtBeforeAndDraftIdIsNotNull(cutoff);
         fileRepository.deleteAll(expiredFiles);
     }
 }

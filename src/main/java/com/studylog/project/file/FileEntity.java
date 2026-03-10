@@ -47,9 +47,6 @@ public class FileEntity {
     @Column(name= "upload_at", nullable = false)
     private LocalDateTime uploadAt;
 
-    @Column(name="is_draft", nullable = false)
-    private boolean draft;
-
     @Builder
     public FileEntity(UserEntity user,BoardEntity board, String draft, Long size, String path, String originalName,
                       String name, String type) {
@@ -62,15 +59,22 @@ public class FileEntity {
         this.name = name;
         this.type = type;
         this.uploadAt = LocalDateTime.now();
-        this.draft = true; //업로드 당시엔 임시저장상태
     }
 
-    public void updateBoard(BoardEntity board) {
+    @Builder(builderMethodName = "testBuilder")
+    public FileEntity(Long id, UserEntity user, BoardEntity board, String draftId) {
+        this.id = id;
+        this.user = user;
         this.board = board;
+        this.draftId = draftId;
     }
 
-    public void resetDraftIdAndDraftFalse(){
+    public void attachBoard(BoardEntity board) {
+        this.board = board;
+        board.getFiles().add(this);
+    }
+
+    public void resetDraftId(){
         this.draftId = null; //임시 파일 벗어남
-        this.draft = false;
     }
 }

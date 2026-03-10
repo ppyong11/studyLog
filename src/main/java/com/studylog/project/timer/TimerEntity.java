@@ -55,9 +55,8 @@ public class TimerEntity {
     protected TimerStatus status;
 
     @Builder
-    public TimerEntity(String timerName, UserEntity user_id, PlanEntity plan_id, CategoryEntity category_id) {
-        //null인데 trim하면 NPE 뜸
-        this.name= timerName.trim();
+    public TimerEntity(String name, UserEntity user_id, PlanEntity plan_id, CategoryEntity category_id) {
+        this.name= name;
         this.user = user_id;
         this.plan = plan_id;
         this.category = category_id;
@@ -73,7 +72,7 @@ public class TimerEntity {
     //메서드는 서비스에서 실행하니까 public
     //타이머, 랩명 업데이트
     public void updateName(String name) {
-        this.name= name.trim();
+        this.name= name;
     }
 
     public void start(){

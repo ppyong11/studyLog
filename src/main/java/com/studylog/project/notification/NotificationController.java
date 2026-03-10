@@ -1,8 +1,8 @@
 package com.studylog.project.notification;
 
-import com.studylog.project.global.ScrollResponse;
-import com.studylog.project.global.exception.BadRequestException;
-import com.studylog.project.global.response.CommonResponse;
+import com.studylog.project.global.CommonValidator;
+import com.studylog.project.global.response.ScrollResponse;
+import com.studylog.project.global.response.SuccessResponse;
 import com.studylog.project.jwt.CustomUserDetail;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name="Notification", description = "알림 관련 API, 모든 요청 access token 필요")
 public class NotificationController {
     private final NotificationService notificationService;
@@ -57,21 +59,22 @@ public class NotificationController {
                                     example = "{\n  \"success\": false,\n  \"message\": \"로그인이 필요한 요청입니다.\"\n}")))
     })
     @GetMapping("")
-    public ResponseEntity<ScrollResponse<NotificationResponse>> getAllNoti(@RequestParam(required = false) Integer page,
+    public ResponseEntity<ScrollResponse<NotificationResponse>> getAllNoti(@RequestParam(required = false) int page,
                                                                            @AuthenticationPrincipal CustomUserDetail user){
-        if(page == null || page < 1) throw new BadRequestException("잘못된 페이지 값입니다.");
+        CommonValidator.validatePage(page);
         return ResponseEntity.ok(notificationService.getAllNoti(page, user.getUser()));
     }
 
     @Operation(summary = "미확인 알림 개수 조회", description = "미확인 알림 개수 띄우는 API")
     @GetMapping("/unread-count")
     public ResponseEntity<Long> getUnreadCount(@AuthenticationPrincipal CustomUserDetail user){
+        log.info("알림 개수 조회 시작: {}", user.getUser());
         return ResponseEntity.ok(notificationService.getUnreadCount(user.getUser()));
     }
 
     @Operation(summary = "알림 전체 삭제")
     @DeleteMapping("/")
-    public ResponseEntity<CommonResponse<Void>> deleteAllNoti(@AuthenticationPrincipal CustomUserDetail user){
+    public ResponseEntity<SuccessResponse<Void>> deleteAllNoti(@AuthenticationPrincipal CustomUserDetail user){
         return ResponseEntity.ok(notificationService.deleteAllNoti(user.getUser()));
     }
 
@@ -86,7 +89,7 @@ public class NotificationController {
     //알림 모두 읽음 처리
     @Operation(summary = "모든 알림 읽음 처리")
     @PatchMapping("/read-all")
-    public ResponseEntity<CommonResponse<Void>> readAllNoti(@AuthenticationPrincipal CustomUserDetail user){
+    public ResponseEntity<SuccessResponse<Void>> readAllNoti(@AuthenticationPrincipal CustomUserDetail user){
         return ResponseEntity.ok(notificationService.readAllNoti(user.getUser()));
     }
 

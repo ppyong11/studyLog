@@ -15,6 +15,7 @@ public class CustomUserDetail implements UserDetails {
     //유저 전체 정보(entity 필드)가 들어옴
     private final UserEntity user; //이건 Getter가 자동 생성해 줌 (추상 메서드 X)
 
+    // CustomUserDetail의 User는 UserEntity 타입임
     public CustomUserDetail(UserEntity user) {
         this.user = user;
     }

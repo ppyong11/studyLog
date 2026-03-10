@@ -20,13 +20,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws IOException, ServletException {
-            String token = jwtTokenProvider.resolveAccessToken(request); //request에서 쿠키 꺼내서 검증
-            log.info("JWT token: {}", token);
-            if (token != null && jwtTokenProvider.validateToken(token)) {
-                // 인증 객체 생성
-                Authentication authentication = jwtTokenProvider.getAuthentication(token);
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-            }
+
+        String requestURI = request.getRequestURI();
+
+        if (requestURI.equals("/api/login")) {
             chain.doFilter(request, response);
+            return;
+        }
+
+        String token = jwtTokenProvider.resolveAccessToken(request);
+
+        // 쿠키에 없으면 쿼리 파라미터에서 꺼내기 (sendBeacon용 *창 꺼지면 타이머 종료)
+        if (token == null) {
+            token = request.getParameter("token");
+            log.info("쿼리 파라미터 token: {}", token);
+        }
+
+        log.info("JWT token: {}", token);
+        if (token != null) {
+            jwtTokenProvider.validateToken(token);
+            Authentication authentication = jwtTokenProvider.getAuthentication(token);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+        }
+        chain.doFilter(request, response);
     }
 }

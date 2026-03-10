@@ -1,8 +1,10 @@
 package com.studylog.project.category;
 
-import com.studylog.project.global.ScrollResponse;
-import com.studylog.project.global.exception.BadRequestException;
-import com.studylog.project.global.response.CommonResponse;
+import com.studylog.project.global.CommonValidator;
+import com.studylog.project.global.exception.CustomException;
+import com.studylog.project.global.exception.ErrorCode;
+import com.studylog.project.global.response.ScrollResponse;
+import com.studylog.project.global.response.SuccessResponse;
 import com.studylog.project.jwt.CustomUserDetail;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -32,7 +34,7 @@ public class CategoryController {
             "#F7F7F7", "#484848", //기본
             "#E3E3E3", "#484848", //회색
             "#F1E7E1", "#554539", //갈색
-            "#FFE5E5", "##821912", //빨간색
+            "#FFE5E5", "#821912", //빨간색
             "#FFE7CD", "#72471D", //주황색
             "#FCF4CC", "#584C12", //노란색
             "#E4EFE7", "#134F14", //초록색
@@ -54,12 +56,14 @@ public class CategoryController {
         array = @ArraySchema(schema= @Schema(implementation = CategoryResponse.class))))
     @GetMapping("search")
     public ResponseEntity<ScrollResponse<CategoryResponse>> searchCategories(@RequestParam(required = false) String keyword,
-                                                                             @RequestParam(required = false) Integer page,
+                                                                             @RequestParam(required = false) int page,
                                                                              @AuthenticationPrincipal CustomUserDetail user) {
 
-        if(page == null || page < 1) throw new BadRequestException("잘못된 페이지 값입니다.");
+        CommonValidator.validatePage(page);
+        keyword = keyword == null ? null : keyword.trim();
+
         return ResponseEntity.ok(
-                categoryService.searchCategories(keyword == null ? null : keyword.trim(), page, user.getUser()));
+                categoryService.searchCategories(keyword, page, user.getUser()));
     }
 
     //카테고리 단일 조회
@@ -83,22 +87,30 @@ public class CategoryController {
     //카테고리 추가
     @Operation(summary = "카테고리 등록")
     @PostMapping("")
-    public ResponseEntity<CommonResponse<Void>> newCategory(@Valid @RequestBody CategoryRequest request,
+    public ResponseEntity<SuccessResponse<CategoryResponse>> newCategory(@Valid @RequestBody CategoryRequest request,
                                                       @AuthenticationPrincipal CustomUserDetail user) {
-        if(!COLORS.containsKey(request.getBgColor())) throw new BadRequestException("지원하지 않는 색상입니다.");
-        categoryService.addCategory(request, COLORS.get(request.getBgColor()), user.getUser());
-        return ResponseEntity.ok(new CommonResponse<>( true, "카테고리가 등록되었습니다."));
+        if(!COLORS.containsKey(request.bgColor())) {
+            log.info("지원하지 않는 색상 값: {}", request.bgColor());
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+
+        CategoryResponse response = categoryService.addCategory(request, user.getUser());
+        return ResponseEntity.ok(SuccessResponse.of("카테고리가 등록되었습니다.", response));
     }
 
     //카테고리 수정
     @Operation(summary = "카테고리 수정")
-    @PatchMapping("/{categoryId}")
-    public ResponseEntity<CommonResponse<Void>> updateCategory(@PathVariable Long categoryId,
+    @PatchMapping("/{id}")
+    public ResponseEntity<SuccessResponse<CategoryResponse>> updateCategory(@PathVariable Long id,
                                                          @Valid @RequestBody CategoryRequest request,
                                                          @AuthenticationPrincipal CustomUserDetail user) {
-        if(!COLORS.containsKey(request.getBgColor())) throw new BadRequestException("지원하지 않는 색상입니다.");
-        categoryService.updateCategory(categoryId, request, COLORS.get(request.getBgColor()), user.getUser());
-        return ResponseEntity.ok(new CommonResponse<>(true, "카테고리가 수정되었습니다."));
+        if(!COLORS.containsKey(request.bgColor())) {
+            log.info("지원하지 않는 색상 값: {}", request.bgColor());
+            throw new CustomException(ErrorCode.INVALID_REQUEST);
+        }
+
+        CategoryResponse response = categoryService.updateCategory(id, request, user.getUser());
+        return ResponseEntity.ok(SuccessResponse.of("카테고리가 수정되었습니다.", response));
     }
 
     //카테고리 삭제
@@ -117,10 +129,10 @@ public class CategoryController {
             schema = @Schema(
                     example = "{\n  \"success\": false,\n  \"message\": \"존재하지 않는 카테고리입니다.\"\n}")))
     })
-    @DeleteMapping("/{categoryId}")
-    public ResponseEntity<CommonResponse<Void>> delCategory(@PathVariable Long categoryId,
+    @DeleteMapping("/{id}")
+    public ResponseEntity<SuccessResponse<Void>> delCategory(@PathVariable Long id,
                                                       @AuthenticationPrincipal CustomUserDetail user) {
-        categoryService.delCategory(categoryId, user.getUser());
-        return ResponseEntity.ok(new CommonResponse<>( true, "카테고리가 삭제되었습니다."));
+        categoryService.delCategory(id, user.getUser());
+        return ResponseEntity.ok(SuccessResponse.of( "카테고리가 삭제되었습니다."));
     }
 }

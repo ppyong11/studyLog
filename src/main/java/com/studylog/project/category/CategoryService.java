@@ -1,13 +1,8 @@
 package com.studylog.project.category;
 
-import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.types.Projections;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.board.BoardService;
-import com.studylog.project.global.ScrollResponse;
-import com.studylog.project.global.exception.BadRequestException;
-import com.studylog.project.global.exception.DuplicateException;
-import com.studylog.project.global.exception.NotFoundException;
+import com.studylog.project.global.exception.*;
+import com.studylog.project.global.response.ScrollResponse;
 import com.studylog.project.plan.PlanService;
 import com.studylog.project.timer.TimerService;
 import com.studylog.project.user.UserEntity;
@@ -24,7 +19,7 @@ import java.util.List;
 @Transactional
 public class CategoryService {
     private final CategoryRepository categoryRepository;
-    private final JPAQueryFactory queryFactory;
+    private final CategoryRepositoryImpl categoryRepositoryImpl;
     private final PlanService planService;
     private final BoardService boardService;
     private final TimerService timerService;
@@ -41,111 +36,86 @@ public class CategoryService {
     }
 
     public List<CategoryResponse> getAllCategories(UserEntity user){
-        QCategoryEntity categoryEntity= QCategoryEntity.categoryEntity;
-
-        return queryFactory
-                .select(Projections.constructor(
-                        CategoryResponse.class,
-                        categoryEntity.id,
-                        categoryEntity.name,
-                        categoryEntity.bgColor,
-                        categoryEntity.textColor
-                ))
-                .from(categoryEntity)
-                .where(categoryEntity.user.eq(user))
-                .fetch();
+        return categoryRepositoryImpl.findAllCategories(user);
     }
 
     //카테고리 전체&키워드 조회
     public ScrollResponse<CategoryResponse> searchCategories(String keyword, int page, UserEntity user) {
-        QCategoryEntity categoryEntity = QCategoryEntity.categoryEntity;
-        BooleanBuilder builder = new BooleanBuilder();
-        builder.and(categoryEntity.user.eq(user)); //이거만 해도 전체 카테고리 나옴
 
-        if (keyword != null && !keyword.isEmpty()) {
-            builder.and(categoryEntity.name.like('%' + keyword + '%'));
-        }
+        List<CategoryResponse> responses = categoryRepositoryImpl.searchCategoriesByFilter(user, keyword, page);
+
+        Long totalItems= categoryRepositoryImpl.totalItems(user, keyword);
 
         long pageSize= 10;
-        long offset= (page-1) * pageSize; //페이지당 10건씩 반환 (0~9, 10~19)
-        List<CategoryResponse> responses = queryFactory
-                .select(Projections.constructor(
-                        CategoryResponse.class,
-                        categoryEntity.id,
-                        categoryEntity.name,
-                        categoryEntity.bgColor,
-                        categoryEntity.textColor
-                ))
-                .from(categoryEntity)
-                .where(builder)
-                .orderBy(categoryEntity.name.asc())
-                .offset(offset)
-                .limit(pageSize)
-                .fetch();
-
-        Long totalItems= queryFactory
-                .select(categoryEntity.count())
-                .from(categoryEntity)
-                .where(builder)
-                .fetchOne();
-
         boolean hasNext= page * pageSize < totalItems;
 
         //빈 리스트여도 문제 없이 controller에 빈 리스트로 반환돼서 위에서 에러 터뜨림
-        return new ScrollResponse<>(responses, totalItems, page, pageSize, hasNext);
+        return new ScrollResponse<>(responses, page, totalItems, hasNext);
     }
 
     //카테고리 단일 조회
     public CategoryResponse getCategory(Long id, UserEntity user) {
-        CategoryEntity category = categoryRepository.findByUserAndId(user, id)
-                .orElseThrow(()-> new NotFoundException("존재하지 않는 카테고리입니다."));
+        CategoryEntity category = getCategory(user, id);
+
         return CategoryResponse.toDto(category);
     }
 
-    public void addCategory(CategoryRequest request, String textColor, UserEntity user) {
-        if (categoryRepository.existsByUserAndName(user, request.getName())){
-            throw new DuplicateException("동일한 카테고리가 있습니다.");
+    public CategoryResponse addCategory(CategoryRequest request, UserEntity user) {
+        if (categoryRepository.existsByUserAndName(user, request.name())){
+            throw new CustomException(ErrorCode.CATEGORY_NAME_DUPLICATE);
         }
+
         CategoryEntity category= CategoryEntity.builder()
-                .name(request.getName())
+                .name(request.name())
                 .user_id(user)
-                .bgColor(request.getBgColor())
-                .textColor(textColor)
+                .bgColor(request.bgColor())
+                .textColor(request.textColor())
                 .build();
         categoryRepository.save(category);
+
+        return CategoryResponse.toDto(category);
     }
 
-    public void updateCategory(Long id, CategoryRequest request, String textColor, UserEntity user) {
+    public CategoryResponse updateCategory(Long id, CategoryRequest request, UserEntity user) {
         //카테고리 엔티티 가져옴
-        CategoryEntity category= categoryRepository.findByUserAndId(user, id)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다."));
+        CategoryEntity category= getCategory(user, id);
 
-        if(category.getName().equals("기타"))
-            throw new BadRequestException("해당 카테고리는 수정할 수 없습니다.");
-
-        if (categoryRepository.existsByUserAndName(user, request.getName().trim())){
-            if(!category.getName().equals(request.getName().trim()))
-                throw new DuplicateException("동일한 카테고리가 있습니다.");
+        if(category.getName().equals("기타")) {
+            log.info("기타 카테고리 변경 요청 - 불가");
+            throw new CustomException(ErrorCode.CATEGORY_NOT_MODIFIABLE);
         }
-        category.updateCategory(request, textColor);
+
+        if (categoryRepository.existsByUserAndName(user, request.name().trim())){
+            if(!category.getName().equals(request.name().trim()))
+                throw new CustomException(ErrorCode.CATEGORY_NAME_DUPLICATE);
+        }
+
+        category.updateCategory(request);
+        return CategoryResponse.toDto(category);
     }
 
     public void delCategory(Long id, UserEntity user) {
         //카테고리 엔티티 가져옴
-        CategoryEntity deleteCategory= categoryRepository.findByUserAndId(user, id)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 카테고리입니다."));
-        if (deleteCategory.getName().equals("기타"))
-            throw new BadRequestException("해당 카테고리는 삭제할 수 없습니다.");
+        CategoryEntity deleteCategory= getCategory(user, id);
 
+        if (deleteCategory.getName().equals("기타")) {
+            log.info("기타 카테고리 삭제 요청 - 불가");
+            throw new CustomException(ErrorCode.CATEGORY_NOT_MODIFIABLE);
+        }
         //유저의 기본 카테고리 조회 후 적용
         CategoryEntity defaultCategory= categoryRepository.findByUserAndName(user, "기타")
-                .orElseThrow(()-> new NotFoundException("기타 카테고리가 없습니다."));
+                .orElseThrow(()-> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
 
         planService.updateCategory(deleteCategory,defaultCategory);
         boardService.updateCategory(deleteCategory, defaultCategory);
         timerService.updateCategory(deleteCategory, defaultCategory);
 
         categoryRepository.delete(deleteCategory);
+    }
+
+    private CategoryEntity getCategory(UserEntity user, Long id) {
+        return categoryRepository.findByUserAndId(user, id)
+                .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
     }
 }
 

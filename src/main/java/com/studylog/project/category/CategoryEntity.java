@@ -39,9 +39,9 @@ public class CategoryEntity {
     }
 
     //카테고리 수정
-    public void updateCategory(CategoryRequest request, String textColor) {
-        this.name = request.getName().trim();
-        this.bgColor= request.getBgColor();
-        this.textColor= textColor;
+    public void updateCategory(CategoryRequest request) {
+        this.name = request.name();
+        this.bgColor= request.bgColor();
+        this.textColor= request.textColor();
     }
 }

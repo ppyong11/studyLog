@@ -1,9 +1,9 @@
 package com.studylog.project.board;
 
 import com.studylog.project.global.CommonUtil;
-import com.studylog.project.global.PageResponse;
-import com.studylog.project.global.exception.BadRequestException;
-import com.studylog.project.global.response.CommonResponse;
+import com.studylog.project.global.CommonValidator;
+import com.studylog.project.global.response.PageResponse;
+import com.studylog.project.global.response.SuccessResponse;
 import com.studylog.project.jwt.CustomUserDetail;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -44,6 +44,7 @@ public class BoardController {
     public ResponseEntity<BoardDetailResponse> getBoards(@PathVariable("boardId") Long id,
                                    @AuthenticationPrincipal CustomUserDetail user) {
         BoardDetailResponse response= boardService.getBoard(id, user.getUser());
+        log.info("{}", response.getBoard().getTitle());
         return ResponseEntity.ok(response);
     }
 
@@ -52,26 +53,25 @@ public class BoardController {
         content= @Content(mediaType = "application/json",
         array = @ArraySchema(schema= @Schema(implementation = BoardResponse.class))))
     @GetMapping("/search")
-    public ResponseEntity<PageResponse<BoardResponse>> searchBoards(@RequestParam(required = false) String category,
+    public ResponseEntity<PageResponse<BoardResponse>> searchBoards(@RequestParam(required = false) String categories,
                                                      @RequestParam(required = false) String keyword,
                                                      @RequestParam(required = false) List<String> sort,
-                                                     @RequestParam(required = false) Integer page,
+                                                     @RequestParam(required = false) int page,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
-        if (page == null || page < 1)
-            throw new BadRequestException("잘못된 페이지 값입니다.");
+        CommonValidator.validatePage(page);
+
+        if (sort == null || sort.isEmpty()) { //null or 빈 리스트
+            sort = List.of("date,desc", "title,asc"); //기본값 설정
+        } else {
+            CommonValidator.validateSort(sort, 2);
+        }
+
         List<Long> categoryList = new ArrayList<>(); //빈 리스트
 
-        if(sort != null && sort.size() != 3){
-            throw new BadRequestException("잘못된 정렬 값입니다.");
+        if (categories != null && !categories.trim().isEmpty()) {
+            categoryList = CommonUtil.parseAndValidateCategory(categories);
         }
 
-        if (sort == null) { //null or 빈 리스트
-            sort = List.of("date,desc", "category,asc", "title,asc"); //기본값 설정
-        }
-        log.info("sort: {}", sort.size());
-        if (category != null && !category.trim().isEmpty()) {
-            categoryList = CommonUtil.parseAndValidateCategory(category);
-        }
         keyword = (keyword == null) ? null : keyword.trim();
 
         return ResponseEntity.ok(boardService.searchBoards(categoryList, keyword, sort, page, user.getUser()));
@@ -93,25 +93,33 @@ public class BoardController {
 
     })
     @PostMapping("")
-    public ResponseEntity<BoardDetailResponse> createBoard(@Valid @RequestBody BoardCreateRequest request,
+    public ResponseEntity<BoardDetailResponse> createBoard(@Valid @RequestBody BoardRequest request,
+                                                     @RequestParam(required = false) String draftId,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
-        BoardDetailResponse response= boardService.createBoard(request, user.getUser());
+        log.info("draftId: {}", draftId);
+        CommonValidator.validateDraftId(draftId);
+
+        BoardDetailResponse response= boardService.createBoard(request, draftId.trim(), user.getUser());
         return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "게시글 수정")
-    @PatchMapping("{boardId}")
+@PatchMapping("/{boardId}")
     public ResponseEntity<BoardDetailResponse> updateBoard(@PathVariable("boardId") Long id,
-                                                     @Valid @RequestBody BoardUpdateRequest request,
+                                                     @Valid @RequestBody BoardRequest request,
+                                                     @RequestParam(required = false) String draftId,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
-        return ResponseEntity.ok(boardService.updateBoard(id, request, user.getUser()));
+        log.info("draftId: {}", draftId);
+        CommonValidator.validateDraftId(draftId);
+
+        return ResponseEntity.ok(boardService.updateBoard(id, request, draftId.trim(), user.getUser()));
     }
 
     @Operation(summary = "게시글 삭제 (해당 게시글의 파일 함께 삭제)")
-    @DeleteMapping("{boardId}")
-    public ResponseEntity<CommonResponse<Void>> deleteBoard(@PathVariable("boardId") Long boardId,
+    @DeleteMapping("/{boardId}")
+    public ResponseEntity<SuccessResponse<Void>> deleteBoard(@PathVariable("boardId") Long boardId,
                                                       @AuthenticationPrincipal CustomUserDetail user) {
         boardService.deleteBoard(boardId, user.getUser());
-        return ResponseEntity.ok(new CommonResponse<>(true, "게시글이 삭제되었습니다."));
+        return ResponseEntity.ok(SuccessResponse.of("게시글이 삭제되었습니다."));
     }
 }

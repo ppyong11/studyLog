@@ -71,6 +71,12 @@ public class UserEntity {
         //null 허용 X인 필드(is_delete)는 필드 기본 값 들어가서 null 처리 안 됨
     }
 
+    @Builder(builderMethodName = "testBuilder") // 테스트용 빌더
+    public UserEntity(long user_id) {
+        this.user_id = user_id;
+    }
+
+
     public void setEncodedPw(String encodedPw) {
         this.pw = encodedPw;
     }
@@ -96,6 +102,6 @@ public class UserEntity {
 
     //다짐 수정
     public void updateResolution(String resolution){
-        this.resolution= resolution.trim();
+        this.resolution= resolution;
     }
 }

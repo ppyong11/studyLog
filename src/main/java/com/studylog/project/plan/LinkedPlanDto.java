@@ -2,16 +2,16 @@ package com.studylog.project.plan;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
-@AllArgsConstructor
 @Getter
-public class CalenderPlanResponse {
-    private Long planId;
-    private String planName;
-    private Long categoryId;
+@NoArgsConstructor
+@AllArgsConstructor
+public class LinkedPlanDto {
+    private Long id;
+    private String name;
     private LocalDate startDate;
     private LocalDate endDate;
-    private boolean isComplete;
 }

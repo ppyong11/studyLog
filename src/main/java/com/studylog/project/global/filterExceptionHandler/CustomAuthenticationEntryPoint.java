@@ -1,7 +1,8 @@
 package com.studylog.project.global.filterExceptionHandler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.studylog.project.global.response.CommonResponse;
+import com.studylog.project.global.exception.ErrorCode;
+import com.studylog.project.global.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -23,13 +24,12 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException authException) throws IOException{
         log.info("entry 호출: 401 에러 발생");
-        HttpStatus status = HttpStatus.UNAUTHORIZED;
-        CommonResponse commonResponse = new CommonResponse(false, "로그인이 필요한 요청입니다.");
+        ErrorCode errorCode = ErrorCode.AUTH_REQUIRED;
 
-        response.setStatus(status.value());
+        response.setStatus(errorCode.getStatus().value());
         response.setContentType("application/json; charset=UTF-8");
 
-        String responseBody= objectMapper.writeValueAsString(commonResponse);
+        String responseBody= objectMapper.writeValueAsString(new ErrorResponse(errorCode.getCode(), errorCode.getMessage()));
         response.getWriter().write(responseBody);
     }
 }
