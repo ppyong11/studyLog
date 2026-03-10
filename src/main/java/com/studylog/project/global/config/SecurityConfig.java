@@ -42,8 +42,7 @@ public class SecurityConfig {
                             //아래 API 요청 모두 허가
                             "/api/signup/**",
                             "/api/login",
-                            "/api/", //뒷 엔드포인트도 다 로긘 처리
-                            "/api", //메인
+                            "api/refresh",
                             "/swagger-ui/**",
                             "/v3/api-docs/**",
                             "/swagger-resources/**",

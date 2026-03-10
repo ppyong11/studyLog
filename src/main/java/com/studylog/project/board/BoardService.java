@@ -1,6 +1,5 @@
 package com.studylog.project.board;
 
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
 import com.studylog.project.file.FileService;
@@ -41,7 +40,7 @@ public class BoardService {
         // 총 요소 개수 반환, count()는 항상 row가 하나씩 있어서 0 이상 반환
         Long totalItems= boardRepositoryImpl.getTotalItems(user, categoryList, keyword);
 
-        long pageSize= 30;
+        long pageSize= 20;
         long totalPages= (totalItems + pageSize - 1) / pageSize;
 
         return new PageResponse<>(boardResponses, totalItems, totalPages, page, pageSize);
@@ -49,7 +48,7 @@ public class BoardService {
 
     public BoardDetailResponse createBoard(BoardRequest request, String draftId, UserEntity user) {
         //board의 category는 categoryEntity타입으로 조회하고 엔티티로 받기
-        CategoryEntity category= categoryRepository.findByUserAndId(user, request.categoryId())
+        CategoryEntity category= categoryRepository.findByUserAndId(user, request.category())
                 .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
 
         BoardEntity board = request.toEntity(user, category);
@@ -62,7 +61,7 @@ public class BoardService {
 
     public BoardDetailResponse updateBoard(Long id, BoardRequest request, String draftId, UserEntity user) {
         BoardEntity board = getBoardByUserAndId(user, id);
-        CategoryEntity category= categoryRepository.findByUserAndId(user, request.categoryId())
+        CategoryEntity category= categoryRepository.findByUserAndId(user, request.category())
                 .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
 
         board.updateBoard(category, request);

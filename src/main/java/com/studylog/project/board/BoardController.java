@@ -44,6 +44,7 @@ public class BoardController {
     public ResponseEntity<BoardDetailResponse> getBoards(@PathVariable("boardId") Long id,
                                    @AuthenticationPrincipal CustomUserDetail user) {
         BoardDetailResponse response= boardService.getBoard(id, user.getUser());
+        log.info("{}", response.getBoard().getTitle());
         return ResponseEntity.ok(response);
     }
 
@@ -52,7 +53,7 @@ public class BoardController {
         content= @Content(mediaType = "application/json",
         array = @ArraySchema(schema= @Schema(implementation = BoardResponse.class))))
     @GetMapping("/search")
-    public ResponseEntity<PageResponse<BoardResponse>> searchBoards(@RequestParam(required = false) String category,
+    public ResponseEntity<PageResponse<BoardResponse>> searchBoards(@RequestParam(required = false) String categories,
                                                      @RequestParam(required = false) String keyword,
                                                      @RequestParam(required = false) List<String> sort,
                                                      @RequestParam(required = false) int page,
@@ -60,15 +61,15 @@ public class BoardController {
         CommonValidator.validatePage(page);
 
         if (sort == null || sort.isEmpty()) { //null or 빈 리스트
-            sort = List.of("date,desc", "category,asc", "title,asc"); //기본값 설정
+            sort = List.of("date,desc", "title,asc"); //기본값 설정
         } else {
-            CommonValidator.validateSort(sort, 3);
+            CommonValidator.validateSort(sort, 2);
         }
 
         List<Long> categoryList = new ArrayList<>(); //빈 리스트
 
-        if (category != null && !category.trim().isEmpty()) {
-            categoryList = CommonUtil.parseAndValidateCategory(category);
+        if (categories != null && !categories.trim().isEmpty()) {
+            categoryList = CommonUtil.parseAndValidateCategory(categories);
         }
 
         keyword = (keyword == null) ? null : keyword.trim();
@@ -95,6 +96,7 @@ public class BoardController {
     public ResponseEntity<BoardDetailResponse> createBoard(@Valid @RequestBody BoardRequest request,
                                                      @RequestParam(required = false) String draftId,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
+        log.info("draftId: {}", draftId);
         CommonValidator.validateDraftId(draftId);
 
         BoardDetailResponse response= boardService.createBoard(request, draftId.trim(), user.getUser());
@@ -102,18 +104,19 @@ public class BoardController {
     }
 
     @Operation(summary = "게시글 수정")
-    @PatchMapping("{boardId}")
+@PatchMapping("/{boardId}")
     public ResponseEntity<BoardDetailResponse> updateBoard(@PathVariable("boardId") Long id,
                                                      @Valid @RequestBody BoardRequest request,
                                                      @RequestParam(required = false) String draftId,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
+        log.info("draftId: {}", draftId);
         CommonValidator.validateDraftId(draftId);
 
         return ResponseEntity.ok(boardService.updateBoard(id, request, draftId.trim(), user.getUser()));
     }
 
     @Operation(summary = "게시글 삭제 (해당 게시글의 파일 함께 삭제)")
-    @DeleteMapping("{boardId}")
+    @DeleteMapping("/{boardId}")
     public ResponseEntity<SuccessResponse<Void>> deleteBoard(@PathVariable("boardId") Long boardId,
                                                       @AuthenticationPrincipal CustomUserDetail user) {
         boardService.deleteBoard(boardId, user.getUser());

@@ -1,10 +1,8 @@
 package com.studylog.project.timer;
 
-import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.studylog.project.global.CommonThrow;
 import com.studylog.project.user.UserEntity;
@@ -14,6 +12,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
+import static com.studylog.project.category.QCategoryEntity.categoryEntity;
+import static com.studylog.project.plan.QPlanEntity.planEntity;
 import static com.studylog.project.timer.QTimerEntity.timerEntity;
 
 @AllArgsConstructor
@@ -22,7 +22,7 @@ public class TimerRepositoryImpl implements TimerRepositoryCustom {
 
     @Override
     public List<TimerResponse> searchTimersByFilter(UserEntity user, LocalDate startDate, LocalDate endDate,
-                                                     List<Long> categoryList, String planKeyword, String keyword, String status, List<String> sort,
+                                                     List<Long> categoryList, String planKeyword, String keyword, String status, String sort,
                                                      int page) {
         long pageSize = 20;
         long offset= (page - 1) * pageSize;
@@ -32,19 +32,21 @@ public class TimerRepositoryImpl implements TimerRepositoryCustom {
                         TimerResponse.class,
                         timerEntity.id,
                         timerEntity.name,
-                        timerEntity.plan.id, //외래키로 연결된 다른 테이블 컬럼값 가져오려면 join 필수
-                        timerEntity.plan.name,
-                        timerEntity.category.id, //Projections이라 join 영속성 관리 안 됨 -> 바로 DTO 매핑이기 때문
+                        categoryEntity.id, //Projections이라 join 영속성 관리 안 됨 -> 바로 DTO 매핑이기 때문
                         timerEntity.createAt,
                         timerEntity.startAt,
                         timerEntity.endAt,
                         timerEntity.pauseAt,
                         timerEntity.elapsed,
-                        timerEntity.status
+                        timerEntity.status,
+                        planEntity.id,
+                        planEntity.name,
+                        planEntity.startDate,
+                        planEntity.endDate
                 ))
                 .from(timerEntity)
-                .leftJoin(timerEntity.plan) //select(엔티티) 아니라서 fetchJoin 쓰면 오류남
-                .leftJoin(timerEntity.category)
+                .leftJoin(timerEntity.plan, planEntity) //select(엔티티) 아니라서 fetchJoin 쓰면 오류남
+                .leftJoin(timerEntity.category, categoryEntity) // 뒤에 건 별칭
                 .where(
                         timerEntity.user.eq(user),
                         dateRange(startDate, endDate),
@@ -102,35 +104,22 @@ public class TimerRepositoryImpl implements TimerRepositoryCustom {
             timerEntity.status.eq(TimerStatus.valueOf(status)) : null;
     }
 
-    private OrderSpecifier<?>[] getOrderSpecifiers(List<String> sort) {
-        OrderSpecifier<?>[] orders= new OrderSpecifier[3];
+    private OrderSpecifier<?> getOrderSpecifiers(String sort) {
+        String[] arr= sort.split(",");
 
-        for(String s:sort){
-            String[] arr= s.split(",");
-            if(arr.length != 2) {
-                CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
-            }
-            String field= arr[0].trim().toLowerCase();
-            String value= arr[1].trim().toLowerCase();
-            if(!value.equals("asc") && !value.equals("desc")) {
-                CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
-            }
-
-            switch (field){
-                case "date" ->
-                        orders[0]= value.equals("desc")? timerEntity.createAt.desc(): timerEntity.createAt.asc();
-                case "category" ->
-                        orders[1]= value.equals("desc")? timerEntity.category.name.desc():timerEntity.category.name.asc();
-                case "name" ->
-                        orders[2]= value.equals("desc")? timerEntity.name.desc(): timerEntity.name.asc();
-                default -> CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
-            }
-        }
-
-        if(orders[0] == null || orders[1] == null || orders[2] == null) {
+        if(arr.length != 2) {
             CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
         }
 
-        return orders;
+        String field= arr[0].trim().toLowerCase();
+        String value= arr[1].trim().toLowerCase();
+
+        boolean isDesc = value.equals("desc");
+
+        if(!value.equals("asc") && !value.equals("desc")) {
+            CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sort);
+        }
+
+        return isDesc ? timerEntity.createAt.desc() : timerEntity.createAt.asc();
     }
 }

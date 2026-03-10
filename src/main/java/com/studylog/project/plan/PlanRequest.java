@@ -9,9 +9,9 @@ import java.time.LocalDate;
 
 @Schema(description = "계획 수정/등록 request")
 public record PlanRequest (
-    @Schema(description = "계획명 (30자 이내)")
+    @Schema(description = "계획명 (20자 이내)")
     @NotBlank(message= "계획명을 입력해 주세요.")
-    @Size(max= 30, message = "30자 이내로 입력해 주세요. ")
+    @Size(max= 20, message = "계획명은 20자 이내여야 합니다. ")
     String name,
     @Schema(description = "계획 메모")
     String memo,

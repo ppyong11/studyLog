@@ -20,7 +20,7 @@ public class BoardRepositoryImpl implements BoardRepositoryCustom{
     public List<BoardResponse> searchBoardsByFilter(UserEntity user, List<Long> categoryIds, String keyword,
                                                 List<String> sortList, int page) {
 
-        long pageSize = 30;
+        long pageSize = 20;
         long offset= (page - 1) * pageSize; //페이지당 30건 반환
 
         return queryFactory
@@ -70,7 +70,7 @@ public class BoardRepositoryImpl implements BoardRepositoryCustom{
     }
 
     private OrderSpecifier<?>[] getOrderSpecifiers(List<String> sortList) {
-        OrderSpecifier<?>[] orders = new OrderSpecifier[3];
+        OrderSpecifier<?>[] orders = new OrderSpecifier[2];
 
         for(String s : sortList) {
             String[] arr= s.split(","); //arr[0]= title, arr[1]= asc
@@ -87,16 +87,14 @@ public class BoardRepositoryImpl implements BoardRepositoryCustom{
             switch (field) { //->: 자동 break 처리
                 case "date" ->
                         orders[0]= value.equals("desc")? boardEntity.upload_at.desc() : boardEntity.upload_at.asc();
-                case "category" ->
-                        orders[1]= value.equals("desc")? boardEntity.category.name.desc() : boardEntity.category.name.asc();
                 case "title" ->
-                        orders[2]= value.equals("desc")? boardEntity.title.desc() : boardEntity.title.asc();
+                        orders[1]= value.equals("desc")? boardEntity.title.desc() : boardEntity.title.asc();
                 default -> CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sortList);
 
             }
         }
 
-        if (orders[0] == null || orders[1] == null || orders[2] == null) {
+        if (orders[0] == null || orders[1] == null) {
             CommonThrow.invalidRequest("지원하지 않는 정렬 값: " + sortList);
         }
 

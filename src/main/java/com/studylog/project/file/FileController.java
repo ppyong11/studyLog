@@ -1,6 +1,5 @@
 package com.studylog.project.file;
 
-import com.studylog.project.global.CommonThrow;
 import com.studylog.project.global.CommonValidator;
 import com.studylog.project.global.response.SuccessResponse;
 import com.studylog.project.jwt.CustomUserDetail;

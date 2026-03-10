@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 @Slf4j
-public class JwtService {
+public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthenticationManagerBuilder authenticationManagerBuilder;
     private final RedisTemplate<String, String> redisTemplate;
@@ -90,23 +90,27 @@ public class JwtService {
 
     //토큰 재발급 (access, refresh 둘 다)
     //redis에 토큰 회전 및 쿠키에 재발급한 토큰들 내려주기
-    public JwtToken createNewToken(String userId, CustomUserDetail userDetail, String access){
-        UserEntity userEntity= userRepository.findById(userId) //userId 유니크 필드라 조회 문제 X
+    public JwtToken createNewToken(String refreshToken){
+        String userId = redisTemplate.opsForValue().get("RT:" + refreshToken);
+
+        if (userId == null) {
+            throw  new CustomException(ErrorCode.JWT_EXPIRED);
+        }
+
+        UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         //인증 객체 임의 생성
-        List<GrantedAuthority> authorities= List.of(new SimpleGrantedAuthority(userEntity.getRole()? "ROLE_USER" : "ROLE_ADMIN"));
-        Authentication authentication= new UsernamePasswordAuthenticationToken(userEntity.getId(), null, authorities);
+        List<GrantedAuthority> authorities= List.of(new SimpleGrantedAuthority(user.getRole()? "ROLE_USER" : "ROLE_ADMIN"));
+        Authentication authentication= new UsernamePasswordAuthenticationToken(user.getId(), null, authorities);
         JwtToken jwtToken= jwtTokenProvider.createToken(authentication);
 
         //기존 AT 로그아웃 처리, 저장된 RT 삭제 후 새 RT 저장
         String newRefresh= jwtToken.refreshToken();
 
-        saveToken("AT:"+ access, access, null, "로그아웃");
-        String id= userDetail.getUsername();
-        deleteRefreshToken(userDetail.getUsername()); //redis에 저장된 기존 리프레시 토큰 삭제
-        saveToken("RT:" + id, newRefresh, null, null); //리프레시 토큰 저장 (id -> 토큰)
-        saveToken("RT:" + newRefresh, newRefresh, id, null); //양방향 저장 (토큰 -> id)
+        deleteRefreshToken(userId); //redis에 저장된 기존 리프레시 토큰 삭제
+        saveToken("RT:" + userId, newRefresh, null, null); //리프레시 토큰 저장 (id -> 토큰)
+        saveToken("RT:" + newRefresh, newRefresh, userId, null); //양방향 저장 (토큰 -> id)
         return jwtToken;//JWT 토큰 타입
     }
 

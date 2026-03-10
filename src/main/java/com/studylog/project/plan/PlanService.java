@@ -30,6 +30,11 @@ public class PlanService {
 
     public PlanResponse getPlan(Long planId, UserEntity user) {
         PlanEntity plan= getPlanByUserAndId(planId, user);
+
+        if (plan.getTimer() != null) {
+            return PlanResponse.toDto(plan, plan.getTimer());
+        }
+
         return PlanResponse.toDto(plan);
     }
 
@@ -161,6 +166,9 @@ public class PlanService {
                         });
 
         plan.updatePlan(request, category); //여기서 값 바뀐 거만 수정해줌
+        if (plan.getTimer() != null) {
+            return PlanResponse.toDto(plan, plan.getTimer());
+        }
         return PlanResponse.toDto(plan);
     }
 

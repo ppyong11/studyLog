@@ -54,11 +54,11 @@ public class TimerController {
     @GetMapping("/search")
     public ResponseEntity<PageResponse<TimerResponse>> searchTimer(@RequestParam(required = false) LocalDate startDate,
                                                          @RequestParam(required = false) LocalDate endDate,
-                                                         @RequestParam(required = false) String category,
+                                                         @RequestParam(required = false) String categories,
                                                          @RequestParam(required = false) String planKeyword,
                                                          @RequestParam(required = false) String keyword,
                                                          @RequestParam(required = false) String status,
-                                                         @RequestParam(required = false) List<String> sort,
+                                                         @RequestParam(required = false) String sort,
                                                          @RequestParam(required = false) int page,
                                                          @AuthenticationPrincipal CustomUserDetail user) {
 
@@ -68,11 +68,10 @@ public class TimerController {
         List<Long> categoryList= new ArrayList<>();
         status= status == null? null:status.trim().toUpperCase();
 
+        log.info("검색 상태: {}", status);
+
         if (sort == null) {
-            sort= List.of("date,desc", "category,asc", "name,asc");
-            log.info("{}", sort);
-        } else {
-            CommonValidator.validateSort(sort, 3);
+            sort= "date,desc";
         }
 
         if (startDate == null ^ endDate == null) //fasle, true / true, false일 때 들어감
@@ -80,8 +79,8 @@ public class TimerController {
         if(startDate != null && startDate.isAfter(endDate))
             throw new CustomException(ErrorCode.INVALID_DATE_RANGE);
 
-        if (category != null && !category.trim().isEmpty()){
-            categoryList= CommonUtil.parseAndValidateCategory(category);
+        if (categories != null && !categories.trim().isEmpty()){
+            categoryList= CommonUtil.parseAndValidateCategory(categories);
         }
         if (status != null && !VALID_STATUS.contains(status)) {//null 들어가도 문제 X
             log.info("잘못된 상태 값: {}", sort);
@@ -115,7 +114,7 @@ public class TimerController {
     @Operation(summary = "타이머 등록", description = "카테고리 필수, 계획 선택 / 계획 입력 시 계획의 카테고리와 동일해야 함")
     @PostMapping("")
     public ResponseEntity<TimerResponse> createTimer(@Valid @RequestBody TimerRequest request,
-                                                           @AuthenticationPrincipal CustomUserDetail user) {
+                                                       @AuthenticationPrincipal CustomUserDetail user) {
         TimerResponse response= timerService.createTimer(request, user.getUser());
         return ResponseEntity.ok(response);
     }
@@ -129,7 +128,8 @@ public class TimerController {
     }
 
     @Operation(summary = "타이머 정지 (실행 중인 랩 함께 정지)")
-    @PatchMapping("/{timerId}/pause")
+    // 창 꺼질 때 요청 보내기 위해서 PATCH, POST 둘 다 허용
+    @RequestMapping(value = "/{timerId}/pause", method = {RequestMethod.PATCH, RequestMethod.POST})
     public ResponseEntity<TimerResponse> pauseTimer(@PathVariable("timerId") Long id,
                                                           @AuthenticationPrincipal CustomUserDetail user) {
         TimerResponse response= timerService.pauseTimer(id, user.getUser());

@@ -11,6 +11,7 @@ import com.studylog.project.plan.PlanEntity;
 import com.studylog.project.plan.PlanRepository;
 import com.studylog.project.sse.SseEmitterService;
 import com.studylog.project.user.UserEntity;
+import com.studylog.project.user.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,13 +31,14 @@ import java.util.Optional;
 public class TimerService {
     private final TimerRepository timerRepository;
     private final PlanRepository planRepository;
+    private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final SseEmitterService sseEmitterService;
     private final TimerRepositoryImpl timerRepositoryImpl;
     private final NotificationRepository notificationRepository;
     //조건 조회
     public PageResponse<TimerResponse> searchTimers(UserEntity user, LocalDate startDate, LocalDate endDate,
-                                                    List<Long> categoryList, String planKeyword, String keyword, String status, List<String> sort,
+                                                    List<Long> categoryList, String planKeyword, String keyword, String status, String sort,
                                                     int page) {
 
         long pageSize= 20;
@@ -74,6 +76,10 @@ public class TimerService {
 
         timer= request.toEntity(user, plan, category);
         timerRepository.saveAndFlush(timer); //이때 timer에도 id 매핑됨 (AI 된 값)
+
+        if (plan != null) {
+            return TimerResponse.toDto(timer, plan);
+        }
         return TimerResponse.toDto(timer); //첫 생성 후 조회
     }
 
@@ -94,16 +100,20 @@ public class TimerService {
                     .orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
             checkPlan(plan, timer, request);
             category= plan.getCategory();
-        } else{ //request에 플랜 X
-            if(timer.getPlan() != null && timer.getPlan().isComplete())
+        } else { //request에 플랜 X
+            if (timer.getPlan() != null && timer.getPlan().isComplete())
                 throw new CustomException(ErrorCode.TIMER_PLAN_COMPLETED);
-            category= categoryRepository.findByUserAndId(user, request.categoryId())
+            category = categoryRepository.findByUserAndId(user, request.categoryId())
                     .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
         }
 
         timer.updateName(request.name());
         timer.updatePlan(plan);
         timer.updateCategory(category);
+
+        if (plan != null) {
+            return TimerResponse.toDto(timer, plan);
+        }
         return TimerResponse.toDto(timer);
     }
 
@@ -121,6 +131,9 @@ public class TimerService {
             throw new CustomException(ErrorCode.TIMER_ENDED);
 
         timer.start();
+        if (timer.getPlan() != null) {
+            return TimerResponse.toDto(timer, timer.getPlan());
+        }
         return TimerResponse.toDto(timer);
     }
 
@@ -136,7 +149,7 @@ public class TimerService {
                 noti.updateUrl();
         }
 
-        timerRepository.delete(timer); //랩도 알아서 삭제됨
+        timerRepository.delete(timer);
     }
 
     //타이머 동기화
@@ -148,10 +161,13 @@ public class TimerService {
         timer.updateElapsed(getTotalElapsed(timer)); //누적 경과+startAt+동기화 시간
         timer.updateSyncedAt(); //동기화
         checkCompletion(timer, user, true);
+
+        if (timer.getPlan() != null) {
+            return TimerResponse.toDto(timer, timer.getPlan());
+        }
         return TimerResponse.toDto(timer);
     }
 
-    //정지 시 실행 중인 랩도 정지됨
     public TimerResponse pauseTimer(Long id, UserEntity user) {
         TimerEntity timer= getTimerByUserAndId(user, id);
 
@@ -162,7 +178,10 @@ public class TimerService {
         }
 
         timer.updateElapsed(getTotalElapsed(timer)); //누적 시간 갱신
-        if(timer.getPlan() != null) checkCompletion(timer, user, false);
+        if(timer.getPlan() != null) {
+            checkCompletion(timer, user, false);
+            return TimerResponse.toDto(timer, timer.getPlan());
+        }
         return TimerResponse.toDto(timer);
     }
 
@@ -178,18 +197,26 @@ public class TimerService {
             case READY -> throw new CustomException(ErrorCode.TIMER_NOT_RUNNING);
             case PAUSED -> timer.end(timer.getPauseAt()); //정지된 타이머라면 정지 시간 == 종료 시간 (누적 시간 갱신은 정지할 때 함)
         }
-        if(timer.getPlan() != null) checkCompletion(timer, user, false);
+        if(timer.getPlan() != null) {
+            checkCompletion(timer, user, false);
+            return TimerResponse.toDto(timer, timer.getPlan());
+        }
         return TimerResponse.toDto(timer);
     }
 
     //완료 체킹은 그대로
     public TimerResponse resetTimer(Long id, UserEntity user) {
         TimerEntity timer= getTimerByUserAndId(user, id);
-        if(timer.getPlan().isComplete()) throw new CustomException(ErrorCode.TIMER_RESET_FOR_COMPLETED_PLAN);
+
+        if(timer.getPlan() != null && timer.getPlan().isComplete()) throw new CustomException(ErrorCode.TIMER_RESET_FOR_COMPLETED_PLAN);
         switch (timer.getStatus()) {
             case ENDED -> throw new CustomException(ErrorCode.TIMER_ENDED);
             case READY -> throw new CustomException(ErrorCode.TIMER_ALREADY_STATE);
             default -> timer.reset();
+        }
+
+        if (timer.getPlan() != null) {
+            return TimerResponse.toDto(timer, timer.getPlan());
         }
         return TimerResponse.toDto(timer);
     }
@@ -235,13 +262,6 @@ public class TimerService {
         return duration.getSeconds() + entity.getElapsed();
     }
 
-    public String formatElapsed(long elapsedSeconds){
-        long hours= elapsedSeconds / 3600;
-        long minutes= (elapsedSeconds % 3600) / 60;
-        long seconds= elapsedSeconds % 60;
-        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
-    }
-
     private void checkCompletion(TimerEntity timer, UserEntity user, boolean isSyncCheck){
         LocalDate timerStartDate= timer.getSyncedAt() == null? timer.getStartAt().toLocalDate():timer.getSyncedAt().toLocalDate();
         LocalDate planStart= timer.getPlan().getStartDate();
@@ -271,6 +291,25 @@ public class TimerService {
 
     public void updateCategory(CategoryEntity deleteCategory, CategoryEntity defaultCategory){
         timerRepository.updateCategory(deleteCategory, defaultCategory);
+    }
+
+    // 연결이 끊겼을 때 호출될 이벤트 리스너 전용 메서드
+    @Transactional
+    public void pauseRunningTimerOnDisconnect(String userId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        List<TimerEntity> runningTimers = timerRepository.findRunningTimerByUserId(user);
+
+        for (TimerEntity timer : runningTimers) {
+            //  상태 변경과 시간 갱신만 수행합니다.
+            timer.pause();
+            timer.updateElapsed(getTotalElapsed(timer));
+
+            if (timer.getPlan() != null) {
+                checkCompletion(timer, user, false);
+            }
+        }
     }
 
     @Scheduled(cron= "0 0/5 * * * *") //5분 간격 스케쥴링

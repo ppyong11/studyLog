@@ -50,9 +50,16 @@ public class PlanRepositoryImpl implements PlanRepositoryCustom {
                         planEntity.startDate,
                         planEntity.endDate,
                         planEntity.minutes,
-                        planEntity.isComplete
+                        planEntity.isComplete,
+                        timerEntity.id, // 연결된 타이머 없으면 null 반환 (left join)
+                        timerEntity.name,
+                        timerEntity.category.id,
+                        timerEntity.createAt,
+                        timerEntity.startAt,
+                        timerEntity.elapsed
                 ))
                 .from(planEntity)
+                .leftJoin(planEntity.timer, timerEntity)
                 .where(
                         planEntity.user.eq(user), //유저 것만 조회 결과로
                         //startDate, endDate 항상 있음 (컨트롤러에서 검증)
@@ -87,9 +94,16 @@ public class PlanRepositoryImpl implements PlanRepositoryCustom {
                         planEntity.startDate,
                         planEntity.endDate,
                         planEntity.minutes,
-                        planEntity.isComplete
+                        planEntity.isComplete,
+                        timerEntity.id,
+                        timerEntity.name,
+                        timerEntity.category.id,
+                        timerEntity.createAt,
+                        timerEntity.startAt,
+                        timerEntity.elapsed
                 ))
                 .from(planEntity)
+                .leftJoin(planEntity.timer, timerEntity)
                 .where(
                         planEntity.user.eq(user),
                         planEntity.startDate.loe(endDate), //<=
@@ -121,11 +135,20 @@ public class PlanRepositoryImpl implements PlanRepositoryCustom {
                         planEntity.startDate,
                         planEntity.endDate,
                         planEntity.minutes,
-                        planEntity.isComplete
+                        planEntity.isComplete,
+                        timerEntity.id,
+                        timerEntity.name,
+                        timerEntity.category.id,
+                        timerEntity.createAt,
+                        timerEntity.startAt,
+                        timerEntity.elapsed
                 ))
                 .from(planEntity)
+                .leftJoin(planEntity.timer, timerEntity)
                 .where(
-
+                        planEntity.user.eq(user),
+                        planEntity.startDate.loe(today), //<=
+                        planEntity.endDate.goe(today) // >=
                 )
                 .orderBy(
                         planEntity.startDate.asc(),

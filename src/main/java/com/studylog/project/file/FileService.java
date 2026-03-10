@@ -4,6 +4,7 @@ import com.studylog.project.board.BoardEntity;
 import com.studylog.project.global.exception.*;
 import com.studylog.project.user.UserEntity;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -15,19 +16,24 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @Service
 @RequiredArgsConstructor//빈으로 등록
 @Transactional
 @Slf4j
 public class FileService {
-    private final String fileDir= "/home/ubuntu/app-data/uploads/";
+    // yml 설정 값 읽어옴
+    @Value("${file.upload.dir}")
+    private String fileDir;
+
     private final FileRepository fileRepository;
     private final Set<String> blackExts= Set.of(
             "exe", "msi", "bat", "cmd", "sh", "bin", "com", "cpl", "scr", "jar",
@@ -39,19 +45,43 @@ public class FileService {
 
     public String saveFile(MultipartFile multipartFile) {
         if (multipartFile.isEmpty()) return null;
+
         String originalFileName = multipartFile.getOriginalFilename();
-        String uuid= UUID.randomUUID().toString();
-        //.확장자 부분 받아옴
-        log.info(multipartFile.getContentType());
-        String ext= originalFileName.substring(originalFileName.lastIndexOf(".")).toLowerCase();
-        if (blackExts.contains(ext)) throw new CustomException(ErrorCode.INVALID_FILE_TYPE);
-        String savedName= uuid + ext;
+        log.info("업로드된 파일 타입: {}", multipartFile.getContentType());
+
+        int extIndex = originalFileName.lastIndexOf(".");
+        if (extIndex == -1) {
+            throw new CustomException(ErrorCode.INVALID_FILE_TYPE);
+        }
+
+        String ext = originalFileName.substring(extIndex + 1).toLowerCase();
+
+        if (blackExts.contains(ext)) {
+            throw new CustomException(ErrorCode.INVALID_FILE_TYPE);
+        }
+
+        String uuid = UUID.randomUUID().toString();
+        String savedName = uuid + "." + ext;
+
         try {
-            File file= new File(fileDir + savedName); //데이터 X, 파일 객체
-            //파일을 tmp/uploads/랜덤명에 저장
-            multipartFile.transferTo(file); //multipartFile: 데이터
+            // 1. 상대 경로("./uploads/")를 현재 프로젝트의 절대 경로로 변환 *앱폴더/uploads/
+            // 배포 시엔 앱 폴더 밖 시스템 경로에 파일 두기 (재배포 시 데이터 안 날아감)
+            Path uploadPath = Paths.get(fileDir).toAbsolutePath().normalize();
+
+            // 2. NIO 방식으로 폴더 생성 (현재 프로젝트 폴더의 절대 경로로 변환해줌)
+            // 이미 절대 경로면 변환 X
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            // 최종 파일이 저장될 완벽한 경로 완성
+            Path filePath = uploadPath.resolve(savedName);
+
+            // 파일 저장!
+            multipartFile.transferTo(filePath.toFile());
+
         } catch (IOException e) {
-            log.info("파일 업로드 중 서버 오류 발생 (500)");
+            log.error("파일 저장 실패: {}", e.getMessage());
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
         return savedName;

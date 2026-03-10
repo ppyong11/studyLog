@@ -12,7 +12,7 @@ import jakarta.validation.constraints.Size;
 public record TimerRequest (
     @Schema(description = "타이머명 (20자 이내)")
     @NotBlank(message = "타이머 제목을 입력해 주세요.")
-    @Size(max= 20, message = "20자 이내로 입력해 주세요.")
+    @Size(max= 20, message = "타이머명은 20자 이내여야 합니다.")
     String name,
     @Schema(description = "플랜 id *선택")
     Long planId, //null 가능

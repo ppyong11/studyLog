@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface TimerRepositoryCustom {
     List<TimerResponse> searchTimersByFilter(UserEntity user, LocalDate startDate, LocalDate endDate,
-                                             List<Long> categoryList, String planKeyword, String keyword, String status, List<String> sort,
+                                             List<Long> categoryList, String planKeyword, String keyword, String status, String sort,
                                              int page);
     Long getTotalItems(UserEntity user, LocalDate startDate, LocalDate endDate,
                     List<Long> categoryList, String planKeyword, String keyword, String status);
