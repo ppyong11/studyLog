@@ -30,10 +30,10 @@ public class CommonValidator {
     }
 
     public static void validateDate(LocalDate startDate, LocalDate endDate) {
-        if(startDate == null || endDate == null){
+        if(startDate == null){
             throw new CustomException(ErrorCode.DATE_RANGE_REQUIRED);
         }
-        if (startDate.isAfter(endDate)) {
+        if (endDate != null && startDate.isAfter(endDate)) {
             throw new CustomException(ErrorCode.INVALID_DATE_RANGE);
         }
     }

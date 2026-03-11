@@ -30,15 +30,21 @@ public class PlanRepositoryImpl implements PlanRepositoryCustom {
         long pageSize= 10;
         long offset= (page-1) * pageSize; //0~9, 10~19
 
-        BooleanBuilder builder = new BooleanBuilder(
-                planEntity.user.eq(user) //유저 것만 조회 결과로
-                //startDate, endDate 항상 있음 (컨트롤러에서 검증)
-                .and(planEntity.startDate.goe(startDate)) // >=
-                .and(planEntity.endDate.loe(endDate)) // <=
-                .and(categoryId(categoryIds))
+        BooleanBuilder builder = new BooleanBuilder(planEntity.user.eq(user));
+
+        // 시작일 조건: startDate가 있을 때만 적용
+        if (startDate != null) {
+            builder.and(planEntity.startDate.goe(startDate));
+        }
+
+        // 종료일 조건: endDate가 있을 때만 적용 (null이면 무시됨 = 전체 조회)
+        if (endDate != null) {
+            builder.and(planEntity.endDate.loe(endDate));
+        }
+
+        builder.and(categoryId(categoryIds))
                 .and(nameLike(keyword))
-                .and(statusEqual(status))
-        );
+                .and(statusEqual(status));
 
         List<PlanResponse> responses =  queryFactory
                 .select(Projections.constructor(
