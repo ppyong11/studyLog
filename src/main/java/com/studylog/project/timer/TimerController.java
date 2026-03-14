@@ -88,26 +88,15 @@ public class TimerController {
         }
         planKeyword= planKeyword == null? null:planKeyword.trim();
         keyword= keyword == null? null:keyword.trim();
-        PageResponse<TimerResponse> response= timerService.searchTimers(user.getUser(), startDate, endDate, categoryList,
+        PageResponse<TimerResponse> response= timerService.searchTimers(user.getUserId(), startDate, endDate, categoryList,
                 planKeyword, keyword, status, sort, page);
         return ResponseEntity.ok(response);
     }
 
-    //단일 조회
-    @Operation(summary = "타이머 단일 조회 (상세 조회)")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "조회 성공",
-            content= @Content(mediaType = "application/json",
-            schema = @Schema(implementation = TimerResponse.class))),
-        @ApiResponse(responseCode = "404", description = "조회 실패",
-            content = @Content(mediaType = "application/json",
-            schema = @Schema(
-                    example = "{\n  \"success\": false,\n  \"message\": \"존재하지 않는 타이머입니다.\"\n}")))
-    })
-    @GetMapping("/{timerId}")
-    public ResponseEntity<TimerResponse> getTimer(@PathVariable("timerId") Long id,
-                                                        @AuthenticationPrincipal CustomUserDetail user) {
-        TimerResponse response = timerService.getTimer(id, user.getUser());
+    @Operation(summary = "실행 중인 타이머 조회")
+    @GetMapping("/running")
+    public ResponseEntity<TimerResponse> getRunningTimer(@AuthenticationPrincipal CustomUserDetail user) {
+        TimerResponse response = timerService.getRunningTimer(user.getUserId());
         return ResponseEntity.ok(response);
     }
 
@@ -115,7 +104,7 @@ public class TimerController {
     @PostMapping("")
     public ResponseEntity<TimerResponse> createTimer(@Valid @RequestBody TimerRequest request,
                                                        @AuthenticationPrincipal CustomUserDetail user) {
-        TimerResponse response= timerService.createTimer(request, user.getUser());
+        TimerResponse response= timerService.createTimer(request, user.getUserId());
         return ResponseEntity.ok(response);
     }
 
@@ -123,7 +112,7 @@ public class TimerController {
     @PatchMapping("/{timerId}/start")
     public ResponseEntity<TimerResponse> startTimer(@PathVariable("timerId") Long id,
                                                           @AuthenticationPrincipal CustomUserDetail user) {
-        TimerResponse response= timerService.startTimer(id, user.getUser());
+        TimerResponse response= timerService.startTimer(id, user.getUserId());
         return ResponseEntity.ok(response);
     }
 
@@ -132,7 +121,7 @@ public class TimerController {
     @RequestMapping(value = "/{timerId}/pause", method = {RequestMethod.PATCH, RequestMethod.POST})
     public ResponseEntity<TimerResponse> pauseTimer(@PathVariable("timerId") Long id,
                                                           @AuthenticationPrincipal CustomUserDetail user) {
-        TimerResponse response= timerService.pauseTimer(id, user.getUser());
+        TimerResponse response= timerService.pauseTimer(id, user.getUserId());
         return ResponseEntity.ok(response);
     }
 
@@ -140,7 +129,7 @@ public class TimerController {
     @PatchMapping("/{timerId}/end")
     public ResponseEntity<TimerResponse> endTimer(@PathVariable("timerId") Long id,
                                                         @AuthenticationPrincipal CustomUserDetail user) {
-        TimerResponse response= timerService.endTimer(id, user.getUser());
+        TimerResponse response= timerService.endTimer(id, user.getUserId());
         return ResponseEntity.ok(response);
     }
 
@@ -149,7 +138,7 @@ public class TimerController {
     public ResponseEntity<TimerResponse> updateTimer(@PathVariable("timerId") Long id,
                                                            @Valid @RequestBody TimerRequest request,
                                                            @AuthenticationPrincipal CustomUserDetail user) {
-        TimerResponse response= timerService.updateTimer(id, request,user.getUser());
+        TimerResponse response= timerService.updateTimer(id, request,user.getUserId());
         return ResponseEntity.ok(response);
     }
 
@@ -158,7 +147,7 @@ public class TimerController {
     @PatchMapping("{timerId}/reset")
     public ResponseEntity<TimerResponse> resetTimer(@PathVariable("timerId") Long id,
                                                           @AuthenticationPrincipal CustomUserDetail user) {
-        TimerResponse response= timerService.resetTimer(id, user.getUser());
+        TimerResponse response= timerService.resetTimer(id, user.getUserId());
         return ResponseEntity.ok(response);
     }
 
@@ -167,7 +156,7 @@ public class TimerController {
     @DeleteMapping("/{timerId}")
     public ResponseEntity<SuccessResponse<Void>> deleteTimer(@PathVariable("timerId") Long id,
                                                       @AuthenticationPrincipal CustomUserDetail user) {
-        timerService.deleteTimer(id, user.getUser());
+        timerService.deleteTimer(id, user.getUserId());
         return ResponseEntity.ok(SuccessResponse.of("타이머가 삭제되었습니다."));
     }
 
@@ -176,6 +165,6 @@ public class TimerController {
     @PatchMapping("{timerId}/sync")
     public ResponseEntity<TimerResponse> syncedTimer(@PathVariable("timerId") Long id,
                                                    @AuthenticationPrincipal CustomUserDetail user) {
-        return ResponseEntity.ok(timerService.syncedTimer(id, user.getUser()));
+        return ResponseEntity.ok(timerService.syncedTimer(id, user.getUserId()));
     }
 }
