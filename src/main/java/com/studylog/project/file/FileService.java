@@ -83,7 +83,7 @@ public class FileService {
     }
 
     // 2. uploadTempFile 수정: saveFile에서 준 완벽한 경로를 DB에 넣습니다.
-    public void uploadTempFile(MultipartFile multipartFile, String draftId, Long userId) {
+    public FileResponse uploadTempFile(MultipartFile multipartFile, String draftId, Long userId) {
         UserEntity proxyUser = userRepository.getReferenceById(userId);
 
         // 이제 fullPath는 "/Users/ahyeon/.../uploads/uuid.png" 처럼 완벽합니다.
@@ -93,12 +93,13 @@ public class FileService {
                 .user(proxyUser)
                 .draft(draftId)
                 .size(multipartFile.getSize())
-                .path(fullPath) // ⭐ 위에서 받은 완벽한 경로 사용
+                .path(fullPath)
                 .originalName(multipartFile.getOriginalFilename())
                 .name(Paths.get(fullPath).getFileName().toString()) // 파일명만 추출
                 .type(multipartFile.getContentType())
                 .build();
-        fileRepository.save(fileEntity);
+
+        return FileResponse.toDto(fileRepository.save(fileEntity));
     }
     public void deleteTempMeta(Long fileId, String draftId, Long userId) {
         UserEntity proxyUser = userRepository.getReferenceById(userId);

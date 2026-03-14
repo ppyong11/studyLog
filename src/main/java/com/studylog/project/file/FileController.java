@@ -48,13 +48,13 @@ public class FileController {
     })
     @PostMapping("/files")
     // 업로드 시 boardId 필요 X, 게시글 등록, 수정 시 알아서 매핑함
-    public ResponseEntity<SuccessResponse<Void>> uploadTempFile(@RequestParam("file") MultipartFile file,
+    public ResponseEntity<SuccessResponse<FileResponse>> uploadTempFile(@RequestParam("file") MultipartFile file,
                                                    @RequestParam(required = false) String draftId,
                                                    @AuthenticationPrincipal CustomUserDetail user) {
         CommonValidator.validateDraftId(draftId);
-        fileService.uploadTempFile(file, draftId.trim(), user.getUserId());
+        FileResponse response = fileService.uploadTempFile(file, draftId.trim(), user.getUserId());
 
-        return ResponseEntity.ok(SuccessResponse.of("파일이 업로드되었습니다."));
+        return ResponseEntity.ok(SuccessResponse.of("파일이 업로드되었습니다.", response));
     }
 
     @Operation(summary = "front에 파일 띄우기")
