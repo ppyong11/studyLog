@@ -41,6 +41,7 @@ public class TimerRepositoryImpl implements TimerRepositoryCustom {
                         timerEntity.status,
                         planEntity.id,
                         planEntity.name,
+                        planEntity.category.id,
                         planEntity.startDate,
                         planEntity.endDate
                 ))

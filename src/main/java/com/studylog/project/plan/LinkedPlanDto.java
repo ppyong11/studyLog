@@ -12,6 +12,7 @@ import java.time.LocalDate;
 public class LinkedPlanDto {
     private Long id;
     private String name;
+    private Long categoryId;
     private LocalDate startDate;
     private LocalDate endDate;
 }

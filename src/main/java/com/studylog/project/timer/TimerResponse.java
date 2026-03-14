@@ -41,7 +41,7 @@ public class TimerResponse{
     // 생성자 오버로딩
     public TimerResponse(Long id, String name, Long categoryId, LocalDateTime createAt,
                          LocalDateTime startAt, LocalDateTime endAt, LocalDateTime pauseAt,
-                         Long elapsed, TimerStatus status, Long planId, String planName,
+                         Long elapsed, TimerStatus status, Long planId, String planName, Long planCategoryId,
                          LocalDate planStartDate, LocalDate planEndDate) {
         this.id = id;
         this.name = name;
@@ -54,7 +54,7 @@ public class TimerResponse{
         this.status = status;
 
         if (planId != null) {
-            this.connectedPlan = new LinkedPlanDto(planId, planName, planStartDate, planEndDate);
+            this.connectedPlan = new LinkedPlanDto(planId, planName, planCategoryId, planStartDate, planEndDate);
         } else {
             this.connectedPlan = null;
         }
@@ -73,7 +73,7 @@ public class TimerResponse{
     public static TimerResponse toDto(TimerEntity timer, PlanEntity plan) {
         return new TimerResponse(timer.getId(), timer.getName(), timer.getCategory().getId(), timer.getCreateAt(),
                 timer.getStartAt(), timer.getEndAt(), timer.getPauseAt(), timer.getElapsed(), timer.getStatus(),
-                new LinkedPlanDto(plan.getId(), plan.getName(), plan.getStartDate(), plan.getEndDate())
+                new LinkedPlanDto(plan.getId(), plan.getName(), plan.getCategory().getId(), plan.getStartDate(), plan.getEndDate())
         );
     }
 }
