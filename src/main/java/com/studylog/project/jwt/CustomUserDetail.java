@@ -11,13 +11,25 @@ import java.util.Collections;
 
 @Getter
 public class CustomUserDetail implements UserDetails {
-    //principal 객체 넣기 전에 findById로 넣어서 토큰 주인 객체로 설정됨
-    //유저 전체 정보(entity 필드)가 들어옴
-    private final UserEntity user; //이건 Getter가 자동 생성해 줌 (추상 메서드 X)
+    private final UserEntity user;
+    private final Long userId;
+    private final String loginId;
+    private final boolean isAdmin;
 
-    // CustomUserDetail의 User는 UserEntity 타입임
+    // DB 조회 후 실제 엔티티 넣을 때
     public CustomUserDetail(UserEntity user) {
         this.user = user;
+        this.userId = user.getUser_id();
+        this.loginId = user.getId();
+        this.isAdmin = user.getRole() != null && user.getRole();
+    }
+
+    // JWT 인증 시 (가짜 객체)
+    public CustomUserDetail(Long userId, String id, String role) {
+        this.user = null;
+        this.userId = userId;
+        this.loginId = id;
+        this.isAdmin = !role.equals("ROLE_USER");
     }
 
     @Override
@@ -27,16 +39,17 @@ public class CustomUserDetail implements UserDetails {
         );
     }
 
-    //UserDetails의 추상 메서드라서 오버라이드  필요
+    //UserDetails의 추상 메서드라서 오버라이드 필요
     @Override
     public String getPassword() {
-        return user.getPw();
+        return user != null ? user.getPw() : null;
     }
 
     @Override
     public String getUsername() {
-        return user.getId();
+        return loginId; // user 대신 직접 필드 사용
     }
+
     @Override
     public boolean isAccountNonExpired() {
         return true;

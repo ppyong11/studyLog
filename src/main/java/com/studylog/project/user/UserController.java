@@ -31,7 +31,7 @@ public class UserController {
     @Operation(summary = "유저 닉네임, 다짐 반환")
     @GetMapping("/member/user-info")
     public ResponseEntity<UserInfoResponse> getUserInfo(@AuthenticationPrincipal CustomUserDetail user){
-        return ResponseEntity.ok(userService.getUserInfo(user.getUser()));
+        return ResponseEntity.ok(userService.getUserInfo(user.getUserId()));
     }
 
     @Operation(summary= "아이디 중복 확인")
@@ -113,9 +113,8 @@ public class UserController {
     @GetMapping("auth/me")
     @Operation(summary = "유저 정보 반환")
     public ResponseEntity<UserResponse> getMemberInfo(@AuthenticationPrincipal CustomUserDetail user) {
-        log.info("로그인한 유저 정보 반환");
 
-        return ResponseEntity.ok(UserResponse.of(userService.getUser(user.getUser(), ErrorCode.USER_NOT_FOUND)));
+        return ResponseEntity.ok(UserResponse.of(userService.getUser(user.getUserId(), ErrorCode.USER_NOT_FOUND)));
     }
 
     @PatchMapping("/member/change-pw")
@@ -123,7 +122,7 @@ public class UserController {
     public ResponseEntity<SuccessResponse<Void>> updatePW(@AuthenticationPrincipal CustomUserDetail user,
                                                    @RequestBody @Valid UpdatePwRequest request) {
         //유효 토큰 및 로그인 상태 확인(redis) 필터에서 검증됨
-        userService.changePw(user.getUser(), request);
+        userService.changePw(user.getUserId(), request);
         return ResponseEntity.ok(SuccessResponse.of("비밀번호가 변경되었습니다."));
     }
 
@@ -132,7 +131,7 @@ public class UserController {
     public ResponseEntity<SuccessResponse<String>> updateNickname(@AuthenticationPrincipal CustomUserDetail user,
                                                          @RequestBody @Valid NicknameRequest request) {
         //유효 토큰 및 로그인 상태 확인(redis) 필터에서 검증됨
-        userService.changeNickname(user.getUser(), request.nickname());
+        userService.changeNickname(user.getUserId(), request.nickname());
         log.info(request.nickname());
         return ResponseEntity.ok(SuccessResponse.of("닉네임이 변경되었습니다.", request.nickname()));
     }
@@ -141,7 +140,7 @@ public class UserController {
     @PatchMapping("/member/change-resolution")
     public ResponseEntity<SuccessResponse<Void>> updateResolution(@Valid @RequestBody UpdateResolutionReqeust reqeust,
                                                    @AuthenticationPrincipal CustomUserDetail user){
-        userService.updateResolution(reqeust.resolution(), user.getUser());
+        userService.updateResolution(reqeust.resolution(), user.getUserId());
         return ResponseEntity.ok(SuccessResponse.of("다짐이 변경되었습니다."));
     }
 }

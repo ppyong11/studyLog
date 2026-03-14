@@ -6,6 +6,7 @@ import com.studylog.project.global.response.ScrollResponse;
 import com.studylog.project.global.response.SuccessResponse;
 import com.studylog.project.timer.TimerEntity;
 import com.studylog.project.user.UserEntity;
+import com.studylog.project.user.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,24 +21,30 @@ import java.util.List;
 public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationRepositoryImpl notificationRepositoryImpl;
+    private final UserRepository userRepository;
 
-    public ScrollResponse<NotificationResponse> getAllNoti(int page, UserEntity user){
+    public ScrollResponse<NotificationResponse> getAllNoti(int page, Long userId){
+        UserEntity proxyUser = userRepository.getReferenceById(userId);
 
         long pageSize= 10;
 
         //엔티티 조회 + response로 매핑 (생성자에 들어감)
-        List<NotificationResponse> responses = notificationRepositoryImpl.findAllNotifications(user, page);
+        List<NotificationResponse> responses = notificationRepositoryImpl.findAllNotifications(proxyUser, page);
 
-        Long totalItems = notificationRepositoryImpl.totalItems(user);
+        Long totalItems = notificationRepositoryImpl.totalItems(proxyUser);
         log.info("{}", totalItems);
 
         boolean hasNext= page * pageSize < totalItems;
         return new ScrollResponse<>(responses, page, totalItems, hasNext);
     }
 
-    public long getUnreadCount(UserEntity user){
-        return notificationRepository.countByUserAndIsReadFalse(user);
+    public long getUnreadCount(Long userId){
+        UserEntity proxyUser = userRepository.getReferenceById(userId);
+
+        return notificationRepository.countByUserAndIsReadFalse(proxyUser);
     }
+
+    //프록시 객체 들어옴
     public void saveNotification(UserEntity user, TimerEntity timer, boolean isSyncCheck) {
         //DB에 알림 저장
         //동기화로 완료 체크 시 - 타이머 있음
@@ -54,26 +61,34 @@ public class NotificationService {
         notificationRepository.save(notification);
     }
 
-    public SuccessResponse<Void> deleteAllNoti(UserEntity user){
-        List<NotificationEntity> notifications= notificationRepository.findAllByUser(user);
+    public SuccessResponse<Void> deleteAllNoti(Long userId){
+        UserEntity proxyUser = userRepository.getReferenceById(userId);
+
+        List<NotificationEntity> notifications= notificationRepository.findAllByUser(proxyUser);
         if(notifications.isEmpty()) return SuccessResponse.of( "삭제할 알림이 없습니다.");
         notificationRepository.deleteAll(notifications); //인자 없으면 모든 행 삭제
         return SuccessResponse.of( "모든 알림이 삭제되었습니다.");
     }
-    public void deleteNoti(Long id, UserEntity user){
-        NotificationEntity notification= notificationRepository.findByUserAndId(user, id)
+    public void deleteNoti(Long id, Long userId){
+        UserEntity proxyUser = userRepository.getReferenceById(userId);
+
+        NotificationEntity notification= notificationRepository.findByUserAndId(proxyUser, id)
                 .orElseThrow(()-> new CustomException(ErrorCode.NOTI_NOT_FOUND));
         notificationRepository.delete(notification);
     }
 
-    public void readNoti(Long id, UserEntity user){
-        NotificationEntity notification= notificationRepository.findByUserAndId(user, id)
+    public void readNoti(Long id, Long userId){
+        UserEntity proxyUser = userRepository.getReferenceById(userId);
+
+        NotificationEntity notification= notificationRepository.findByUserAndId(proxyUser, id)
                 .orElseThrow(()-> new CustomException(ErrorCode.NOTI_NOT_FOUND));
         notification.updateIsRead();
     }
 
-    public SuccessResponse<Void> readAllNoti(UserEntity user){
-        List<NotificationEntity> notifications= notificationRepository.findAllByUserAndIsReadFalse(user);
+    public SuccessResponse<Void> readAllNoti(Long userId){
+        UserEntity proxyUser = userRepository.getReferenceById(userId);
+
+        List<NotificationEntity> notifications= notificationRepository.findAllByUserAndIsReadFalse(proxyUser);
         if(notifications.isEmpty()) {
             return SuccessResponse.of("읽음 처리할 알림이 없습니다.");
         }

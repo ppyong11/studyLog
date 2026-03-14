@@ -54,7 +54,6 @@ public class PlanController {
                                                                @AuthenticationPrincipal CustomUserDetail user) {
 
         CommonValidator.validatePage(page);
-        log.info("{}", categories);
 
         if (sort == null || sort.isEmpty()) {
             sort = List.of("date,desc", "category,asc");
@@ -75,25 +74,9 @@ public class PlanController {
 
         keyword = (keyword == null) ? null : keyword.trim(); //공백 제거
 
-        ScrollPlanResponse response= planService.searchTablePlans(user.getUser(), startDate, endDate,
+        ScrollPlanResponse response= planService.searchTablePlans(user.getUserId(), startDate, endDate,
                 categoryList, keyword, status, sort, page);
         return ResponseEntity.ok(response); //빈 리스트도 보내짐
-    }
-
-    //main용
-    @Operation(summary = "메인페이지 todo 조회")
-    @GetMapping("/daily")
-    //HTTP 응답 바디 타입을 T로 지정해서 제네릭 사용 (타입 안정성 보장)
-    public ResponseEntity<ScrollPlanResponse> getDailyPlans(@AuthenticationPrincipal CustomUserDetail user,
-                                                            @RequestParam(required = false) int page,
-                                                            @RequestParam(required = false) LocalDate startDate){
-        CommonValidator.validatePage(page);
-        if(startDate == null || !startDate.equals(LocalDate.now())) {
-            log.info("잘못된 날짜 값 - startDate {}", startDate);
-            throw new CustomException(ErrorCode.INVALID_REQUEST);
-        }
-
-        return ResponseEntity.ok(planService.MainDailyPlans(user.getUser(), startDate, page));
     }
 
     //main & plan창
@@ -108,7 +91,7 @@ public class PlanController {
             throw new CustomException(ErrorCode.DATE_RANGE_REQUIRED);
         }
 
-        return ResponseEntity.ok(planService.getCalendarPlans(startDate, endDate, range, user.getUser()));
+        return ResponseEntity.ok(planService.getCalendarPlans(startDate, endDate, range, user.getUserId()));
     }
 
     //계획 하나 조회
@@ -125,7 +108,7 @@ public class PlanController {
     @GetMapping("/{planId}")
     public ResponseEntity<PlanResponse> getPlan(@PathVariable Long planId,
                                                 @AuthenticationPrincipal CustomUserDetail user) {
-        PlanResponse plan= planService.getPlan(planId, user.getUser());
+        PlanResponse plan= planService.getPlan(planId, user.getUserId());
         return ResponseEntity.ok(plan);
     }
 
@@ -145,7 +128,7 @@ public class PlanController {
     @PostMapping("")
     public ResponseEntity<SuccessResponse<PlanResponse>> addPlan(@Valid @RequestBody PlanRequest request,
                                                   @AuthenticationPrincipal CustomUserDetail user) {
-        PlanResponse response = planService.addPlan(request, user.getUser());
+        PlanResponse response = planService.addPlan(request, user.getUserId());
         return ResponseEntity.ok(SuccessResponse.of("계획이 저장되었습니다.", response));
     }
 
@@ -158,7 +141,7 @@ public class PlanController {
         boolean isComplete= parseStatus(status.trim().toLowerCase());
 
         log.info("{}", isComplete);
-        PlanResponse response = planService.updateStatus(planId, isComplete, user.getUser());
+        PlanResponse response = planService.updateStatus(planId, isComplete, user.getUserId());
         return ResponseEntity.ok(SuccessResponse.of("계획 상태가 변경되었습니다.", response));
     }
 
@@ -168,7 +151,7 @@ public class PlanController {
     public ResponseEntity<SuccessResponse<PlanResponse>> updatePlan(@PathVariable Long planId,
                                                      @Valid @RequestBody PlanRequest request,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
-        PlanResponse response = planService.updatePlan(planId, request, user.getUser());
+        PlanResponse response = planService.updatePlan(planId, request, user.getUserId());
         return ResponseEntity.ok(SuccessResponse.of("계획이 수정되었습니다.", response));
     }
 
@@ -177,7 +160,7 @@ public class PlanController {
     @DeleteMapping("/{planId}")
     public ResponseEntity<SuccessResponse<Void>> deletePlan(@PathVariable Long planId,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
-        planService.deletePlan(planId, user.getUser());
+        planService.deletePlan(planId, user.getUserId());
         return ResponseEntity.ok(SuccessResponse.of("계획이 삭제되었습니다."));
     }
 
@@ -198,7 +181,7 @@ public class PlanController {
 
         CommonValidator.validateDate(startDate, endDate);
 
-        return ResponseEntity.ok(planService.getPlansForTimer(startDate, endDate, keyword, sort, page, user.getUser()));
+        return ResponseEntity.ok(planService.getPlansForTimer(startDate, endDate, keyword, sort, page, user.getUserId()));
     }
 
     //status 파싱

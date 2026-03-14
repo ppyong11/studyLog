@@ -26,7 +26,7 @@ public class PlanRepositoryImpl implements PlanRepositoryCustom {
 
     @Override
     public PlanSummary getPlanSummaryByFilter(UserEntity user, LocalDate startDate, LocalDate endDate, List<Long> categoryIds,
-                                             String keyword, Boolean status, List<String> sort, int page) {
+                                              String keyword, Boolean status, List<String> sort, int page) {
         long pageSize= 10;
         long offset= (page-1) * pageSize; //0~9, 10~19
 
@@ -62,19 +62,12 @@ public class PlanRepositoryImpl implements PlanRepositoryCustom {
                         timerEntity.category.id,
                         timerEntity.createAt,
                         timerEntity.startAt,
-                        timerEntity.elapsed
+                        timerEntity.elapsed,
+                        timerEntity.status
                 ))
                 .from(planEntity)
                 .leftJoin(planEntity.timer, timerEntity)
-                .where(
-                        planEntity.user.eq(user), //유저 것만 조회 결과로
-                        //startDate, endDate 항상 있음 (컨트롤러에서 검증)
-                        planEntity.startDate.goe(startDate), // >=
-                        planEntity.endDate.loe(endDate), // <=
-                        categoryId(categoryIds),
-                        nameLike(keyword),
-                        statusEqual(status)
-                )
+                .where(builder)
                 .orderBy(getOrderSpecifiers(sort))
                 .offset(offset)
                 .limit(pageSize)
@@ -106,7 +99,8 @@ public class PlanRepositoryImpl implements PlanRepositoryCustom {
                         timerEntity.category.id,
                         timerEntity.createAt,
                         timerEntity.startAt,
-                        timerEntity.elapsed
+                        timerEntity.elapsed,
+                        timerEntity.status
                 ))
                 .from(planEntity)
                 .leftJoin(planEntity.timer, timerEntity)
@@ -147,7 +141,8 @@ public class PlanRepositoryImpl implements PlanRepositoryCustom {
                         timerEntity.category.id,
                         timerEntity.createAt,
                         timerEntity.startAt,
-                        timerEntity.elapsed
+                        timerEntity.elapsed,
+                        timerEntity.status
                 ))
                 .from(planEntity)
                 .leftJoin(planEntity.timer, timerEntity)

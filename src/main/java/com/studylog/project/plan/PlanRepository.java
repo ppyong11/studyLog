@@ -19,7 +19,6 @@ public interface PlanRepository extends JpaRepository<PlanEntity, Long> {
     // mappedBy가 있어서 필드에 저장할 수 있는 것 (entity의 timer 필드)
     @EntityGraph(attributePaths = {"timer"})
     Optional<PlanEntity> findByUserAndId(UserEntity user, Long id);
-    List<PlanEntity> findByCategory(CategoryEntity category);
     void deleteAllByUser(UserEntity user);
 
     @Modifying //변경 쿼리라는 거 알리기

@@ -23,7 +23,11 @@ public interface TimerRepository extends JpaRepository<TimerEntity, Long> {
                                                    @Param("timerId") Long timerId);
 
     @Query("select t from TimerEntity t where t.user= :user and t.status = 'RUNNING'")
-    List<TimerEntity> findRunningTimerByUserId(@Param("user") UserEntity user);
+    List<TimerEntity> findAllRunningTimerByUserId(@Param("user") UserEntity user);
+
+    @Query("select t from TimerEntity t where t.user= :user and t.status = 'RUNNING'")
+    Optional<TimerEntity> findRunningTimerByUserId(@Param("user") UserEntity user);
+
 
     void deleteAllByUser(UserEntity user);
 

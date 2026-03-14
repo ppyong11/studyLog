@@ -7,6 +7,7 @@ import com.studylog.project.global.exception.CustomException;
 import com.studylog.project.global.exception.ErrorCode;
 import com.studylog.project.global.response.PageResponse;
 import com.studylog.project.user.UserEntity;
+import com.studylog.project.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,23 +23,25 @@ public class BoardService {
     private final BoardRepository boardRepository;
     private final CategoryRepository categoryRepository;
     private final FileService fileService;
+    private final UserRepository userRepository;
     private final BoardRepositoryImpl boardRepositoryImpl;
 
     // 게시글 단일 조회
-    public BoardDetailResponse getBoard(Long id, UserEntity user) {
-        BoardEntity board = getBoardByUserAndId(user, id);
+    public BoardDetailResponse getBoard(Long id, Long userId) {
+        BoardEntity board = getBoardByUserAndId(userId, id);
         return BoardDetailResponse.toDto(BoardResponse.toDto(board), board);
     }
 
     // 게시글 목록 조회
     public PageResponse<BoardResponse> searchBoards(List<Long> categoryList, String keyword, List<String> sort, int page,
-                                            UserEntity user) {
+                                            Long userId) {
+        UserEntity proxyUser = userRepository.getReferenceById(userId);
 
         // QueryDSL 조회
-        List<BoardResponse> boardResponses = boardRepositoryImpl.searchBoardsByFilter(user, categoryList, keyword, sort, page);
+        List<BoardResponse> boardResponses = boardRepositoryImpl.searchBoardsByFilter(proxyUser, categoryList, keyword, sort, page);
 
         // 총 요소 개수 반환, count()는 항상 row가 하나씩 있어서 0 이상 반환
-        Long totalItems= boardRepositoryImpl.getTotalItems(user, categoryList, keyword);
+        Long totalItems= boardRepositoryImpl.getTotalItems(proxyUser, categoryList, keyword);
 
         long pageSize= 20;
         long totalPages= (totalItems + pageSize - 1) / pageSize;
@@ -46,38 +49,44 @@ public class BoardService {
         return new PageResponse<>(boardResponses, totalItems, totalPages, page, pageSize);
     }
 
-    public BoardDetailResponse createBoard(BoardRequest request, String draftId, UserEntity user) {
+    public BoardDetailResponse createBoard(BoardRequest request, String draftId, Long userId) {
+        UserEntity proxyUser = userRepository.getReferenceById(userId);
+
         //board의 category는 categoryEntity타입으로 조회하고 엔티티로 받기
-        CategoryEntity category= categoryRepository.findByUserAndId(user, request.category())
+        CategoryEntity category= categoryRepository.findByUserAndId(proxyUser, request.category())
                 .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
 
-        BoardEntity board = request.toEntity(user, category);
+        BoardEntity board = request.toEntity(proxyUser, category);
         boardRepository.saveAndFlush(board); // 이때는 board.id 있음
 
-        fileService.attachDraftFilesToBoard(user, board, draftId);
+        fileService.attachDraftFilesToBoard(proxyUser, board, draftId);
 
         return BoardDetailResponse.toDto(BoardResponse.toDto(board), board);
     }
 
-    public BoardDetailResponse updateBoard(Long id, BoardRequest request, String draftId, UserEntity user) {
-        BoardEntity board = getBoardByUserAndId(user, id);
-        CategoryEntity category= categoryRepository.findByUserAndId(user, request.category())
+    public BoardDetailResponse updateBoard(Long id, BoardRequest request, String draftId, Long userId) {
+        UserEntity proxyUser = userRepository.getReferenceById(userId);
+
+        BoardEntity board = getBoardByUserAndId(userId, id);
+        CategoryEntity category= categoryRepository.findByUserAndId(proxyUser, request.category())
                 .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
 
         board.updateBoard(category, request);
 
-        fileService.attachDraftFilesToBoard(user, board, draftId);
+        fileService.attachDraftFilesToBoard(proxyUser, board, draftId);
         return BoardDetailResponse.toDto(BoardResponse.toDto(board), board);
     }
 
-    public void deleteBoard(Long id, UserEntity user) {
-        BoardEntity board= getBoardByUserAndId(user, id);
+    public void deleteBoard(Long id, Long userId) {
+        BoardEntity board= getBoardByUserAndId(userId, id);
+
         boardRepository.delete(board);
-        log.info("게시글 삭제 완료");
     }
 
-    private BoardEntity getBoardByUserAndId(UserEntity user, Long id) {
-        return boardRepository.findByUserAndId(user, id).orElseThrow(() -> new CustomException(ErrorCode.BOARD_NOT_FOUND));
+    private BoardEntity getBoardByUserAndId(Long userId, Long id) {
+        UserEntity proxyUser = userRepository.getReferenceById(userId);
+
+        return boardRepository.findByUserAndId(proxyUser, id).orElseThrow(() -> new CustomException(ErrorCode.BOARD_NOT_FOUND));
     }
 
     public void updateCategory(CategoryEntity deleteCategory, CategoryEntity defaultCategory){

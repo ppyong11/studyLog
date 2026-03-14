@@ -80,7 +80,7 @@ public class AuthController {
         //로그아웃  시 액세스 토큰 필요해서 파라미터 받기 (컨트롤러에서 필요없으면 필터에서만 검증하면 됨)
         log.info("로그아웃 요청 성공");
 
-        authService.saveBlacklistToken(user, accessToken); //액세스 토큰 저장
+        authService.saveBlacklistToken(user.getUserId(), accessToken); //액세스 토큰 저장
 
         String deleteAccessCookie= authService.deleteCookie("access_token", "/");
         String deleteRefreshCookie= authService.deleteCookie("refresh_token", "/api/refresh");
@@ -113,13 +113,13 @@ public class AuthController {
                                                    HttpServletResponse response,
                                                    @AuthenticationPrincipal CustomUserDetail user) {
         //자동 로그아웃 + user 속성 바꾸기
-        authService.saveBlacklistToken(user, accessToken); //액세스 토큰 저장
+        authService.saveBlacklistToken(user.getUserId(), accessToken); //액세스 토큰 저장
         String deleteAccessCookie= authService.deleteCookie("access_token", "/");
         String deleteRefreshCookie= authService.deleteCookie("refresh_token", "/api/refresh");
         response.addHeader(HttpHeaders.SET_COOKIE, deleteAccessCookie);
         response.addHeader(HttpHeaders.SET_COOKIE, deleteRefreshCookie);
 
-        userService.withdraw(user.getUser());
+        userService.withdraw(user.getUserId());
         return ResponseEntity.ok(SuccessResponse.of("회원탈퇴 처리되었습니다."));
     }
 

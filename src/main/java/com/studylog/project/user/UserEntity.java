@@ -76,7 +76,6 @@ public class UserEntity {
         this.user_id = user_id;
     }
 
-
     public void setEncodedPw(String encodedPw) {
         this.pw = encodedPw;
     }

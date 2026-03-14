@@ -46,7 +46,7 @@ public class CategoryController {
     @Operation(summary = "전체 카테고리 조회", description = "front-end 전역상태 관리용")
     @GetMapping("")
     public ResponseEntity<List<CategoryResponse>> getAllCategories(@AuthenticationPrincipal CustomUserDetail user){
-        return ResponseEntity.ok(categoryService.getAllCategories(user.getUser()));
+        return ResponseEntity.ok(categoryService.getAllCategories(user.getUserId()));
     }
 
     //카테고리 전체&키워드 조회 (페이지)
@@ -63,7 +63,7 @@ public class CategoryController {
         keyword = keyword == null ? null : keyword.trim();
 
         return ResponseEntity.ok(
-                categoryService.searchCategories(keyword, page, user.getUser()));
+                categoryService.searchCategories(keyword, page, user.getUserId()));
     }
 
     //카테고리 단일 조회
@@ -80,7 +80,7 @@ public class CategoryController {
     @GetMapping("/{categoryId}")
     public ResponseEntity<CategoryResponse> getCategory(@PathVariable Long categoryId,
                                                         @AuthenticationPrincipal CustomUserDetail user) {
-        CategoryResponse response = categoryService.getCategory(categoryId, user.getUser());
+        CategoryResponse response = categoryService.searchCategory(categoryId, user.getUserId());
         return ResponseEntity.ok(response);
     }
 
@@ -94,7 +94,7 @@ public class CategoryController {
             throw new CustomException(ErrorCode.INVALID_REQUEST);
         }
 
-        CategoryResponse response = categoryService.addCategory(request, user.getUser());
+        CategoryResponse response = categoryService.addCategory(request, user.getUserId());
         return ResponseEntity.ok(SuccessResponse.of("카테고리가 등록되었습니다.", response));
     }
 
@@ -109,7 +109,7 @@ public class CategoryController {
             throw new CustomException(ErrorCode.INVALID_REQUEST);
         }
 
-        CategoryResponse response = categoryService.updateCategory(id, request, user.getUser());
+        CategoryResponse response = categoryService.updateCategory(id, request, user.getUserId());
         return ResponseEntity.ok(SuccessResponse.of("카테고리가 수정되었습니다.", response));
     }
 
@@ -132,7 +132,7 @@ public class CategoryController {
     @DeleteMapping("/{id}")
     public ResponseEntity<SuccessResponse<Void>> delCategory(@PathVariable Long id,
                                                       @AuthenticationPrincipal CustomUserDetail user) {
-        categoryService.delCategory(id, user.getUser());
+        categoryService.delCategory(id, user.getUserId());
         return ResponseEntity.ok(SuccessResponse.of( "카테고리가 삭제되었습니다."));
     }
 }

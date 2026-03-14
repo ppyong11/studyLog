@@ -49,19 +49,19 @@ public class UserService {
         String encryptedPw= passwordEncoder.encode(request.password());
         UserEntity userEntity = request.toEntity();
         userEntity.setEncodedPw(encryptedPw); //빌더 객체 pw 값 바뀜
-        userRepository.save(userEntity);
-        userRepository.flush(); //userEntity DB에 저장 후 카테고리 넣기
+
+        UserEntity savedEntity = userRepository.save(userEntity);
+        userRepository.flush(); //userEntity DB에 저장 후 카테고리 넣기 (userEntity가 영속 상태가 됨)
         //위에 거 안 하면 메서드 다 끝나고 user 테이블에 저장해서 아래 코드 오류남 (엔티티 X)
-        log.info("{}", userEntity.getUser_id());
-        categoryService.defaultCategory(userEntity);
+
+        categoryService.defaultCategory(savedEntity);
     }
 
     @Transactional
     //아이디, 비밀번호 확인
     public void validateAndRestoreUser(LogInRequest request) {
         //아이디 검증
-        UserEntity userEntity= userRepository.findById(request.id())
-                .orElseThrow(() -> new CustomException(ErrorCode.LOGIN_FAIL));
+        UserEntity userEntity= findByStringId(request.id());
 
         if (passwordEncoder.matches(request.pw(), userEntity.getPw())) {
 
@@ -81,13 +81,13 @@ public class UserService {
 
     @Transactional
     //비밀번호 변경
-    public void changePw(UserEntity user, UpdatePwRequest request) { //암호화된 비번(DTO), 평문 비번(request)
+    public void changePw(Long id, UpdatePwRequest request) { //암호화된 비번(DTO), 평문 비번(request)
         String currentPw = request.currentPassword();
         String newPw = request.newPassword();
 
-        UserEntity userEntity = getUser(user, ErrorCode.USER_NOT_FOUND); // principal의 user 객체를 entity에 넣음
+        UserEntity userEntity = getUser(id, ErrorCode.USER_NOT_FOUND); // principal의 user 객체를 entity에 넣음
 
-        if (!passwordEncoder.matches(currentPw, user.getPw())) {
+        if (!passwordEncoder.matches(currentPw, userEntity.getPw())) {
             throw new CustomException(ErrorCode.PASSWORD_MISMATCH);
         }
 
@@ -103,8 +103,8 @@ public class UserService {
 
     @Transactional
     //닉네임 변경
-    public void changeNickname(UserEntity user, String newNickname) {
-        UserEntity userEntity = getUser(user, ErrorCode.USER_NOT_FOUND); // 요청 날린 토큰의 인증 객체로 영속성 컨텍스트 저장
+    public void changeNickname(Long id, String newNickname) {
+        UserEntity userEntity = getUser(id, ErrorCode.USER_NOT_FOUND); // 요청 날린 토큰의 인증 객체로 영속성 컨텍스트 저장
 
         if (userEntity.getNickname().equals(newNickname)) {
             // 닉네임이 동일하면 아무 작업 X
@@ -118,32 +118,35 @@ public class UserService {
     }
 
     //회원 탈퇴 취소
-    public void restore(UserEntity user){
+    private void restore(UserEntity userEntity){
         //로그인한 회원이 회원탈퇴한 회원이라면, 탈퇴 취소
-        user.restore(); //is_delete= false, deleteAt= null
-        log.info("탈퇴 철회 완료: 탈퇴 여부 {}, 시간 {}, ", user.isDelete(), user.getDeleteAt());
+        userEntity.restore(); //is_delete= false, deleteAt= null
+        log.info("탈퇴 철회 완료: 탈퇴 여부 {}, 시간 {}, ", userEntity.isDelete(), userEntity.getDeleteAt());
     }
 
     //회원탈퇴
     @Transactional
-    public void withdraw(UserEntity user){
-        UserEntity userEntity= getUser(user, ErrorCode.USER_NOT_FOUND);
+    public void withdraw(Long id){
+        // 프록시 객체는 pk만 알아서 다른 필드다 메서드 사용할 거면 찐객체로 만드는 게 좋음 (성능상 차이는 없지만...)
+        UserEntity userEntity= getUser(id, ErrorCode.USER_NOT_FOUND);
         userEntity.withdraw(LocalDateTime.now()); //기존 객체를 바꾸는 거니까 빌더 필요 X
         log.info("탈퇴 처리 완료: 여부 {}, 시간 {}, ", userEntity.isDelete(), userEntity.getDeleteAt());
     }
 
-    public void updateResolution(String resolution, UserEntity user){
-        UserEntity userEntity= getUser(user, ErrorCode.USER_NOT_FOUND); //영속 상태 만들기
+    public void updateResolution(String resolution, Long id){
+        UserEntity userEntity= getUser(id, ErrorCode.USER_NOT_FOUND); //영속 상태 만들기
         userEntity.updateResolution(resolution);
     }
 
-    public UserInfoResponse getUserInfo(UserEntity user){
-        return new UserInfoResponse(user.getNickname(), user.getResolution(),
-                notificationService.getUnreadCount(user));
+    public UserInfoResponse getUserInfo(Long id){
+        UserEntity userEntity = getUser(id, ErrorCode.USER_NOT_FOUND);
+
+        return new UserInfoResponse(userEntity.getNickname(), userEntity.getResolution(),
+                notificationService.getUnreadCount(id));
     }
 
-    public UserEntity getUser(UserEntity user, ErrorCode errorCode){
-        return userRepository.findById(user.getUser_id())
+    public UserEntity getUser(Long id, ErrorCode errorCode){
+        return userRepository.findById(id)
                 .orElseThrow(() -> new CustomException(errorCode)); //회원 객체 받기
     }
 
@@ -181,10 +184,14 @@ public class UserService {
     }
 
     public UserResponse getCurrentUser(String id) {
-        UserEntity userEntity = userRepository.findById(id)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        UserEntity userEntity = findByStringId(id);
+
         return UserResponse.of(userEntity);
     }
 
+    private UserEntity findByStringId(String id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    }
 
 }

@@ -26,6 +26,7 @@ public record BoardRequest (
     public BoardEntity toEntity(UserEntity user, CategoryEntity category) {
         return BoardEntity.builder()
                 .user(user)
+                // 단순 숫자인 아이디를 entity로 변환해서 넣어야 함
                 .category(category)
                 .title(title)
                 .content(content)

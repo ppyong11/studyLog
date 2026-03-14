@@ -2,6 +2,7 @@ package com.studylog.project.plan;
 
 import com.studylog.project.timer.LinkedTimerDto;
 import com.studylog.project.timer.TimerEntity;
+import com.studylog.project.timer.TimerStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -36,7 +37,7 @@ public class PlanResponse {
     public PlanResponse(Long id, String name, String memo, Long categoryId,
                         LocalDate startDate, LocalDate endDate, Integer minutes,
                         Boolean completed, Long timerId, String timerName, Long timerCategoryId,
-                        LocalDateTime creatAt, LocalDateTime startAt, Long timerElapsed) {
+                        LocalDateTime creatAt, LocalDateTime startAt, Long timerElapsed, TimerStatus status) {
         this.id = id;
         this.name = name;
         this.memo = memo;
@@ -48,7 +49,7 @@ public class PlanResponse {
 
         // 타이머 ID가 있을 때만 DTO 조립
         if (timerId != null) {
-            this.connectedTimer = new LinkedTimerDto(timerId, timerName, categoryId, creatAt, startAt,timerElapsed);
+            this.connectedTimer = new LinkedTimerDto(timerId, timerName, categoryId, creatAt, startAt,timerElapsed, status);
         } else {
             this.connectedTimer = null;
         }
@@ -82,7 +83,7 @@ public class PlanResponse {
                 plan.getMinutes(),
                 plan.isComplete(),
                 new LinkedTimerDto(timer.getId(), timer.getName(), timer.getCategory().getId(), timer.getCreateAt(),
-                        timer.getStartAt(), timer.getElapsed())
+                        timer.getStartAt(), timer.getElapsed(), timer.getStatus())
         );
     }
 }

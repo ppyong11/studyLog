@@ -6,6 +6,7 @@ import com.studylog.project.timer.TimerRepository;
 import com.studylog.project.timer.TimerStatus;
 import com.studylog.project.user.UserEntity;
 import com.studylog.project.user.UserRepository;
+import com.studylog.project.user.UserService;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -81,11 +82,13 @@ public class AuthService {
     }
 
     //블랙리스트 저장 (로그아웃)
-    public void saveBlacklistToken(CustomUserDetail userDetail, String token){
-        if(timerRepository.existsByUserAndStatus(userDetail.getUser(), TimerStatus.RUNNING))
+    public void saveBlacklistToken(Long userId, String token){
+        UserEntity proxyUser = userRepository.getReferenceById(userId);
+
+        if(timerRepository.existsByUserAndStatus(proxyUser, TimerStatus.RUNNING))
             throw new CustomException(ErrorCode.TIMER_RUNNING);
         saveToken("AT:"+ token, token, null, "로그아웃"); //액세스 저장
-        deleteRefreshToken(userDetail.getUsername());
+        deleteRefreshToken(proxyUser.getId());
     }
 
     //토큰 재발급 (access, refresh 둘 다)
@@ -100,9 +103,12 @@ public class AuthService {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
+        CustomUserDetail customUserDetail = new CustomUserDetail(user);
+
         //인증 객체 임의 생성
         List<GrantedAuthority> authorities= List.of(new SimpleGrantedAuthority(user.getRole()? "ROLE_USER" : "ROLE_ADMIN"));
-        Authentication authentication= new UsernamePasswordAuthenticationToken(user.getId(), null, authorities);
+
+        Authentication authentication= new UsernamePasswordAuthenticationToken(user, null, authorities);
         JwtToken jwtToken= jwtTokenProvider.createToken(authentication);
 
         //기존 AT 로그아웃 처리, 저장된 RT 삭제 후 새 RT 저장

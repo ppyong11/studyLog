@@ -38,7 +38,7 @@ public class SseController {
     })
     @GetMapping("/subscribe/status")
     public ResponseEntity<SuccessResponse<Void>> isSubscribe(@AuthenticationPrincipal CustomUserDetail user) {
-        if (!sseEmitterService.isSubscribe(user.getUser()))
+        if (!sseEmitterService.isSubscribe(user.getUserId()))
             return ResponseEntity.ok(SuccessResponse.of("구독된 알림 채널이 없습니다."));
         return ResponseEntity.ok(SuccessResponse.of("구독된 알림 채널이 있습니다."));
     }
@@ -48,6 +48,6 @@ public class SseController {
     @GetMapping(value= "/subscribe", produces = "text/event-stream")
     public SseEmitter subscribe(@AuthenticationPrincipal CustomUserDetail user) {
         //로그인 후에 구독 요청해서 인증 객체 있음
-        return sseEmitterService.subscribe(user.getUser());
+        return sseEmitterService.subscribe(user.getUserId());
     }
 }

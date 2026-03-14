@@ -52,7 +52,7 @@ public class FileController {
                                                    @RequestParam(required = false) String draftId,
                                                    @AuthenticationPrincipal CustomUserDetail user) {
         CommonValidator.validateDraftId(draftId);
-        fileService.uploadTempFile(file, draftId.trim(), user.getUser());
+        fileService.uploadTempFile(file, draftId.trim(), user.getUserId());
 
         return ResponseEntity.ok(SuccessResponse.of("파일이 업로드되었습니다."));
     }
@@ -61,7 +61,7 @@ public class FileController {
     @GetMapping("files/{fileId}")
     public ResponseEntity<Resource> viewFile(@PathVariable Long fileId,
                                              @AuthenticationPrincipal CustomUserDetail user) {
-        return fileService.getFileResponse(fileId, user.getUser());
+        return fileService.getFileResponse(fileId, user.getUserId());
     }
 
     @Operation(summary = "파일 삭제", description = "삭제할 파일 id와 파일이 있는 게시글 id가 일치해야 하며, 임시 파일이라면 파일의 draft id와 일치해야 한다.")
@@ -86,7 +86,7 @@ public class FileController {
     public ResponseEntity<SuccessResponse<Void>> deleteFile(@PathVariable Long fileId,
                                                      @PathVariable Long boardId,
                                                      @AuthenticationPrincipal CustomUserDetail user) {
-        fileService.deleteMeta(fileId, boardId, user.getUser());
+        fileService.deleteMeta(fileId, boardId, user.getUserId());
 
         return ResponseEntity.ok(SuccessResponse.of("파일이 삭제되었습니다."));
     }
@@ -97,7 +97,7 @@ public class FileController {
                                                             @AuthenticationPrincipal CustomUserDetail user) {
         CommonValidator.validateDraftId(draftId);
 
-        fileService.deleteTempMeta(fileId, draftId, user.getUser());
+        fileService.deleteTempMeta(fileId, draftId, user.getUserId());
         return ResponseEntity.ok(SuccessResponse.of("파일이 삭제되었습니다."));
     }
 }

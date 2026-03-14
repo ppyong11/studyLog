@@ -62,27 +62,26 @@ public class NotificationController {
     public ResponseEntity<ScrollResponse<NotificationResponse>> getAllNoti(@RequestParam(required = false) int page,
                                                                            @AuthenticationPrincipal CustomUserDetail user){
         CommonValidator.validatePage(page);
-        return ResponseEntity.ok(notificationService.getAllNoti(page, user.getUser()));
-    }
-
-    @Operation(summary = "미확인 알림 개수 조회", description = "미확인 알림 개수 띄우는 API")
+        return ResponseEntity.ok(notificationService.getAllNoti(page, user.getUserId()));
+    }    @Operation(summary = "미확인 알림 개수 조회", description = "미확인 알림 개수 띄우는 API")
     @GetMapping("/unread-count")
     public ResponseEntity<Long> getUnreadCount(@AuthenticationPrincipal CustomUserDetail user){
-        log.info("알림 개수 조회 시작: {}", user.getUser());
-        return ResponseEntity.ok(notificationService.getUnreadCount(user.getUser()));
+        return ResponseEntity.ok(notificationService.getUnreadCount(user.getUserId()));
     }
+
+
 
     @Operation(summary = "알림 전체 삭제")
     @DeleteMapping("/")
     public ResponseEntity<SuccessResponse<Void>> deleteAllNoti(@AuthenticationPrincipal CustomUserDetail user){
-        return ResponseEntity.ok(notificationService.deleteAllNoti(user.getUser()));
+        return ResponseEntity.ok(notificationService.deleteAllNoti(user.getUserId()));
     }
 
     @Operation(summary = "특정 알림 삭제")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteNoti(@PathVariable Long id,
                                            @AuthenticationPrincipal CustomUserDetail user){
-        notificationService.deleteNoti(id, user.getUser());
+        notificationService.deleteNoti(id, user.getUserId());
         return ResponseEntity.noContent().build(); //204 No Content (성공, 본문 없음)
     }
 
@@ -90,7 +89,7 @@ public class NotificationController {
     @Operation(summary = "모든 알림 읽음 처리")
     @PatchMapping("/read-all")
     public ResponseEntity<SuccessResponse<Void>> readAllNoti(@AuthenticationPrincipal CustomUserDetail user){
-        return ResponseEntity.ok(notificationService.readAllNoti(user.getUser()));
+        return ResponseEntity.ok(notificationService.readAllNoti(user.getUserId()));
     }
 
     //알림 개별 읽음 처리
@@ -98,7 +97,7 @@ public class NotificationController {
     @PatchMapping("/{id}/read")
     public ResponseEntity<Void> readNoti(@PathVariable Long id,
                                          @AuthenticationPrincipal CustomUserDetail user){
-        notificationService.readNoti(id, user.getUser());
+        notificationService.readNoti(id, user.getUserId());
         return ResponseEntity.noContent().build();
     }
 }

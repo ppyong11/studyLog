@@ -43,8 +43,8 @@ public class BoardController {
     @GetMapping("/{boardId}")
     public ResponseEntity<BoardDetailResponse> getBoards(@PathVariable("boardId") Long id,
                                    @AuthenticationPrincipal CustomUserDetail user) {
-        BoardDetailResponse response= boardService.getBoard(id, user.getUser());
-        log.info("{}", response.getBoard().getTitle());
+        BoardDetailResponse response= boardService.getBoard(id, user.getUserId());
+
         return ResponseEntity.ok(response);
     }
 
@@ -74,7 +74,7 @@ public class BoardController {
 
         keyword = (keyword == null) ? null : keyword.trim();
 
-        return ResponseEntity.ok(boardService.searchBoards(categoryList, keyword, sort, page, user.getUser()));
+        return ResponseEntity.ok(boardService.searchBoards(categoryList, keyword, sort, page, user.getUserId()));
     }
 
     @Operation(summary = "게시글 등록", description = "임시 파일 매핑을 위한 draftId 필수")
@@ -99,7 +99,7 @@ public class BoardController {
         log.info("draftId: {}", draftId);
         CommonValidator.validateDraftId(draftId);
 
-        BoardDetailResponse response= boardService.createBoard(request, draftId.trim(), user.getUser());
+        BoardDetailResponse response= boardService.createBoard(request, draftId.trim(), user.getUserId());
         return ResponseEntity.ok(response);
     }
 
@@ -112,14 +112,14 @@ public class BoardController {
         log.info("draftId: {}", draftId);
         CommonValidator.validateDraftId(draftId);
 
-        return ResponseEntity.ok(boardService.updateBoard(id, request, draftId.trim(), user.getUser()));
+        return ResponseEntity.ok(boardService.updateBoard(id, request, draftId.trim(), user.getUserId()));
     }
 
     @Operation(summary = "게시글 삭제 (해당 게시글의 파일 함께 삭제)")
     @DeleteMapping("/{boardId}")
     public ResponseEntity<SuccessResponse<Void>> deleteBoard(@PathVariable("boardId") Long boardId,
                                                       @AuthenticationPrincipal CustomUserDetail user) {
-        boardService.deleteBoard(boardId, user.getUser());
+        boardService.deleteBoard(boardId, user.getUserId());
         return ResponseEntity.ok(SuccessResponse.of("게시글이 삭제되었습니다."));
     }
 }

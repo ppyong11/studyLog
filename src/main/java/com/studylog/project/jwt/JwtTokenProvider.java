@@ -2,7 +2,6 @@ package com.studylog.project.jwt;
 
 import com.studylog.project.global.exception.CustomException;
 import com.studylog.project.global.exception.ErrorCode;
-import com.studylog.project.user.UserEntity;
 import com.studylog.project.user.UserRepository;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
@@ -16,7 +15,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -41,6 +39,11 @@ public class JwtTokenProvider {
 
     //유저 정보로 Token 생성
     public JwtToken createToken(Authentication authentication) {
+        // principal.getUser()는 찐 영속성 객체
+        CustomUserDetail principal = (CustomUserDetail) authentication.getPrincipal();
+
+        Long userId = principal.getUser().getUser_id();
+
         //권한 가져오기
         String authority = authentication.getAuthorities().stream()
                 .findFirst() //단일 권한
@@ -49,11 +52,12 @@ public class JwtTokenProvider {
 
         long now= (new Date().getTime()); //현재 시간 저장
 
-        //Access Token 생성
+        //Access Token 생성 (필요한 정보만 담아서 토큰 생성)
         Date accessTokenExpire= new Date(now + (30*60*1000)); //현재 시간 + 30분(ms)
         String accessToken= Jwts.builder()
                 .setSubject(authentication.getName()) //사용자 이름 (토큰 주인)
                 .claim("auth", authority) //사용자 권한 정보
+                .claim("user_id", userId)
                 .setExpiration(accessTokenExpire) //토큰 만료 시간
                 .signWith(key, SignatureAlgorithm.HS256) //비밀키로 서명
                 .compact(); //토큰 문자열 생성
@@ -71,7 +75,7 @@ public class JwtTokenProvider {
                 .build(); //토큰 dto 생성
     }
 
-    //토큰 정보 꺼내서 검증 객체 만듦
+    //토큰 정보 꺼내서 검증 객체 만듦 (토큰 분해해서 api 요청 인증에 사용할 가짜 객체 만듦)
     public Authentication getAuthentication(String accessToken) {
         //복호화 및 claim 받음 (유효기간 지나도 받음)
         Claims claims = parseClaims(accessToken);
@@ -80,13 +84,15 @@ public class JwtTokenProvider {
             throw new RuntimeException("권한 정보가 없는 토큰입니다.");
         }
 
+        Long user_id = claims.get("user_id", Long.class);
+        log.info("토큰 user_id: {}", user_id);
+
         String role= claims.get("auth", String.class); //ROlE_USER or RILE_ADMIN
+
         Collection<? extends  GrantedAuthority> authority= List.of(new SimpleGrantedAuthority(role));
 
-        //UserDetails 객체 생성 후 Authentication 반환
-        UserEntity userEntity= userRepository.findById(claims.getSubject())
-                .orElseThrow(() -> new UsernameNotFoundException(String.format("[%s]에 해당하는 회원을 찾을 수 없습니다.", claims.getSubject())));
-        CustomUserDetail principal= new CustomUserDetail(userEntity);
+        CustomUserDetail principal= new CustomUserDetail(user_id, claims.getSubject(), role);
+        log.info("principal user_id: {}", principal.getUserId());
         return new UsernamePasswordAuthenticationToken(principal, "", authority); //Authentication 객체
     }
 

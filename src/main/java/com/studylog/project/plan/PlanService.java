@@ -8,6 +8,8 @@ import com.studylog.project.global.exception.ErrorCode;
 import com.studylog.project.global.response.ScrollResponse;
 import com.studylog.project.timer.TimerService;
 import com.studylog.project.user.UserEntity;
+import com.studylog.project.user.UserRepository;
+import com.studylog.project.user.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,9 +29,10 @@ public class PlanService {
     private final CategoryRepository categoryRepository;
     private final PlanRepositoryImpl planRepositoryImpl; //동적 쿼리용
     private final TimerService timerService;
+    private final UserRepository userRepository;
 
-    public PlanResponse getPlan(Long planId, UserEntity user) {
-        PlanEntity plan= getPlanByUserAndId(planId, user);
+    public PlanResponse getPlan(Long planId, Long userId) {
+        PlanEntity plan= getPlanByUserAndId(planId, userId);
 
         if (plan.getTimer() != null) {
             return PlanResponse.toDto(plan, plan.getTimer());
@@ -38,23 +41,20 @@ public class PlanService {
         return PlanResponse.toDto(plan);
     }
 
-    public ScrollPlanResponse searchTablePlans(UserEntity user, LocalDate startDate, LocalDate endDate,
+    public ScrollPlanResponse searchTablePlans(Long userId, LocalDate startDate, LocalDate endDate,
                                                List<Long> categoryList, String keyword, Boolean status, List<String> sort,
                                                int page) {
-        PlanSummary planSummary = planRepositoryImpl.getPlanSummaryByFilter(user, startDate, endDate, categoryList,
+        UserEntity proxyUser = userRepository.getReferenceById(userId);
+
+        PlanSummary planSummary = planRepositoryImpl.getPlanSummaryByFilter(proxyUser, startDate, endDate, categoryList,
                 keyword, status, sort, page);
 
-        return getScrollPlanResponse(planSummary, page, user, null); //range: 일, 주, 월
+        return getScrollPlanResponse(planSummary, page);
     }
 
-    // 메인에서 보여지는 계획은 today만 가능
-    public ScrollPlanResponse MainDailyPlans(UserEntity user, LocalDate today, int page){
-        PlanSummary planSummary = planRepositoryImpl.findTodayPlans(user, today, page);
+    public List<PlanResponse> getCalendarPlans(LocalDate startDate, LocalDate endDate, String range, Long userId){
+        UserEntity proxyUser = userRepository.getReferenceById(userId);
 
-        return getScrollPlanResponse(planSummary, page, user, "일");
-    }
-
-    public List<PlanResponse> getCalendarPlans(LocalDate startDate, LocalDate endDate, String range, UserEntity user){
         LocalDate sun, sat;
         boolean isSame = false;
 
@@ -79,11 +79,10 @@ public class PlanService {
             CommonThrow.invalidRequest("잘못된 범위 값: " + range);
         }
 
-        log.info("startDate {}, endDate {}", startDate, endDate);
-        return planRepositoryImpl.getCalendarPlans(startDate, endDate, user);
+        return planRepositoryImpl.getCalendarPlans(startDate, endDate, proxyUser);
     }
 
-    private ScrollPlanResponse getScrollPlanResponse (PlanSummary planSummary, int page, UserEntity user, String range){
+    private ScrollPlanResponse getScrollPlanResponse (PlanSummary planSummary, int page){
         List<PlanResponse> responses = planSummary.plans();
         long total= planSummary.totalCount(); // 오토 언박싱
         long achieved= planSummary.achivedCount(); // 오토 언박싱
@@ -96,8 +95,7 @@ public class PlanService {
 
         boolean hasNext= page * pageSize < total;
 
-        String message= returnMessage(user.getNickname(), rate, total, range);
-        return ScrollPlanResponse.toDto(responses, achieved, total, rate, message, totalStudyTimeString, page, hasNext);
+        return ScrollPlanResponse.toDto(responses, achieved, total, rate, totalStudyTimeString, page, hasNext);
     }
 
     private String parseTotalStudyTimeFormat(Long totalSeconds){
@@ -108,55 +106,27 @@ public class PlanService {
         return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 
-    private String returnMessage(String nickname, double rate, long total, String range){
-        if(range == null) return null;
-
-        //range는 day, week, month만 받음 (컨트롤러에서 분기 처리)
-        String unit= range.equals("week")? "주":"달";
-        if(total == 0) return "해당 일자에 등록된 계획이 없어요.";
-
-        if (rate == 0.0){
-            if(range.equals("day")) return "아직 달성한 계획이 없어요. 시작해 볼까요? 😎";
-            return String.format("이번 %s에 달성한 계획이 없어요. 지금부터 해도 충분해요 🍀",
-                    unit);
-        } else if (rate < 50.0) {
-            if(range.equals("day")) return String.format("시작이 제일 어려운 거 아시죠? %s 님은 그걸 해냈어요!",
-                    nickname);
-            return "천천히 쌓아가는 중이에요. 남은 기간 동안 더 쌓아봐요! 🏃";
-        } else if (rate < 70) {
-            if(range.equals("day")) return "계획의 반을 완료했어요! 잘하고 있어요 👏";
-            return String.format("한 %s 목표의 절반 이상을 완료했어요! 조금만 더 힘내 볼까요? 🔥",
-                    unit);
-        } else if (rate < 100) {
-            if(range.equals("day")) return "거의 다 했네요! 마무리만 잘하면 완벽해요 🔥";
-            return String.format("한 %s간 열심히 달렸네요! 이제 마무리만 남았어요 👊",
-                    unit);
-
-        } else{
-            if(range.equals("day")) return "오늘 계획을 모두 완료했어요! 최고예요!";
-            return String.format("🎉 이번 %s 목표 달성! %s 님의 꾸준한 노력의 결과예요. 멋져요!",
-                    unit, nickname);
-        }
-    }
-
     public void updateCategory(CategoryEntity deleteCategory, CategoryEntity defaultCategory){
         planRepository.updateCategory(deleteCategory, defaultCategory);
     }
 
-    public PlanResponse addPlan(PlanRequest request, UserEntity user) {
-        CategoryEntity category= getCategory(request.categoryId(), user);
-        PlanEntity plan= request.toEntity(user, category);
+    public PlanResponse addPlan(PlanRequest request, Long userId) {
+        // select 안 하고 JPA 속일 프록시 객체 생성
+        UserEntity proxyUser = userRepository.getReferenceById(userId);
+
+        CategoryEntity category= getCategory(request.categoryId(), userId);
+
+        PlanEntity plan= request.toEntity(proxyUser, category);
         // flush 전이지만 저장된 엔티티 반환
         // IDENTIFY일 땐 id를 알 방법이 없으니까 저장 먼저 하고 id를 자바가 가짐
-        PlanEntity savedPlan = planRepository.save(plan);
-        return PlanResponse.toDto(savedPlan);
+        return PlanResponse.toDto(planRepository.save(plan));
 
     }
 
-    public PlanResponse updatePlan(Long id, PlanRequest request, UserEntity user) {
+    public PlanResponse updatePlan(Long id, PlanRequest request, Long userId) {
         //유저, 계획 검사
-        PlanEntity plan= getPlanByUserAndId(id, user);
-        CategoryEntity category= getCategory(request.categoryId(), user);
+        PlanEntity plan= getPlanByUserAndId(id, userId);
+        CategoryEntity category= getCategory(request.categoryId(), userId);
         //reqeust에 들어온 값 확인, 값이 있고 빈 문자열이 아닐 경우에만 처리 (시간은
 
         //타이머 있으면 처리, 없으면 패스
@@ -173,16 +143,18 @@ public class PlanService {
     }
 
     //상태 변경 로직
-    public PlanResponse updateStatus(Long id, Boolean status, UserEntity user) {
-        PlanEntity plan= getPlanByUserAndId(id, user);
+    public PlanResponse updateStatus(Long id, Boolean status, Long userId) {
+        PlanEntity plan= getPlanByUserAndId(id, userId);
         plan.updateStatus(status); //상태 변경
 
         return PlanResponse.toDto(plan);
     }
 
     //삭제 로직
-    public void deletePlan(Long id, UserEntity user) {
-        PlanEntity plan= planRepository.findByUserAndId(user, id)
+    public void deletePlan(Long id, Long userId) {
+        UserEntity proxyUser = userRepository.getReferenceById(userId);
+
+        PlanEntity plan= planRepository.findByUserAndId(proxyUser, id)
                 .orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
 
         planRepository.delete(plan); //cascade로 타이머도 삭제됨
@@ -190,14 +162,16 @@ public class PlanService {
 
     //타이머에 보내는 계획 리스트
     public ScrollResponse<PlansForTimerResponse> getPlansForTimer(LocalDate startDate, LocalDate endDate, String keyword,
-                                                                  String sort, int page, UserEntity user){
+                                                                  String sort, int page, Long userId){
+        UserEntity proxyUser = userRepository.getReferenceById(userId);
+
         long pageSize = 20;
 
         if (!List.of("asc", "desc").contains(sort)) {
             CommonThrow.invalidRequest("잘못된 정렬 값: " + sort);
         }
 
-        PlansForTimerSummary summary = planRepositoryImpl.getPlansForTimer(startDate, endDate, keyword, sort, page, user);
+        PlansForTimerSummary summary = planRepositoryImpl.getPlansForTimer(startDate, endDate, keyword, sort, page, proxyUser);
         List<PlansForTimerResponse> responses = summary.plans();
         Long totalItems = summary.totalItems();
 
@@ -207,15 +181,20 @@ public class PlanService {
     }
 
     //유저, planId 검사
-    private PlanEntity getPlanByUserAndId(Long id, UserEntity user) {
-        return planRepository.findByUserAndId(user, id)
+    public PlanEntity getPlanByUserAndId(Long id, Long userId) {
+        UserEntity proxyUser = userRepository.getReferenceById(userId);
+
+        // 프록시 객체 넘겨줌
+        return planRepository.findByUserAndId(proxyUser, id)
                 .orElseThrow(() -> new CustomException(ErrorCode.PLAN_NOT_FOUND));
     }
     //유효성 검사 후 카테고리 가져옴
-    private CategoryEntity getCategory(Long category, UserEntity user) {
+    private CategoryEntity getCategory(Long category, Long userId) {
+        UserEntity proxyUser = userRepository.getReferenceById(userId);
+
         //유저에게 존재하지 않는 카테고리일 경우 반환 X
         //반환되는 카테고리도 영속 상태임 (@Transactional 써서 메서드 끝날 때까지 영속)
-        return categoryRepository.findByUserAndId(user, category)
+        return categoryRepository.findByUserAndId(proxyUser, category)
                 .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
     }
 
