@@ -26,7 +26,6 @@ public class NotificationRepositoryImpl implements NotificationRepositoryCustom 
                                 notificationEntity.title,
                                 notificationEntity.content,
                                 notificationEntity.alertAt,
-                                notificationEntity.url,
                                 notificationEntity.isRead
                         ))
                 .from(notificationEntity)

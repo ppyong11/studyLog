@@ -140,7 +140,6 @@ public class PlanController {
                                                         @AuthenticationPrincipal CustomUserDetail user) {
         boolean isComplete= parseStatus(status.trim().toLowerCase());
 
-        log.info("{}", isComplete);
         PlanResponse response = planService.updateStatus(planId, isComplete, user.getUserId());
         return ResponseEntity.ok(SuccessResponse.of("계획 상태가 변경되었습니다.", response));
     }

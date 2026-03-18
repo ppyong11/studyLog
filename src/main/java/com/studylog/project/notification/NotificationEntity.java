@@ -32,8 +32,6 @@ public class NotificationEntity {
 
     @Column(name = "alert_at")
     private LocalDateTime alertAt;
-    private String url;
-
     @Column(name = "is_read")
     private boolean isRead;
 
@@ -44,7 +42,6 @@ public class NotificationEntity {
         this.title= title;
         this.content= content;
         this.alertAt= LocalDateTime.now();
-        this.url= url;
         this.isRead= false;
     }
 
@@ -53,8 +50,5 @@ public class NotificationEntity {
     }
     public void updateTimerId(){
         this.timer= null;
-    }
-    public void updateUrl(){
-        this.url= null;
     }
 }

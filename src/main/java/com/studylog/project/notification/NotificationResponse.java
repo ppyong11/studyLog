@@ -18,8 +18,6 @@ public class NotificationResponse {
     private String content;
     @Schema(description = "알림 발생 일자")
     private LocalDateTime alertAt;
-    @Schema(description = "알림 클릭 시 이동되는 url")
-    private String url;
     @Schema(description = "알림 읽음 체크")
     private boolean isRead;
 }

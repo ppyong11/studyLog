@@ -85,14 +85,13 @@ public class JwtTokenProvider {
         }
 
         Long user_id = claims.get("user_id", Long.class);
-        log.info("토큰 user_id: {}", user_id);
 
         String role= claims.get("auth", String.class); //ROlE_USER or RILE_ADMIN
 
         Collection<? extends  GrantedAuthority> authority= List.of(new SimpleGrantedAuthority(role));
 
         CustomUserDetail principal= new CustomUserDetail(user_id, claims.getSubject(), role);
-        log.info("principal user_id: {}", principal.getUserId());
+
         return new UsernamePasswordAuthenticationToken(principal, "", authority); //Authentication 객체
     }
 

@@ -42,8 +42,10 @@ public class TimerRepositoryImpl implements TimerRepositoryCustom {
                         planEntity.id,
                         planEntity.name,
                         planEntity.category.id,
+                        planEntity.minutes,
                         planEntity.startDate,
-                        planEntity.endDate
+                        planEntity.endDate,
+                        planEntity.isComplete
                 ))
                 .from(timerEntity)
                 .leftJoin(timerEntity.plan, planEntity) //select(엔티티) 아니라서 fetchJoin 쓰면 오류남

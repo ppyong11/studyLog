@@ -11,7 +11,7 @@ import jakarta.validation.constraints.Size;
 public record BoardRequest (
     @Schema(description = "카테고리 id *필수")
     @NotNull(message = "카테고리를 선택해 주세요.")
-    Long category,
+    Long categoryId,
     @Schema(description = "게시글 제목 (30자 이내)")
     @NotBlank(message = "제목을 입력해 주세요.")
     @Size(max= 30, message = "제목은 30자 이내여야 합니다.")

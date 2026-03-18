@@ -147,6 +147,10 @@ public class PlanService {
         PlanEntity plan= getPlanByUserAndId(id, userId);
         plan.updateStatus(status); //상태 변경
 
+        if (plan.getTimer() != null) {
+            return PlanResponse.toDto(plan, plan.getTimer());
+        }
+
         return PlanResponse.toDto(plan);
     }
 

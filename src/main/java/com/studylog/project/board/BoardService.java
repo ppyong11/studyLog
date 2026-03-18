@@ -53,7 +53,7 @@ public class BoardService {
         UserEntity proxyUser = userRepository.getReferenceById(userId);
 
         //board의 category는 categoryEntity타입으로 조회하고 엔티티로 받기
-        CategoryEntity category= categoryRepository.findByUserAndId(proxyUser, request.category())
+        CategoryEntity category= categoryRepository.findByUserAndId(proxyUser, request.categoryId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
 
         BoardEntity board = request.toEntity(proxyUser, category);
@@ -68,7 +68,7 @@ public class BoardService {
         UserEntity proxyUser = userRepository.getReferenceById(userId);
 
         BoardEntity board = getBoardByUserAndId(userId, id);
-        CategoryEntity category= categoryRepository.findByUserAndId(proxyUser, request.category())
+        CategoryEntity category= categoryRepository.findByUserAndId(proxyUser, request.categoryId())
                 .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND));
 
         board.updateBoard(category, request);

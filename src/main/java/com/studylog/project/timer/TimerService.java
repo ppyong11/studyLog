@@ -167,8 +167,6 @@ public class TimerService {
 
         for(NotificationEntity noti : notifications){ //해당 타이머를 가진 알림 없으면 패스
             noti.updateTimerId(); //null 처리
-            if(!noti.getUrl().equals("/plans")) //타이머 url일 경우 삭제
-                noti.updateUrl();
         }
 
         timerRepository.delete(timer);
@@ -188,6 +186,7 @@ public class TimerService {
         if (timer.getPlan() != null) {
             return TimerResponse.toDto(timer, timer.getPlan());
         }
+
         return TimerResponse.toDto(timer);
     }
 
@@ -232,6 +231,7 @@ public class TimerService {
         TimerEntity timer= getTimerByUserAndId(userId, id);
 
         if(timer.getPlan() != null && timer.getPlan().isComplete()) throw new CustomException(ErrorCode.TIMER_RESET_FOR_COMPLETED_PLAN);
+
         switch (timer.getStatus()) {
             case ENDED -> throw new CustomException(ErrorCode.TIMER_ENDED);
             case READY -> throw new CustomException(ErrorCode.TIMER_ALREADY_STATE);
@@ -304,7 +304,8 @@ public class TimerService {
             inRange= (timerStartDate.isEqual(planStart) || timerStartDate.isAfter(planStart))
                     && (timerStartDate.isEqual(planEnd) || timerStartDate.isBefore(planEnd));
         }
-        if(inRange && timer.getElapsed() >= timer.getPlan().getMinutes() * 60){
+
+        if(inRange && timer.getElapsed() >= timer.getPlan().getMinutes()){
             timer.getPlan().updateStatus(true);
             sseEmitterService.alert(timer, userId, isSyncCheck);
         }

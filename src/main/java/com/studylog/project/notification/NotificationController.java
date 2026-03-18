@@ -39,15 +39,13 @@ public class NotificationController {
                    "title": "[계획2-동기화로 알림] 계획이 목표 달성 시간을 채워 자동완료 처리되었어요. 🥳",
                    "content": "[동기화 알림 테스트]로 이동해서 타이머를 종료해 주세요.",
                    "alertDate": "25-07-29 01:20:00",
-                   "url": "/timers/20",
                    "read": false
                  },
                  {
                    "notificationId": 2,
-                   "title": "[계획1] 계획이 목표 달성 시간을 채워 완료 처리되었어요. 🥳",
-                   "content": "알림을 클릭하면 계획 페이지로 이동돼요.",
+                   "title": "[계획1] 계획이 목표 달성 시간을 채워 완료 처리되었어요.",
+                   "content": "",
                    "alertDate": "25-07-29 01:27:48",
-                   "url": "/plans",
                    "read": false
                  }
             ]

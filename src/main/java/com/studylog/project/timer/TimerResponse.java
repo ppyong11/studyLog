@@ -42,7 +42,7 @@ public class TimerResponse{
     public TimerResponse(Long id, String name, Long categoryId, LocalDateTime createAt,
                          LocalDateTime startAt, LocalDateTime endAt, LocalDateTime pauseAt,
                          Long elapsed, TimerStatus status, Long planId, String planName, Long planCategoryId,
-                         LocalDate planStartDate, LocalDate planEndDate) {
+                         Integer planMinutes, LocalDate planStartDate, LocalDate planEndDate, Boolean plenCompleted) {
         this.id = id;
         this.name = name;
         this.categoryId = categoryId;
@@ -54,7 +54,7 @@ public class TimerResponse{
         this.status = status;
 
         if (planId != null) {
-            this.connectedPlan = new LinkedPlanDto(planId, planName, planCategoryId, planStartDate, planEndDate);
+            this.connectedPlan = new LinkedPlanDto(planId, planName, planCategoryId, planMinutes, planStartDate, planEndDate, plenCompleted);
         } else {
             this.connectedPlan = null;
         }
@@ -73,7 +73,8 @@ public class TimerResponse{
     public static TimerResponse toDto(TimerEntity timer, PlanEntity plan) {
         return new TimerResponse(timer.getId(), timer.getName(), timer.getCategory().getId(), timer.getCreateAt(),
                 timer.getStartAt(), timer.getEndAt(), timer.getPauseAt(), timer.getElapsed(), timer.getStatus(),
-                new LinkedPlanDto(plan.getId(), plan.getName(), plan.getCategory().getId(), plan.getStartDate(), plan.getEndDate())
+                new LinkedPlanDto(plan.getId(), plan.getName(), plan.getCategory().getId(), plan.getMinutes(),
+                        plan.getStartDate(), plan.getEndDate(), plan.isComplete())
         );
     }
 }
