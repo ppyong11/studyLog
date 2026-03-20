@@ -32,9 +32,6 @@ public class UserEntity {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column
-    private String resolution;
-
     @Column(nullable = false)
     //회원 역할, DB에서 기본값 0으로 처리, 파라미터 안 받음 (빌더 필드에 없어도 알아서 false 들어감 *멤버변수 초기값(boolean= false, Boolean(객체)= null)
     private Boolean role;
@@ -97,10 +94,5 @@ public class UserEntity {
     public void restore(){
         this.delete = false;
         this.deleteAt = null;
-    }
-
-    //다짐 수정
-    public void updateResolution(String resolution){
-        this.resolution= resolution;
     }
 }

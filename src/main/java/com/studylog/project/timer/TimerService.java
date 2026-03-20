@@ -156,19 +156,9 @@ public class TimerService {
         return TimerResponse.toDto(timer);
     }
 
-    //타이머 삭제 + 알림 경로 삭제
+    //타이머 삭제
     public void deleteTimer(Long id, Long userId) {
-        UserEntity proxyUser = userRepository.getReferenceById(userId);
-
         TimerEntity timer= getTimerByUserAndId(userId, id);
-
-        //삭제한 타이머의 알림 받기 (영속 상태)
-        List<NotificationEntity> notifications= notificationRepository.findAllByUserAndTimer(proxyUser, timer);
-
-        for(NotificationEntity noti : notifications){ //해당 타이머를 가진 알림 없으면 패스
-            noti.updateTimerId(); //null 처리
-        }
-
         timerRepository.delete(timer);
     }
 

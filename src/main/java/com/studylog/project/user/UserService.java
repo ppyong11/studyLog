@@ -133,16 +133,10 @@ public class UserService {
         log.info("탈퇴 처리 완료: 여부 {}, 시간 {}, ", userEntity.isDelete(), userEntity.getDeleteAt());
     }
 
-    public void updateResolution(String resolution, Long id){
-        UserEntity userEntity= getUser(id, ErrorCode.USER_NOT_FOUND); //영속 상태 만들기
-        userEntity.updateResolution(resolution);
-    }
-
     public UserInfoResponse getUserInfo(Long id){
         UserEntity userEntity = getUser(id, ErrorCode.USER_NOT_FOUND);
 
-        return new UserInfoResponse(userEntity.getNickname(), userEntity.getResolution(),
-                notificationService.getUnreadCount(id));
+        return new UserInfoResponse(userEntity.getNickname(), notificationService.getUnreadCount(id));
     }
 
     public UserEntity getUser(Long id, ErrorCode errorCode){

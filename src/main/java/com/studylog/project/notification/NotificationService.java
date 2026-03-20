@@ -53,7 +53,6 @@ public class NotificationService {
                 timer.getPlan().getName(), isSyncCheck ? "자동" : "");
         NotificationEntity notification = NotificationEntity.builder()
                 .user(user)
-                .timer(timer) //null이면 알아서 들어감
                 .title(title)
                 .content(isSyncCheck ? "해당 타이머로 이동해서 타이머를 종료해 주세요." : "")
                 .build();

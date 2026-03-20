@@ -23,10 +23,6 @@ public class NotificationEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
-    @ManyToOne
-    @JoinColumn(name="timer_id") //타이머 있어도 되고 없어도 됨
-    private TimerEntity timer;
-
     private String title;
     private String content;
 
@@ -36,9 +32,8 @@ public class NotificationEntity {
     private boolean isRead;
 
     @Builder
-    public NotificationEntity(UserEntity user, TimerEntity timer, String title, String content, String url){
+    public NotificationEntity(UserEntity user, String title, String content, String url){
         this.user= user;
-        this.timer= timer;
         this.title= title;
         this.content= content;
         this.alertAt= LocalDateTime.now();
@@ -47,8 +42,5 @@ public class NotificationEntity {
 
     public void updateIsRead(){
         this.isRead= true;
-    }
-    public void updateTimerId(){
-        this.timer= null;
     }
 }

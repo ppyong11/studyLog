@@ -135,12 +135,4 @@ public class UserController {
         log.info(request.nickname());
         return ResponseEntity.ok(SuccessResponse.of("닉네임이 변경되었습니다.", request.nickname()));
     }
-
-    @Operation(summary = "다짐 변경")
-    @PatchMapping("/member/change-resolution")
-    public ResponseEntity<SuccessResponse<Void>> updateResolution(@Valid @RequestBody UpdateResolutionReqeust reqeust,
-                                                   @AuthenticationPrincipal CustomUserDetail user){
-        userService.updateResolution(reqeust.resolution(), user.getUserId());
-        return ResponseEntity.ok(SuccessResponse.of("다짐이 변경되었습니다."));
-    }
 }

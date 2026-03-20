@@ -11,7 +11,6 @@ import java.util.Optional;
 @Repository
 public interface NotificationRepository extends JpaRepository<NotificationEntity, Long> {
     List<NotificationEntity> findAllByUser(UserEntity user);
-    List<NotificationEntity> findAllByUserAndTimer(UserEntity user, TimerEntity timer);
     List<NotificationEntity> findAllByUserAndIsReadFalse(UserEntity user);
     long countByUserAndIsReadFalse(UserEntity user);
     Optional<NotificationEntity> findByUserAndId(UserEntity user, Long id);
