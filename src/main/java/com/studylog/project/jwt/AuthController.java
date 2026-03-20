@@ -91,7 +91,7 @@ public class AuthController {
         return ResponseEntity.ok(SuccessResponse.of("로그아웃 처리되었습니다."));
     }
 
-    @PostMapping("/member/withdraw")
+    @PostMapping("/withdraw")
     @Operation(summary = "회원탈퇴 (softDelete - 7일간 회원 정보 보관)")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "회원탈퇴 성공",
