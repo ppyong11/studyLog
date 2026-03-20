@@ -108,7 +108,7 @@ public class AuthService {
         //인증 객체 임의 생성
         List<GrantedAuthority> authorities= List.of(new SimpleGrantedAuthority(user.getRole()? "ROLE_USER" : "ROLE_ADMIN"));
 
-        Authentication authentication= new UsernamePasswordAuthenticationToken(user, null, authorities);
+        Authentication authentication= new UsernamePasswordAuthenticationToken(customUserDetail, null, authorities);
         JwtToken jwtToken= jwtTokenProvider.createToken(authentication);
 
         //기존 AT 로그아웃 처리, 저장된 RT 삭제 후 새 RT 저장
