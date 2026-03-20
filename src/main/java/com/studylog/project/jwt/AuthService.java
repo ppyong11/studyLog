@@ -123,6 +123,7 @@ public class AuthService {
     //쿠키 생성
     public String createCookie(String name, String token, String path, long expTime){
         return ResponseCookie.from(name, token)
+                .domain(".studylog.hyeoncode.dev")
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("None") //cross-site에서 쿠키 보내려면 None 처리
@@ -133,6 +134,7 @@ public class AuthService {
     //쿠키 삭제
     public String deleteCookie(String name, String path){
         return ResponseCookie.from(name, "")
+                .domain(".studylog.hyeoncode.dev")
                 .httpOnly(true)
                 .secure(true)
                 .path(path) //생성할 때 넣은 path로 설정
