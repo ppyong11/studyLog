@@ -38,19 +38,19 @@ public class SecurityConfig {
                 //JWT 사용하니까 세션 사용 X
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers(
-                            //아래 API 요청 모두 허가
-                            "/api/signup/**",
-                            "/api/login",
-                            "api/refresh",
-                            "/swagger-ui/**",
-                            "/v3/api-docs/**",
-                            "/swagger-resources/**",
-                            "/webjars/**",
-                            "/actuator/**"
-                ).permitAll()
-                //그 외 모든 요청은 인증 필요
-                .anyRequest().authenticated()
+                        .requestMatchers(
+                                //아래 API 요청 모두 허가
+                                "/api/signup/**",
+                                "/api/login",
+                                "api/refresh",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-resources/**",
+                                "/webjars/**",
+                                "/actuator/**"
+                        ).permitAll()
+                        //그 외 모든 요청은 인증 필요
+                        .anyRequest().authenticated()
                 );
         return http.build();
     }
@@ -58,7 +58,7 @@ public class SecurityConfig {
     @Bean //or 클래스에 @Component 붙이기
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtTokenProvider jwtTokenProvider) {
         return new JwtAuthenticationFilter(jwtTokenProvider);
-    //각 파라미터에 @Component 등 어노테이션이 붙어있으면 알아서 빈 찾아서 파라미터에 주입해줌, 그리고 이 메서드도 저 위 파라미터에 주입하는 것
+        //각 파라미터에 @Component 등 어노테이션이 붙어있으면 알아서 빈 찾아서 파라미터에 주입해줌, 그리고 이 메서드도 저 위 파라미터에 주입하는 것
     }
 
     @Bean

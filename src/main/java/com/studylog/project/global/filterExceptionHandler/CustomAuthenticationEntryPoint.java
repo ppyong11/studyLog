@@ -26,6 +26,9 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         log.info("entry 호출: 401 에러 발생");
         ErrorCode errorCode = ErrorCode.AUTH_REQUIRED;
 
+        response.setHeader("Access-Control-Allow-Origin", request.getHeader("Origin"));
+        response.setHeader("Access-Control-Allow-Credentials", "true");
+
         response.setStatus(errorCode.getStatus().value());
         response.setContentType("application/json; charset=UTF-8");
 
