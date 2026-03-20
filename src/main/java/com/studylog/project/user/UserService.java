@@ -61,7 +61,8 @@ public class UserService {
     //아이디, 비밀번호 확인
     public void validateAndRestoreUser(LogInRequest request) {
         //아이디 검증
-        UserEntity userEntity= findByStringId(request.id());
+        UserEntity userEntity= userRepository.findById(request.id())
+                .orElseThrow(() -> new CustomException(ErrorCode.LOGIN_FAIL));
 
         if (passwordEncoder.matches(request.pw(), userEntity.getPw())) {
 
