@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -46,7 +47,13 @@ public class SseController {
     //구독
     @Operation(summary = "SSE 구독")
     @GetMapping(value= "/subscribe", produces = "text/event-stream")
-    public SseEmitter subscribe(@AuthenticationPrincipal CustomUserDetail user) {
+    public SseEmitter subscribe(@AuthenticationPrincipal CustomUserDetail user,
+                                HttpServletResponse response) {
+
+        response.setHeader("X-Accel-Buffering", "no");
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Connection", "keep-alive");
+
         //로그인 후에 구독 요청해서 인증 객체 있음
         return sseEmitterService.subscribe(user.getUserId());
     }
