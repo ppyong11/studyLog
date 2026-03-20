@@ -79,6 +79,7 @@ public class SseEmitterService {
     }
 
     public void alert(TimerEntity timer, Long userId, boolean isSyncCheck){
+        log.info("알림 발송");
         UserEntity proxyUser = userRepository.getReferenceById(userId);
 
         notificationService.saveNotification(proxyUser, timer, isSyncCheck);

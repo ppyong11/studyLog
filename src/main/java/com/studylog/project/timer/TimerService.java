@@ -286,6 +286,7 @@ public class TimerService {
         //미완료 & 계획 일자 이후에 수행되었으면
 
         boolean inRange; //체킹 값 저장
+
         if(!isSyncCheck){ //정지, 종료에 의한 검사
             LocalDate timerEndDate= timer.getEndAt() == null? timer.getPauseAt().toLocalDate():timer.getEndAt().toLocalDate();
             inRange= (timerStartDate.isEqual(planStart) || timerStartDate.isAfter(planStart))

@@ -32,7 +32,6 @@ public class NotificationService {
         List<NotificationResponse> responses = notificationRepositoryImpl.findAllNotifications(proxyUser, page);
 
         Long totalItems = notificationRepositoryImpl.totalItems(proxyUser);
-        log.info("{}", totalItems);
 
         boolean hasNext= page * pageSize < totalItems;
         return new ScrollResponse<>(responses, page, totalItems, hasNext);

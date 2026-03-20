@@ -88,7 +88,7 @@ public class SecurityConfig {
         configuration.setAllowCredentials(true);
 
         // 사전 요청(Preflight Request) 결과 캐싱 시간 (초 단위)
-        configuration.setMaxAge(3600L); // 1시간 (long 타입으로 3600L)
+        configuration.setMaxAge(60L); // 1분
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         // 위에서 설정한 CORS 구성을 어떤 경로 패턴에 적용할지 설정
