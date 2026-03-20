@@ -296,7 +296,7 @@ public class TimerService {
                     && (timerStartDate.isEqual(planEnd) || timerStartDate.isBefore(planEnd));
         }
 
-        if(inRange && timer.getElapsed() >= timer.getPlan().getMinutes()){
+        if(inRange && timer.getElapsed() >= timer.getPlan().getMinutes() * 60){
             timer.getPlan().updateStatus(true);
             sseEmitterService.alert(timer, userId, isSyncCheck);
         }
