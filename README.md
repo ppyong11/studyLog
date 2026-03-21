@@ -81,6 +81,7 @@ Nginx의 리버스 프록시를 이용해 엔드포인트에 따라 프론트와
   https://www.notion.so/26a516e994b380389999cc3bf3cd4088?source=copy_link#28a516e994b380b88c21d4c13634d928
 - **구동 gif**
     - 계획-타이머 연동과 자동 알림
+    ![플랜-타이머영상](https://github.com/user-attachments/assets/0f07af4b-9b76-4e4d-bac5-446df49a788e)
 
     - 게시글-파일 등록 및 저장
-    ![ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/c961ee2e-61f1-4f1d-96be-d4c8ad5ce25a)
+  ![게시글-파일영상](https://github.com/user-attachments/assets/f7240dc7-fec8-4f65-ae17-c3b678c669ff)
