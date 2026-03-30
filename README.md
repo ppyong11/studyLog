@@ -77,8 +77,8 @@ Nginx의 리버스 프록시를 이용해 엔드포인트에 따라 프론트와
     ➡️ is_draft= 0: 게시글 조회 시, 업로드된 파일이 표출되지 않음.
       
 ## 📝 프로젝트 상세 내용 
-- **노션 링크**
-https://www.notion.so/32a516e994b3816e857ff7197504b804?source=copy_link
+- **노션 링크** </br>
+  https://www.notion.so/32a516e994b3816e857ff7197504b804?source=copy_link
 - **구동 gif**
     - 계획-타이머 연동과 자동 알림
     ![플랜-타이머영상](https://github.com/user-attachments/assets/0f07af4b-9b76-4e4d-bac5-446df49a788e)
