@@ -2,6 +2,7 @@ package com.studylog.project.board;
 
 import com.studylog.project.category.CategoryEntity;
 import com.studylog.project.category.CategoryRepository;
+import com.studylog.project.file.FileEntity;
 import com.studylog.project.file.FileService;
 import com.studylog.project.global.exception.CustomException;
 import com.studylog.project.global.exception.ErrorCode;
@@ -77,9 +78,17 @@ public class BoardService {
         return BoardDetailResponse.toDto(BoardResponse.toDto(board), board);
     }
 
-    public void deleteBoard(Long id, Long userId) {
-        BoardEntity board= getBoardByUserAndId(userId, id);
+    public void deleteBoard(Long boardId, Long userId) {
+        BoardEntity board = getBoardByUserAndId(userId, boardId);
 
+        // 게시글 삭제 전 연결된 파일들의 물리적 경로를 찾아 디스크에서 지움
+        if (board.getFiles() != null && !board.getFiles().isEmpty()) {
+            for (FileEntity file : board.getFiles()) {
+                fileService.deletePhysicalFile(file.getPath());
+            }
+        }
+
+        // 게시글 DB 삭제 (파일 DB에서 알아서 삭제됨)
         boardRepository.delete(board);
     }
 

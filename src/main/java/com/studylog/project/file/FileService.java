@@ -107,8 +107,11 @@ public class FileService {
         FileEntity file = fileRepository.findByUserAndIdAndDraftId(proxyUser, fileId, draftId)
                 .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
 
-        //임시 파일 draft 값 검증 or 게시글 검증된 파일 삭제 시
+        String filePath = file.getPath(); // 물리적 삭제를 위해 경로 빼두기
+
+        //임시 파일 draft 값 검증 or 게시글 검증된 파일 삭제 시 (DB삭제)
         fileRepository.delete(file);
+        deletePhysicalFile(filePath);     // 실제 파일 삭제
     }
 
     public void deleteMeta(Long fileId, Long boardId, Long userId) {
@@ -117,7 +120,9 @@ public class FileService {
         FileEntity file = fileRepository.findByUserAndIdAndBoard(proxyUser, fileId, boardId)
                         .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
 
+        String filePath = file.getPath();
         fileRepository.delete(file);
+        deletePhysicalFile(filePath);
     }
 
     public void attachDraftFilesToBoard(UserEntity user, BoardEntity board, String draftId) {
@@ -160,10 +165,34 @@ public class FileService {
                 .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND));
     }
 
+    // 스토리지에 있는 파일 삭제 메서드
+    public void deletePhysicalFile(String filePath) {
+        if (filePath == null || filePath.isEmpty()) return;
+
+        try {
+            Path path = Paths.get(filePath);
+            boolean deleted = Files.deleteIfExists(path);
+            if (deleted) {
+                log.info("물리적 파일 삭제 완료: {}", filePath);
+            }
+        } catch (IOException e) {
+            log.error("물리적 파일 삭제 실패 (경로: {}): {}", filePath, e.getMessage());
+        }
+    }
+
     @Scheduled(cron= "0 */30 * * * *") //30분마다 시행
     public void deleteDraftFiles(){
         LocalDateTime cutoff= LocalDateTime.now().minusHours(2);
         List<FileEntity> expiredFiles= fileRepository.findAllByUploadAtBeforeAndDraftIdIsNotNull(cutoff);
+
+        // 물리적 파일 먼저 삭제
+        for (FileEntity file : expiredFiles) {
+            deletePhysicalFile(file.getPath());
+        }
+
+        // DB 삭제
         fileRepository.deleteAll(expiredFiles);
+
+        log.info("스케줄러: {}개 임시 파일 삭제 완료", expiredFiles.size());
     }
 }
