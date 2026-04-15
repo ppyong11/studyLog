@@ -28,9 +28,9 @@
     Notification 테이블: 계획 완료 이벤트 발생 시 생성되는 알림 데이터를 저장하며 알림 이력을 관리할 수 있도록 설계했습니다.
 
 ## 📌 시스템 구조
-<img width="661" height="712" alt="studyLog_구조" src="https://github.com/user-attachments/assets/231700a5-bc90-4c5b-994f-43e6a1781a0e" /> </br>
-서버 배포와 HTTPS 적용을 위해 EC2와 도메인을 사용했으며, 코드가 바뀔 때마다 배포하는 번거로움을 줄이기 위해 GitHub Actions 활용한 CI/CD를 도입했습니다.</br>
-Nginx의 리버스 프록시를 이용해 엔드포인트에 따라 FrontEnd Server와 API Server로 분기해 클라이언트의 요청에 응답합니다. </br></br>
+<img width="661" height="712" alt="studyLog_구조" src="https://github.com/user-attachments/assets/f046b71c-8684-4fee-a565-8040c6980628" /> </br>
+각 어플리케이션은 Vercel과 AWS EC2/RDS 환경에 배포해 프론트엔드와 백엔드를 분리했습니다. 클라이언트 요청은 Nginx 리버스 프록시를 통해 내부 Spring Boot API 서버로 전달되고 이 과정에서 서버의 실제 IP를 외부에 노출하지 않도록 처리했습니다. <br>
+RDS는 private subnet으로 분리해 보안성을 높이고 Prometheus와 Grafana를 활용해 서버 상태를 모니터링했습니다.
 
 ## 📌 주요 기능 흐름 소개
 ### **JWT 기반 인증 및 토큰 재발급 시스템**<br>
